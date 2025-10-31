@@ -1,5 +1,6 @@
 package com.mymemori.models;
 
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
@@ -9,6 +10,7 @@ import java.util.Collection;
 import java.util.List;
 
 @RequiredArgsConstructor
+@Data
 public class UserPrincipal implements UserDetails {
 
     private final Users user;
