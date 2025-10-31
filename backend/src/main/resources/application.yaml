@@ -3,9 +3,9 @@ spring:
     name: mymemori
 
   datasource:
-    url: jdbc:postgresql://ep-calm-cake-ahskoe25-pooler.c-3.us-east-1.aws.neon.tech/mymemori?sslmode=require&channelBinding=require
-    username: neondb_owner
-    password: npg_6fYjNU4PMShK
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
