@@ -49,7 +49,7 @@ public class SecurityConfig {
         return request -> {
             CorsConfiguration cfg = new CorsConfiguration();
 
-            cfg.setAllowedOrigins(List.of("http://localhost:3000", "https://mymemori-platform.vercel.app"));
+            cfg.setAllowedOrigins(List.of("http://localhost:5173", "https://mymemori-platform.vercel.app"));
             cfg.setAllowedHeaders(Collections.singletonList("*"));
             cfg.setAllowedMethods(Collections.singletonList("*"));
             cfg.setAllowCredentials(true);
