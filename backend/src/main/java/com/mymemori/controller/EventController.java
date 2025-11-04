@@ -22,7 +22,7 @@ public class EventController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PostMapping("event/{slug}")
+    @GetMapping("/{slug}")
     public ResponseEntity<EventResponse> findEventBySlug(@PathVariable String slug){
         EventResponse response = eventService.findByEventSlug(slug);
         return ResponseEntity.status(HttpStatus.OK).body(response);
