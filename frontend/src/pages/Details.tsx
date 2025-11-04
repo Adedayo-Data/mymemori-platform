@@ -10,11 +10,15 @@ import {
   Bell,
   User,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { QRCodeSVG } from "qrcode.react";
 
 const Details = () => {
   const [copied, setCopied] = useState(false);
-  const eventLink = "ourviews.com/chidi-eleanor";
+  const location = useLocation();
+  const { qrCodeValue, eventData } = location.state || {};
+
+  const eventLink = qrCodeValue;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(eventLink);
@@ -87,9 +91,20 @@ const Details = () => {
         <div className="flex items-start justify-between mb-8">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              Chidi & Eleanor's Wedding
+              {eventData?.eventName || "Event Details"}
             </h1>
-            <p className="text-gray-500">December 14, 2024</p>
+            <p className="text-sm font-bold text-gray-900 mb-2">
+              {eventData?.location || "Event location"}
+            </p>
+            <p className="text-gray-500">
+              {eventData?.eventDate
+                ? new Date(eventData.eventDate).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })
+                : "Date not available"}
+            </p>
           </div>
 
           <button className="flex items-center gap-2 px-4 py-2 bg-pink-50 text-pink-600 rounded-lg hover:bg-pink-100 transition-colors border border-pink-200">
@@ -109,42 +124,11 @@ const Details = () => {
               {/* QR Code Display */}
               <div className="bg-gray-900 rounded-xl p-8 flex items-center justify-center mb-4">
                 <div className="bg-white p-6 rounded-lg">
-                  <svg
-                    viewBox="0 0 100 100"
-                    className="w-32 h-32"
-                    fill="currentColor"
-                  >
-                    <rect x="0" y="0" width="20" height="20" />
-                    <rect x="30" y="0" width="10" height="10" />
-                    <rect x="50" y="0" width="10" height="10" />
-                    <rect x="70" y="0" width="10" height="10" />
-                    <rect x="80" y="0" width="20" height="20" />
-                    <rect x="0" y="10" width="10" height="10" />
-                    <rect x="10" y="10" width="10" height="10" />
-                    <rect x="80" y="10" width="10" height="10" />
-                    <rect x="90" y="10" width="10" height="10" />
-                    <rect x="0" y="30" width="10" height="10" />
-                    <rect x="20" y="30" width="10" height="10" />
-                    <rect x="40" y="30" width="10" height="10" />
-                    <rect x="60" y="30" width="10" height="10" />
-                    <rect x="80" y="30" width="10" height="10" />
-                    <rect x="0" y="40" width="10" height="10" />
-                    <rect x="30" y="40" width="10" height="10" />
-                    <rect x="50" y="40" width="20" height="20" />
-                    <rect x="80" y="40" width="10" height="10" />
-                    <rect x="0" y="70" width="10" height="10" />
-                    <rect x="20" y="70" width="10" height="10" />
-                    <rect x="40" y="70" width="10" height="10" />
-                    <rect x="60" y="70" width="10" height="10" />
-                    <rect x="80" y="70" width="10" height="10" />
-                    <rect x="0" y="80" width="20" height="20" />
-                    <rect x="30" y="80" width="10" height="10" />
-                    <rect x="50" y="80" width="10" height="10" />
-                    <rect x="70" y="80" width="10" height="10" />
-                    <rect x="80" y="80" width="20" height="20" />
-                    <rect x="10" y="90" width="10" height="10" />
-                    <rect x="90" y="90" width="10" height="10" />
-                  </svg>
+                  {qrCodeValue ? (
+                    <QRCodeSVG value={qrCodeValue} size={300} />
+                  ) : (
+                    <p>Loading QR Code...</p>
+                  )}
                 </div>
               </div>
 
