@@ -1,8 +1,38 @@
 import { Upload, Heart } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useEvent } from "../context/eventContext";
 
 const Visit = () => {
   const navigate = useNavigate();
+  const { slug } = useParams();
+  const { getEventBySlug } = useEvent();
+  const [eventData, setEventData] = useState<{
+    eventName?: string;
+    eventDate?: string;
+    location?: string;
+    description?: string;
+  } | null>(null);
+  const [isLoading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchEventData = async () => {
+      try {
+        setLoading(true);
+        const data = await getEventBySlug(slug || ""); // already returns parsed data
+        setEventData(data);
+      } catch (error) {
+        console.error("Error fetching event data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (slug) {
+      fetchEventData();
+    }
+  }, [slug]);
+
   const handleSharePhotos = () => {
     navigate("/gallery");
   };
@@ -65,15 +95,17 @@ const Visit = () => {
         <div className="max-w-2xl text-center border border-gray-500 rounded-2xl p-5 ">
           {/* Title */}
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-            Chidi & Blessing's
-            <br />
-            Wedding
+            {eventData?.eventName || "Event"}
           </h1>
-
+          <p className="text-lg md:text-sm text-gray-200 mb-8 max-w-xl mx-auto">
+            {eventData?.location || "Description"}
+          </p>
+          <p className="text-lg md:text-sm text-gray-200 mb-8 max-w-xl mx-auto">
+            {eventData?.eventDate || "Description"}
+          </p>
           {/* Subtitle */}
-          <p className="text-lg md:text-xl text-gray-200 mb-8 max-w-xl mx-auto">
-            Help us preserve our memories. Share your photos from our special
-            day.
+          <p className="text-lg md:text-2xl text-gray-200 mb-8 max-w-xl mx-auto">
+            {eventData?.description || "Description"}
           </p>
 
           {/* CTA Button */}
