@@ -49,6 +49,24 @@ public class EventService {
         return response;
     }
 
+    // find By Event Slug
+    public EventResponse findByEventSlug(String slug){
+        Event event = eventRepo.findByEventSlug(slug);
+        if (event == null){
+            throw new RuntimeException("Event Details not found");
+        }
+
+        // Map event to DTO
+        EventResponse eventResponse = new EventResponse();
+        eventResponse.setEventName(event.getEventName());
+        eventResponse.setEventDate(event.getEventDate());
+        eventResponse.setLocation(event.getLocation());
+        eventResponse.setDescription(event.getDescription());
+        eventResponse.setEventSlug(event.getEventSlug());
+
+        return eventResponse;
+    }
+
     private String generateEventSlug(){
         String chars = "abcdefghijklmnopqrstuvwxyz0123456789";
         StringBuilder sb = new StringBuilder();
