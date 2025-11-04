@@ -36,7 +36,7 @@ const Booking = () => {
       const eventResponse = await createEvent(formData);
 
       // Generate QR code value using the slug from backend response
-      const qrValue = `https://localhost:5173/e/${eventResponse.eventSlug}`;
+      const qrValue = `${window.location.origin}/e/${eventResponse.eventSlug}/visit`;
       setQrCodeValue(qrValue);
       console.log("Creating event with data:", formData);
       console.log("Event slug:", eventResponse.slug);
