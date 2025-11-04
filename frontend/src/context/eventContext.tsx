@@ -11,12 +11,13 @@ interface EventData {
 }
 
 interface EventResponse {
-  slug: string;
+  eventSlug: string;
   [key: string]: any;
 }
 
 interface EventContextType {
   createEvent: (data: EventData) => Promise<EventResponse>;
+  getEventBySlug: (slug: string) => Promise<EventResponse>;
   loading: boolean;
   error: string | null;
 }
@@ -47,8 +48,27 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const getEventBySlug = async (eventSlug: string): Promise<EventResponse> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await apiClient.get(`/api/event/${eventSlug}`);
+      console.log("Event fetch response:", response.data);
+      return response.data as EventResponse;
+    } catch (err: unknown) {
+      const errorMessage =
+        (err as any)?.response?.data?.message ||
+        "Failed to fetch event. Please try again.";
+      setError(errorMessage);
+      toast.error(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
   const value: EventContextType = {
     createEvent,
+    getEventBySlug,
     loading,
     error,
   };

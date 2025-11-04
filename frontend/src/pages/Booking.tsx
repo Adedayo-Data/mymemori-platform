@@ -39,14 +39,14 @@ const Booking = () => {
       const qrValue = `${window.location.origin}/visit/${eventResponse.eventSlug}/`;
       setQrCodeValue(qrValue);
       console.log("Creating event with data:", formData);
-      console.log("Event slug:", eventResponse.slug);
+      console.log("Event slug:", eventResponse.eventSlug);
 
       // Navigate to details page with QR code data
       navigate("/details", {
         state: {
           qrCodeValue: qrValue,
           eventData: formData,
-          eventSlug: eventResponse.slug,
+          eventSlug: eventResponse.eventSlug, // not .slug
         },
       });
     } catch (error) {
