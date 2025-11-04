@@ -1,7 +1,10 @@
 import { useState } from "react";
 import EventCard from "../components/EventCard";
-import { Heart, Plus, Edit, Image } from "lucide-react";
+import { Heart, Plus, Edit, Image, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/authContext";
+import { LuUser } from "react-icons/lu";
+import toast from "react-hot-toast";
 
 const hostedEvents = [
   {
@@ -31,10 +34,19 @@ const attendedEvents = [
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("hosting");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const navigate = useNavigate();
+  const { getUserDisplayInfo, logout } = useAuth();
+  const userInfo = getUserDisplayInfo();
 
   const handleCreateEvent = () => {
     navigate("/book");
+  };
+
+  const handleLogout = () => {
+    logout();
+    toast.success("Logged out successfully!");
+    navigate("/");
   };
 
   //   const handleEditProfile = () => {
@@ -55,13 +67,36 @@ const Profile = () => {
             <span className="text-xl font-bold text-gray-800">MyMemori</span>
           </div>
 
-          <button
-            onClick={handleCreateEvent}
-            className="flex items-center gap-2 px-4 py-2  cursor-pointer hover:scale-105 bg-linear-to-r from-pink-500 to-rose-500 text-white rounded-lg font-medium hover:from-pink-600 hover:to-rose-600 transition-all shadow-md"
-          >
-            <Plus className="w-4 h-4" />
-            Create New Event
-          </button>
+          <div className="flex gap-8 ">
+            <div className="relative flex items-center gap-3">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="p-2 bg-orange-100 rounded-full cursor-pointer hover:scale-105"
+              >
+                <LuUser className="w-6 h-6 text-orange-600" />
+              </button>
+              {isDropdownOpen && (
+                <div className="absolute top-full right-0 mt-2 w-48 bg-linear-to-r from-pink-500 to-rose-500 rounded-lg shadow-lg border border-gray-200 z-50">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-gray-700 hover:bg-red-400 cursor-pointer rounded-lg transition-colors"
+                  >
+                    <LogOut className="w-4 h-4 text-white" />
+                    <span className="text-sm font-medium text-white">
+                      Logout
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handleCreateEvent}
+              className="flex items-center gap-2 px-4 py-2  cursor-pointer hover:scale-105 bg-linear-to-r from-pink-500 to-rose-500 text-white rounded-lg font-medium hover:from-pink-600 hover:to-rose-600 transition-all shadow-md"
+            >
+              <Plus className="w-4 h-4" />
+              Create New Event
+            </button>
+          </div>
         </div>
       </header>
 
@@ -72,9 +107,11 @@ const Profile = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-1">
-                Olivia Chen
+                {userInfo ? userInfo.fullname : "User"}
               </h1>
-              <p className="text-gray-500">olivia.chen@email.com</p>
+              <p className="text-gray-500">
+                {userInfo ? userInfo.email : "user@example.com"}
+              </p>
             </div>
 
             <button

@@ -2,17 +2,19 @@ import { useState } from "react";
 import { LuHeart, LuUser } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
+import { useEvent } from "../context/eventContext";
 
 const Booking = () => {
   const [formData, setFormData] = useState({
-    eventName: "Chidi & Blessing's Wedding",
-    eventDate: "2024-08-05",
-    location: "The Grand Ballroom, New York",
-    description: "Join us as we celebrate our special day!",
-    allowDownload: true,
+    eventName: "",
+    eventDate: "",
+    location: "",
+    description: "",
+    allowDownload: false,
   });
   const [qrCodeValue, setQrCodeValue] = useState("");
   const navigate = useNavigate();
+  const { createEvent, loading } = useEvent();
   const handleInputChange = (
     e:
       | React.ChangeEvent<HTMLInputElement>
@@ -29,21 +31,27 @@ const Booking = () => {
     }));
   };
 
-  const handleCreateEvent = () => {
-    // Generate a unique QR code value based on form data
-    const uniqueId = Date.now().toString(); // Simple unique ID
-    const qrValue = `https://mystorypalace.site/event/${uniqueId}?name=${encodeURIComponent(
-      formData.eventName
-    )}&date=${encodeURIComponent(
-      formData.eventDate
-    )}&location=${encodeURIComponent(
-      formData.location
-    )}&description=${encodeURIComponent(formData.description)}&download=${
-      formData.allowDownload
-    }`;
-    setQrCodeValue(qrValue);
-    console.log("Creating event with data:", formData);
-    setTimeout(() => navigate("/details"), 4000);
+  const handleCreateEvent = async () => {
+    try {
+      const eventResponse = await createEvent(formData);
+
+      // Generate QR code value using the slug from backend response
+      const qrValue = `https://localhost:5173/e/${eventResponse.eventSlug}`;
+      setQrCodeValue(qrValue);
+      console.log("Creating event with data:", formData);
+      console.log("Event slug:", eventResponse.slug);
+
+      // Navigate to details page with QR code data
+      navigate("/details", {
+        state: {
+          qrCodeValue: qrValue,
+          eventData: formData,
+          eventSlug: eventResponse.slug,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to create event:", error);
+    }
   };
 
   return (
@@ -63,6 +71,7 @@ const Booking = () => {
             >
               <LuUser className="w-5 h-5 text-orange-600" />
             </button>
+            <p>Profile</p>
           </div>
         </div>
       </header>
@@ -194,9 +203,10 @@ const Booking = () => {
             {/* Create Button */}
             <button
               onClick={handleCreateEvent}
-              className="w-full bg-linear-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-semibold py-4 rounded-xl transition-all shadow-lg shadow-pink-200"
+              disabled={loading}
+              className="w-full bg-linear-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-semibold py-4 rounded-xl transition-all shadow-lg shadow-pink-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Create Event & Get QR Code
+              {loading ? "Creating Event..." : "Create Event & Get QR Code"}
             </button>
           </div>
 

@@ -1,5 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/authContext";
+import {
+  validateSignupForm,
+  validateSigninForm,
+  hasValidationErrors,
+} from "../utils/validation";
+import type {
+  ValidationErrors,
+  SignupFormData,
+  SigninFormData,
+} from "../utils/validation";
 
 const Auth = () => {
   const [activeTab, setActiveTab] = useState("signup");
@@ -16,6 +27,7 @@ const Auth = () => {
     confirmPassword: "",
   });
   const navigate = useNavigate();
+  const { loading, signup, signin } = useAuth();
 
   const handleInputChange = (e: {
     target: { name: string; value: string };
@@ -25,49 +37,45 @@ const Auth = () => {
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const handleSubmit = (e: { preventDefault: () => void }) => {
+  const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
 
-    const newErrors = {
-      fullName: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    };
+    let validationErrors: ValidationErrors;
 
     if (activeTab === "signup") {
-      if (!formData.fullName) {
-        newErrors.fullName = "Full name is required";
-      }
-      if (!formData.email) {
-        newErrors.email = "Email is required";
-      }
-      if (!formData.password) {
-        newErrors.password = "Password is required";
-      }
-      if (!formData.confirmPassword) {
-        newErrors.confirmPassword = "Confirm password is required";
-      }
-
-      if (
-        formData.password &&
-        formData.confirmPassword &&
-        formData.password !== formData.confirmPassword
-      ) {
-        newErrors.confirmPassword = "Passwords do not match";
-      }
-
-      if (formData.password && formData.password.length < 6) {
-        newErrors.password = "Password must be at least 6 characters long";
-      }
-
-      setErrors(newErrors);
-
-      if (Object.values(newErrors).some((error) => error !== "")) {
-        return;
-      }
+      validationErrors = validateSignupForm(formData as SignupFormData);
+    } else {
+      validationErrors = validateSigninForm(formData as SigninFormData);
     }
-    navigate("/profile");
+
+    setErrors({
+      fullName: validationErrors.fullName || "",
+      email: validationErrors.email || "",
+      password: validationErrors.password || "",
+      confirmPassword: validationErrors.confirmPassword || "",
+    });
+
+    if (hasValidationErrors(validationErrors)) {
+      return;
+    }
+
+    try {
+      if (activeTab === "signup") {
+        await signup({
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+        });
+      } else {
+        await signin({
+          email: formData.email,
+          password: formData.password,
+        });
+      }
+      navigate("/profile");
+    } catch {
+      // Error is handled by the context
+    }
   };
 
   const handleGoogleSignIn = () => {
@@ -203,9 +211,14 @@ const Auth = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-rose-400 hover:bg-rose-500 text-white font-medium py-3 rounded-lg transition-colors shadow-sm"
+            disabled={loading}
+            className="w-full bg-rose-400 hover:bg-rose-500 disabled:bg-rose-300 text-white font-medium py-3 rounded-lg transition-colors shadow-sm"
           >
-            {activeTab === "signup" ? "Create Account" : "Log In"}
+            {loading
+              ? "Loading..."
+              : activeTab === "signup"
+              ? "Create Account"
+              : "Log In"}
           </button>
         </form>
 
