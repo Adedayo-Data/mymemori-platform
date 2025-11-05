@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { LuHeart, LuUser } from "react-icons/lu";
+import Navigation from "../components/Navigation";
 import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { useEvent } from "../context/eventContext";
+import { Upload as UploadIcon, X } from "lucide-react";
+import toast from "react-hot-toast";
 
 const Booking = () => {
   const [formData, setFormData] = useState({
@@ -11,7 +13,9 @@ const Booking = () => {
     location: "",
     description: "",
     allowDownload: false,
+    eventImage: null as File | null,
   });
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [qrCodeValue, setQrCodeValue] = useState("");
   const navigate = useNavigate();
   const { createEvent, loading } = useEvent();
@@ -29,6 +33,44 @@ const Booking = () => {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please upload an image file");
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size must be less than 5MB");
+        return;
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        eventImage: file,
+      }));
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      toast.success("Image uploaded successfully!");
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setFormData((prev) => ({
+      ...prev,
+      eventImage: null,
+    }));
+    setImagePreview(null);
   };
 
   const handleCreateEvent = async () => {
@@ -55,33 +97,16 @@ const Booking = () => {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-pink-50 via-white to-rose-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-100 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <LuHeart className="w-6 h-6 text-pink-500 fill-pink-500" />
-            <span className="text-xl font-bold text-gray-800">MyMemori</span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              className="p-2 bg-orange-100 rounded-full"
-              onClick={() => navigate("/profile")}
-            >
-              <LuUser className="w-5 h-5 text-orange-600" />
-            </button>
-            <p>Profile</p>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50">
+      {/* Navigation */}
+      <Navigation />
 
       {/* Decorative elements */}
       <div className="fixed top-20 left-10 w-32 h-32 bg-pink-200 rounded-full opacity-20 blur-3xl"></div>
       <div className="fixed bottom-20 right-10 w-40 h-40 bg-rose-200 rounded-full opacity-20 blur-3xl"></div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8 relative z-10">
         {/* Title */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
@@ -119,9 +144,6 @@ const Booking = () => {
                     placeholder="Chidi & Blessing's Wedding"
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
                   />
-                  <p className="text-xs text-gray-400 mt-1.5">
-                    This will show the names of the guests
-                  </p>
                 </div>
 
                 {/* Event Date */}
@@ -166,6 +188,46 @@ const Booking = () => {
                     rows={4}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all resize-none"
                   />
+                </div>
+
+                {/* Event Image */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Event Cover Image (Optional)
+                  </label>
+                  {imagePreview ? (
+                    <div className="relative">
+                      <img
+                        src={imagePreview}
+                        alt="Event cover"
+                        className="w-full h-48 object-cover rounded-xl"
+                      />
+                      <button
+                        onClick={handleRemoveImage}
+                        className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-pink-500 hover:bg-pink-50 transition-all">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <UploadIcon className="w-8 h-8 text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600">
+                          Click to upload or drag and drop
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          PNG, JPG, GIF up to 5MB
+                        </p>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
                 </div>
               </div>
             </div>

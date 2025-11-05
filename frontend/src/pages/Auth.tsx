@@ -83,38 +83,38 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-rose-50 to-orange-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-orange-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 border border-gray-100">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold bg-linear-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
-            myMemori
+          <h1 className="text-4xl font-black bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent mb-2 tracking-tight">
+            MyMemori
           </h1>
-          <p className="text-gray-500">
+          <p className="text-sm text-gray-600 font-medium">
             {activeTab === "signup"
               ? "Create an account to get started on your memories"
-              : "Welcome back log in to view memories"}
+              : "Welcome back, log in to view memories"}
           </p>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 bg-gray-50 p-2 rounded-lg">
+        <div className="flex gap-2 mb-8 bg-gray-100 p-1.5 rounded-xl">
           <button
             onClick={() => setActiveTab("signup")}
-            className={`flex-1 py-2.5 rounded-lg font-medium transition-colors ${
+            className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition-all ${
               activeTab === "signup"
-                ? "bg-rose-100 text-rose-700"
-                : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                ? "bg-white text-pink-600 shadow-md"
+                : "bg-gray-100 text-gray-600 hover:text-gray-900"
             }`}
           >
             Sign Up
           </button>
           <button
             onClick={() => setActiveTab("login")}
-            className={`flex-1 py-2.5 rounded-lg font-medium transition-colors ${
+            className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition-all ${
               activeTab === "login"
-                ? "bg-rose-100 text-rose-700"
-                : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                ? "bg-white text-pink-600 shadow-md"
+                : "bg-gray-100 text-gray-600 hover:text-gray-900"
             }`}
           >
             Log In
@@ -122,10 +122,10 @@ const Auth = () => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {activeTab === "signup" && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-bold text-gray-800 mb-2">
                 Full Name
               </label>
               <input
@@ -133,34 +133,34 @@ const Auth = () => {
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleInputChange}
-                placeholder="Enter your full name"
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all"
+                placeholder="John Doe"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
               />
               {errors.fullName && (
-                <p className="text-sm text-rose-600 mt-1">{errors.fullName}</p>
+                <p className="text-xs text-rose-600 mt-1.5 font-medium">{errors.fullName}</p>
               )}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Email
+            <label className="block text-sm font-bold text-gray-800 mb-2">
+              Email Address
             </label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              placeholder="Enter your email address"
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all"
+              placeholder="you@example.com"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
             />
             {errors.email && (
-              <p className="text-sm text-rose-600 mt-1">{errors.email}</p>
+              <p className="text-xs text-rose-600 mt-1.5 font-medium">{errors.email}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-bold text-gray-800 mb-2">
               Password
             </label>
             <input
@@ -168,17 +168,17 @@ const Auth = () => {
               name="password"
               value={formData.password}
               onChange={handleInputChange}
-              placeholder="Enter your password"
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all"
+              placeholder="••••••••"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
             />
             {errors.password && (
-              <p className="text-sm text-rose-600 mt-1">{errors.password}</p>
+              <p className="text-xs text-rose-600 mt-1.5 font-medium">{errors.password}</p>
             )}
           </div>
 
           {activeTab === "signup" && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-bold text-gray-800 mb-2">
                 Confirm Password
               </label>
               <input
@@ -186,11 +186,11 @@ const Auth = () => {
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
-                placeholder="Confirm your password"
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all"
+                placeholder="••••••••"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
               />
               {errors.confirmPassword && (
-                <p className="text-sm text-rose-600 mt-1">
+                <p className="text-xs text-rose-600 mt-1.5 font-medium">
                   {errors.confirmPassword}
                 </p>
               )}
@@ -201,7 +201,7 @@ const Auth = () => {
             <div className="text-right">
               <button
                 type="button"
-                className="text-sm text-rose-500 hover:text-rose-600 font-medium"
+                className="text-sm text-pink-600 hover:text-pink-700 font-bold transition-colors"
               >
                 Forgot Password?
               </button>
@@ -212,7 +212,7 @@ const Auth = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-rose-400 hover:bg-rose-500 disabled:bg-rose-300 text-white font-medium py-3 rounded-lg transition-colors shadow-sm"
+            className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 disabled:from-pink-300 disabled:to-rose-300 text-white font-bold py-3 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:shadow-none"
           >
             {loading
               ? "Loading..."
@@ -223,16 +223,16 @@ const Auth = () => {
         </form>
 
         {/* Divider */}
-        <div className="flex items-center gap-3 my-6">
+        <div className="flex items-center gap-3 my-7">
           <div className="flex-1 h-px bg-gray-200"></div>
-          <span className="text-sm text-gray-400">or</span>
+          <span className="text-xs text-gray-400 font-semibold uppercase tracking-wide">or</span>
           <div className="flex-1 h-px bg-gray-200"></div>
         </div>
 
         {/* Google Sign In */}
         <button
           onClick={handleGoogleSignIn}
-          className="w-full flex items-center justify-center gap-3 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center justify-center gap-3 py-3 border-2 border-gray-200 rounded-xl hover:border-pink-300 hover:bg-pink-50 transition-all font-bold text-gray-700"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -252,9 +252,7 @@ const Auth = () => {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          <span className="text-gray-700 font-medium">
-            Continue with Google
-          </span>
+          <span>Continue with Google</span>
         </button>
       </div>
     </div>
