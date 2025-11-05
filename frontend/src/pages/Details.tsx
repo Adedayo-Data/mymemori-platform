@@ -1,20 +1,22 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import Navigation from "../components/Navigation";
 import {
-  Heart,
   Download,
   Share2,
   Mail,
   Copy,
   Check,
   MoreVertical,
-  Bell,
-  User,
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
+import domtoimage from "dom-to-image";
+import toast from "react-hot-toast";
 
 const Details = () => {
   const [copied, setCopied] = useState(false);
+  const qrCodeRef = useRef<HTMLDivElement>(null);
+  const tableCardRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const { qrCodeValue, eventData } = location.state || {};
 
@@ -23,70 +25,68 @@ const Details = () => {
   const handleCopy = () => {
     navigator.clipboard.writeText(eventLink);
     setCopied(true);
+    toast.success("Link copied to clipboard!");
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleShare = (platform: string) => {
-    console.log(`Sharing via ${platform}`);
-    alert(`Sharing via ${platform}`);
+    const text = `Join me at ${eventData?.eventName}!`;
+    switch (platform) {
+      case "whatsapp":
+        window.open(
+          `https://wa.me/?text=${encodeURIComponent(text + " " + eventLink)}`,
+          "_blank"
+        );
+        break;
+      case "email":
+        window.location.href = `mailto:?subject=${encodeURIComponent(
+          eventData?.eventName
+        )}&body=${encodeURIComponent(text + " " + eventLink)}`;
+        break;
+    }
+  };
+
+  const downloadAsImage = async (
+    ref: React.RefObject<HTMLDivElement | null>,
+    filename: string
+  ) => {
+    if (!ref.current) {
+      toast.error("Element not found for download");
+      return;
+    }
+
+    console.log(`Element found for ${filename}, proceeding with dom-to-image`);
+    try {
+      const blob = await domtoimage.toBlob(ref.current, {
+        bgcolor: "#ffffff",
+      });
+
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      toast.success(`${filename} downloaded!`);
+    } catch (error) {
+      toast.error("Failed to download image");
+    }
   };
 
   const handleDownloadQR = () => {
-    console.log("Downloading QR code");
-    alert("QR Code downloaded!");
+    downloadAsImage(qrCodeRef, "qr-code.png");
   };
 
   const handleDownloadTemplate = () => {
-    console.log("Downloading table card template");
-    alert("Table card template downloaded!");
+    downloadAsImage(tableCardRef, "table-card.png");
   };
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-pink-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-100 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2">
-              <Heart className="w-6 h-6 text-pink-500 fill-pink-500" />
-              <span className="text-xl font-bold text-gray-800">Our Views</span>
-            </div>
-
-            <nav className="hidden md:flex items-center gap-6">
-              <Link
-                to="/profile"
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                Dashboard
-              </Link>
-              <Link to="/details" className="text-pink-500 font-medium">
-                Events
-              </Link>
-              <Link
-                to="/gallery"
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                Gallery
-              </Link>
-            </nav>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-              <Bell className="w-5 h-5 text-gray-600" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-              <MoreVertical className="w-5 h-5 text-gray-600" />
-            </button>
-            <button className="p-2 bg-pink-100 rounded-full">
-              <User className="w-5 h-5 text-pink-600" />
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* Navigation */}
+      <Navigation />
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-6 py-8 relative z-10">
         {/* Title Section */}
         <div className="flex items-start justify-between mb-8">
           <div>
@@ -122,7 +122,10 @@ const Details = () => {
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
               {/* QR Code Display */}
-              <div className="bg-gray-900 rounded-xl p-8 flex items-center justify-center mb-4">
+              <div
+                ref={qrCodeRef}
+                className="bg-gray-900 rounded-xl p-8 flex items-center justify-center mb-4"
+              >
                 <div className="bg-white p-6 rounded-lg">
                   {qrCodeValue ? (
                     <QRCodeSVG value={qrCodeValue} size={300} />
@@ -181,7 +184,7 @@ const Details = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => handleShare("WhatsApp")}
+                  onClick={() => handleShare("whatsapp")}
                   className="flex items-center justify-center gap-2 px-4 py-3 bg-white rounded-lg hover:bg-gray-50 transition-colors border border-gray-200"
                 >
                   <Share2 className="w-4 h-4 text-gray-700" />
@@ -191,7 +194,7 @@ const Details = () => {
                 </button>
 
                 <button
-                  onClick={() => handleShare("Email")}
+                  onClick={() => handleShare("email")}
                   className="flex items-center justify-center gap-2 px-4 py-3 bg-white rounded-lg hover:bg-gray-50 transition-colors border border-gray-200"
                 >
                   <Mail className="w-4 h-4 text-gray-700" />
@@ -210,35 +213,81 @@ const Details = () => {
             For Your Tables
           </h2>
 
-          <button
-            onClick={handleDownloadTemplate}
-            className="w-full bg-pink-50 text-pink-600 py-4 rounded-xl hover:bg-pink-100 transition-colors flex items-center justify-center gap-2 font-medium border border-pink-100"
+          <div
+            id="table"
+            ref={tableCardRef}
+            className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-6"
           >
-            <Download className="w-5 h-5" />
-            Download Table Card Template
-          </button>
-        </div>
+            {/* Printable Table Card - Compact & Stylish */}
+            <div className="max-w-xs mx-auto">
+              {/* Card Container - Compact design */}
+              <div
+                className="relative bg-linear-to-br from-pink-50 via-white to-purple-50 rounded-2xl shadow-xl overflow-hidden border border-pink-200 p-5"
+                style={{ aspectRatio: "3/4" }}
+              >
+                {/* Subtle Top Accent */}
+                <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-pink-400 to-purple-400"></div>
 
-        {/* Empty State */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center">
-                <Heart className="w-10 h-10 text-pink-400" />
-              </div>
-              <div className="absolute -top-2 -right-2 w-8 h-8 bg-pink-200 rounded-full flex items-center justify-center">
-                <Heart className="w-4 h-4 text-pink-500 fill-pink-500" />
+                {/* Content Container */}
+                <div className="h-full flex flex-col justify-between items-center">
+                  {/* Top Section - Minimal Event Info */}
+                  <div className="text-center">
+                    <h1
+                      className="text-lg font-black tracking-tight bg-linear-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-0.5"
+                      style={{ fontFamily: "Georgia, serif" }}
+                    >
+                      {eventData?.eventName || "Your Event"}
+                    </h1>
+                    <p className="text-xs text-gray-500 font-light tracking-widest uppercase">
+                      {eventData?.location || "Location"}
+                    </p>
+                  </div>
+
+                  {/* Middle Section - QR Code */}
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="bg-white rounded-xl p-2.5 shadow-md border border-pink-100">
+                      {qrCodeValue ? (
+                        <QRCodeSVG value={qrCodeValue} size={250} level="H" />
+                      ) : (
+                        <div className="w-[110px] h-[110px] bg-gray-200 rounded flex items-center justify-center">
+                          <p className="text-gray-500 text-xs">QR</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bottom Section - Link */}
+                  <div className="text-center w-full px-2">
+                    <p className="text-xs text-gray-400 font-light mb-1.5 tracking-widest">
+                      SCAN OR VISIT
+                    </p>
+                    <p
+                      className="text-xs font-mono text-pink-600 font-semibold break-all"
+                      style={{
+                        fontFamily: "Courier New, monospace",
+                        letterSpacing: "0.5px",
+                      }}
+                    >
+                      {eventLink
+                        ? eventLink.replace(/^https?:\/\//, "")
+                        : "event.link"}
+                    </p>
+                  </div>
+
+                  {/* Subtle Bottom Accent */}
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linear-to-r from-purple-400 to-pink-400"></div>
+                </div>
               </div>
             </div>
           </div>
 
-          <h3 className="text-2xl font-bold text-gray-800 mb-3">
-            Awaiting your beautiful moments!
-          </h3>
-          <p className="text-gray-500 max-w-md mx-auto">
-            Your gallery is empty right now. Share this event with your guests
-            to start collecting memories and photos from your special day.
-          </p>
+          <button
+            onClick={handleDownloadTemplate}
+            className="w-full bg-linear-to-r from-pink-500 to-purple-500 text-white py-4 rounded-xl hover:from-pink-600 hover:to-purple-600 transition-all shadow-lg flex items-center justify-center gap-2 font-medium"
+          >
+            <Download className="w-5 h-5" />
+            Download Table Card as Image
+          </button>
         </div>
       </div>
     </div>
