@@ -53,7 +53,7 @@ const Home = () => {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Heart className="w-8 h-8 text-pink-500 fill-pink-500" />
-            <span className="text-2xl font-black bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent tracking-tight">
+            <span className="text-2xl font-black bg-linear-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent tracking-tight">
               MyMemori
             </span>
           </div>
@@ -68,19 +68,11 @@ const Home = () => {
       </header>
 
       {/* Hero Content */}
-      <div className="relative z-10 h-[calc(100vh-88px)] flex items-center justify-center px-6 -mt-10">
+      <div className="relative z-10 h-[calc(100vh-88px)] flex items-center justify-center px-6 ">
         <div className="max-w-5xl mx-auto text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/85 backdrop-blur-md rounded-full shadow-md border border-pink-100 mb-8 animate-fade-in">
-            <Sparkles className="w-4 h-4 text-pink-500" />
-            <span className="text-xs font-semibold text-gray-700 tracking-wide uppercase">
-              Capture Every Beautiful Moment
-            </span>
-          </div>
-
           {/* Main Headline */}
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-black mb-6 leading-tight tracking-tight">
-            <span className="bg-gradient-to-r from-pink-600 via-rose-600 to-orange-500 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-pink-600 via-rose-600 to-orange-500 bg-clip-text text-transparent">
               Share Memories,
             </span>
             <br />
@@ -98,18 +90,18 @@ const Home = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               onClick={handleGetStarted}
-              className="group px-8 py-4 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-full font-bold text-base shadow-xl shadow-pink-200/50 hover:shadow-2xl hover:shadow-pink-300/50 transition-all flex items-center gap-2 hover:gap-3 hover:scale-105 cursor-pointer"
+              className="group px-8 py-4 bg-linear-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-full font-bold text-base shadow-xl shadow-pink-200/50 hover:shadow-2xl hover:shadow-pink-300/50 transition-all flex items-center gap-2 hover:gap-3 hover:scale-105 cursor-pointer"
             >
               Get Started Free
               <ArrowRight className="w-5 h-5 transition-all" />
             </button>
 
-            <button
+            {/* <button
               onClick={handleLearnMore}
               className="px-8 py-4 bg-white/90 backdrop-blur-md hover:bg-white text-gray-800 rounded-full font-bold text-base border-2 border-gray-300 hover:border-pink-400 transition-all shadow-lg hover:shadow-xl cursor-pointer"
             >
               See How It Works
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

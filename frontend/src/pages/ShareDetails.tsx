@@ -1,14 +1,8 @@
 import { useState, useRef } from "react";
 import Navigation from "../components/Navigation";
-import {
-  Download,
-  Share2,
-  Mail,
-  Copy,
-  Check,
-  MoreVertical,
-} from "lucide-react";
-import { useLocation } from "react-router-dom";
+import BottomNav from "../components/BottomNav";
+import { Download, Share2, Mail, Copy, Check, ArrowLeft } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import domtoimage from "dom-to-image";
 import toast from "react-hot-toast";
@@ -18,6 +12,7 @@ const Details = () => {
   const qrCodeRef = useRef<HTMLDivElement>(null);
   const tableCardRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const { qrCodeValue, eventData } = location.state || {};
 
   const eventLink = qrCodeValue;
@@ -30,7 +25,7 @@ const Details = () => {
   };
 
   const handleShare = (platform: string) => {
-    const text = `Join me at ${eventData?.eventName}!`;
+    const text = `Join me at ${eventData?.title || eventData?.eventName}!`;
     switch (platform) {
       case "whatsapp":
         window.open(
@@ -81,36 +76,41 @@ const Details = () => {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-pink-50">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-pink-50 overflow-x-hidden">
       {/* Navigation */}
       <Navigation />
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-6 py-8 relative z-10">
+        {/* Back Button */}
+        <button
+          onClick={() => navigate("/event-list")}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="font-medium">Back to Events</span>
+        </button>
+
         {/* Title Section */}
         <div className="flex items-start justify-between mb-8">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              {eventData?.eventName || "Event Details"}
+              {eventData?.title || eventData?.eventName || "Event Details"}
             </h1>
             <p className="text-sm font-bold text-gray-900 mb-2">
               {eventData?.location || "Event location"}
             </p>
             <p className="text-gray-500">
-              {eventData?.eventDate
-                ? new Date(eventData.eventDate).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })
-                : "Date not available"}
+              {eventData?.date ||
+                (eventData?.eventDate
+                  ? new Date(eventData.eventDate).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })
+                  : "Date not available")}
             </p>
           </div>
-
-          <button className="flex items-center gap-2 px-4 py-2 bg-pink-50 text-pink-600 rounded-lg hover:bg-pink-100 transition-colors border border-pink-200">
-            <MoreVertical className="w-4 h-4" />
-            Options
-          </button>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6 mb-8">
@@ -120,17 +120,23 @@ const Details = () => {
               Share with Your Guests
             </h2>
 
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mr-10 ">
               {/* QR Code Display */}
               <div
                 ref={qrCodeRef}
                 className="bg-gray-900 rounded-xl p-8 flex items-center justify-center mb-4"
               >
-                <div className="bg-white p-6 rounded-lg">
+                <div className="bg-white p-4 md:p-6 rounded-lg">
                   {qrCodeValue ? (
-                    <QRCodeSVG value={qrCodeValue} size={300} />
+                    <QRCodeSVG
+                      value={qrCodeValue}
+                      size={240}
+                      className="w-50 md:w-full"
+                    />
                   ) : (
-                    <p>Loading QR Code...</p>
+                    <p className="text-sm text-gray-500">
+                      Loading QR Code...
+                    </p>
                   )}
                 </div>
               </div>
@@ -151,7 +157,7 @@ const Details = () => {
               .
             </h2>
 
-            <div className="bg-pink-50 rounded-2xl border border-pink-100 p-6">
+            <div className="bg-pink-50 rounded-2xl border border-pink-100 p-6 mr-10 md:mr-0">
               <div className="mb-4">
                 <label className="block text-sm text-gray-600 mb-2">
                   Your short link
@@ -189,7 +195,7 @@ const Details = () => {
                 >
                   <Share2 className="w-4 h-4 text-gray-700" />
                   <span className="text-sm font-medium text-gray-700">
-                    Share via WhatsApp
+                    WhatsApp
                   </span>
                 </button>
 
@@ -199,7 +205,7 @@ const Details = () => {
                 >
                   <Mail className="w-4 h-4 text-gray-700" />
                   <span className="text-sm font-medium text-gray-700">
-                    Share via Email
+                    Email
                   </span>
                 </button>
               </div>
@@ -236,7 +242,9 @@ const Details = () => {
                       className="text-lg font-black tracking-tight bg-linear-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-0.5"
                       style={{ fontFamily: "Georgia, serif" }}
                     >
-                      {eventData?.eventName || "Your Event"}
+                      {eventData?.title ||
+                        eventData?.eventName ||
+                        "Your Event"}
                     </h1>
                     <p className="text-xs text-gray-500 font-light tracking-widest uppercase">
                       {eventData?.location || "Location"}
@@ -247,7 +255,11 @@ const Details = () => {
                   <div className="flex flex-col items-center gap-2">
                     <div className="bg-white rounded-xl p-2.5 shadow-md border border-pink-100">
                       {qrCodeValue ? (
-                        <QRCodeSVG value={qrCodeValue} size={250} level="H" />
+                        <QRCodeSVG
+                          value={qrCodeValue}
+                          size={220}
+                          level="H"
+                        />
                       ) : (
                         <div className="w-[110px] h-[110px] bg-gray-200 rounded flex items-center justify-center">
                           <p className="text-gray-500 text-xs">QR</p>
@@ -290,6 +302,7 @@ const Details = () => {
           </button>
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 };

@@ -1,5 +1,14 @@
 import { useState } from "react";
-import { Heart, Menu, X, Bell, LogOut, Settings, Home, Calendar, Image } from "lucide-react";
+import {
+  Heart,
+  Menu,
+  X,
+  Bell,
+  LogOut,
+  Settings,
+  Home,
+  Calendar,
+} from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import { LuUser } from "react-icons/lu";
@@ -28,19 +37,21 @@ const Navigation = () => {
   const isActive = (path: string) => location.pathname === path;
 
   const navLinks = [
-    { path: "/profile", label: "Dashboard", icon: Home },
+    { path: "/profile", label: "Profile", icon: Home },
     { path: "/book", label: "Create Event", icon: Calendar },
-    { path: "/gallery", label: "Gallery", icon: Image },
   ];
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+    <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm hidden md:block">
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <Link
+            to="/profile"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
             <Heart className="w-6 h-6 text-pink-500 fill-pink-500" />
-            <span className="text-xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
+            <span className="text-xl font-bold bg-linear-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
               MyMemori
             </span>
           </Link>
@@ -75,7 +86,7 @@ const Navigation = () => {
             <div className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="p-2 bg-gradient-to-br from-pink-100 to-rose-100 rounded-full hover:from-pink-200 hover:to-rose-200 transition-all"
+                className="p-2 bg-linear-to-br from-pink-100 to-rose-100 rounded-full hover:from-pink-200 hover:to-rose-200 transition-all"
               >
                 <LuUser className="w-5 h-5 text-pink-600" />
               </button>
@@ -83,11 +94,13 @@ const Navigation = () => {
               {isDropdownOpen && (
                 <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
                   {/* User Info */}
-                  <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-pink-50 to-rose-50">
+                  <div className="px-4 py-3 border-b border-gray-100 bg-linear-to-r from-pink-50 to-rose-50">
                     <p className="text-sm font-semibold text-gray-900">
                       {userInfo?.fullname || "User"}
                     </p>
-                    <p className="text-xs text-gray-500">{userInfo?.email || "user@example.com"}</p>
+                    <p className="text-xs text-gray-500">
+                      {userInfo?.email || "user@example.com"}
+                    </p>
                   </div>
 
                   {/* Menu Items */}

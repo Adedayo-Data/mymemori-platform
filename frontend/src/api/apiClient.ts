@@ -1,6 +1,6 @@
-import axois from "axios";
+import axios from "axios";
 
-const apiClient = axois.create({
+const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   headers: {
     "Content-Type": "application/json",
@@ -33,7 +33,7 @@ apiClient.interceptors.response.use(
       // Token expired or invalid, clear auth data
       localStorage.removeItem("authToken");
       localStorage.removeItem("userData");
-      window.location.href = "/login";
+      window.location.href = "/";
     }
     return Promise.reject(error);
   }

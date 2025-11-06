@@ -1,130 +1,150 @@
 import { Upload, MapPin, Calendar } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { useEvent } from "../context/eventContext";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Visit = () => {
   const navigate = useNavigate();
-  const { slug } = useParams();
-  const { getEventBySlug } = useEvent();
-  const [eventData, setEventData] = useState<{
-    eventName?: string;
-    eventDate?: string;
-    location?: string;
-    description?: string;
-    eventImage?: string;
-  } | null>(null);
-  const [isLoading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const fetchEventData = async () => {
-      try {
-        setLoading(true);
-        const data = await getEventBySlug(slug || "");
-        setEventData(data);
-      } catch (error) {
-        console.error("Error fetching event data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (slug) {
-      fetchEventData();
-    }
-  }, [slug]);
+  const [eventData] = useState({
+    eventName: "testing",
+    eventDate: "testing",
+    location: "testing",
+    description: "testing",
+    eventImage: "",
+  });
 
   const handleSharePhotos = () => {
     navigate("/gallery");
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
-      {/* Background Image */}
+    <div className="relative min-h-screen w-full overflow-hidden bg-gray-950">
+      {/* Background Image with Gradient Overlay */}
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
           backgroundImage: eventData?.eventImage
             ? `url(${eventData.eventImage})`
-            : "linear-gradient(to br, rgb(250, 204, 21), rgb(249, 115, 22))",
+            : "bg-gradient-to-r from-white/0 via-white/20 to-white/0",
         }}
       >
-        {/* Dark overlay for better text readability */}
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+        {/* Improved gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70"></div>
+      </div>
+
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div
+          className="absolute bottom-20 right-10 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        ></div>
       </div>
 
       {/* Content */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center px-6 py-12">
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-12">
         <div className="max-w-2xl w-full">
-          {/* Main Card */}
-          <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
-            {/* Content */}
-            <div className="px-8 py-12 text-center">
-              {/* Title */}
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">
+          {/* Main Card with enhanced styling */}
+          <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden transform transition-all duration-300 hover:scale-[1.02]">
+            {/* Decorative top bar */}
+            <div className="h-1 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500"></div>
+
+            <div className="px-6 sm:px-10 py-10 sm:py-14">
+              {/* Title with better typography */}
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-3 text-center leading-tight">
                 {eventData?.eventName || "Your Event"}
               </h1>
 
-              {/* Event Info Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-8">
-                {/* Date */}
+              {/* Subtitle */}
+              <p className="text-white/80 text-center mb-8 text-lg">
+                Create lasting memories together
+              </p>
+
+              {/* Event Info Cards with improved design */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-10">
+                {/* Date Card */}
                 {eventData?.eventDate && (
-                  <div className="flex items-center justify-center gap-3 p-4 bg-blue-50 rounded-xl">
-                    <Calendar className="w-5 h-5 text-blue-600" />
-                    <div className="text-left">
-                      <p className="text-xs text-blue-600 font-medium">Date</p>
-                      <p className="text-sm font-semibold text-gray-900">
-                        {new Date(eventData.eventDate).toLocaleDateString(
-                          "en-US",
-                          {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          }
-                        )}
-                      </p>
+                  <div className="group relative overflow-hidden bg-white/15 backdrop-blur-md rounded-2xl p-5 border border-white/20 hover:bg-white/25 transition-all duration-300">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="relative flex items-start gap-4">
+                      <div className="p-3 bg-blue-500/30 rounded-xl">
+                        <Calendar className="w-6 h-6 text-blue-200" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="text-xs text-blue-200 font-semibold uppercase tracking-wide mb-1">
+                          Date
+                        </p>
+                        <p className="text-base font-bold text-white">
+                          {new Date(eventData.eventDate).toLocaleDateString(
+                            "en-US",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            }
+                          )}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
 
-                {/* Location */}
+                {/* Location Card */}
                 {eventData?.location && (
-                  <div className="flex items-center justify-center gap-3 p-4 bg-purple-50 rounded-xl">
-                    <MapPin className="w-5 h-5 text-purple-600" />
-                    <div className="text-left">
-                      <p className="text-xs text-purple-600 font-medium">
-                        Location
-                      </p>
-                      <p className="text-sm font-semibold text-gray-900">
-                        {eventData.location}
-                      </p>
+                  <div className="group relative overflow-hidden bg-white/15 backdrop-blur-md rounded-2xl p-5 border border-white/20 hover:bg-white/25 transition-all duration-300">
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="relative flex items-start gap-4">
+                      <div className="p-3 bg-purple-500/30 rounded-xl">
+                        <MapPin className="w-6 h-6 text-purple-200" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="text-xs text-purple-200 font-semibold uppercase tracking-wide mb-1">
+                          Location
+                        </p>
+                        <p className="text-base font-bold text-white">
+                          {eventData.location}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Description */}
+              {/* Description with better styling */}
               {eventData?.description && (
-                <p className="text-gray-700 text-lg mb-8 leading-relaxed">
-                  {eventData.description}
-                </p>
+                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 mb-10">
+                  <p className="text-white/90 text-base sm:text-lg leading-relaxed text-center">
+                    {eventData.description}
+                  </p>
+                </div>
               )}
 
-              {/* Upload Button */}
+              {/* Enhanced Upload Button */}
               <button
                 onClick={handleSharePhotos}
-                className="group px-8 py-4 bg-linear-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-full font-semibold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3 hover:scale-105 mx-auto"
+                className="group relative w-full sm:w-auto mx-auto flex items-center justify-center gap-3 px-10 py-5 bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 hover:from-pink-600 hover:via-rose-600 hover:to-purple-700 text-white rounded-2xl font-bold text-lg shadow-2xl shadow-pink-500/50 hover:shadow-pink-500/70 transition-all duration-300 hover:scale-105 overflow-hidden"
               >
-                <Upload className="w-5 h-5" />
-                Share Photos
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                <Upload className="w-6 h-6 relative z-10" />
+                <span className="relative z-10">Share Your Photos</span>
               </button>
+
+              {/* Additional info */}
+              <p className="text-white/60 text-sm text-center mt-6">
+                All photos are private and only visible to event attendees
+              </p>
             </div>
           </div>
 
-          {/* Footer Info */}
-          <div className="text-center mt-8">
-            <p className="text-white text-sm">
-              Powered by <span className="font-semibold">MyMemori</span>
+          {/* Enhanced Footer */}
+          <div className="text-center mt-8 space-y-2">
+            <p className="text-white/80 text-sm flex items-center justify-center gap-2">
+              Powered by
+              <span className="font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
+                MyMemori
+              </span>
+            </p>
+            <p className="text-white/50 text-xs">
+              Capture and share your special moments
             </p>
           </div>
         </div>
