@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Navigation from "../components/Navigation";
+import BottomNav from "../components/BottomNav";
 import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { useEvent } from "../context/eventContext";
@@ -24,14 +25,10 @@ const Booking = () => {
       | React.ChangeEvent<HTMLInputElement>
       | React.ChangeEvent<HTMLTextAreaElement>
   ) => {
-    const { name, value, type } = e.target;
-    let checked = false;
-    if ("checked" in e.target) {
-      checked = e.target.checked;
-    }
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: value,
     }));
   };
 
@@ -84,26 +81,28 @@ const Booking = () => {
       console.log("Event slug:", eventResponse.eventSlug);
 
       // Navigate to details page with QR code data
-      navigate("/details", {
-        state: {
-          qrCodeValue: qrValue,
-          eventData: formData,
-          eventSlug: eventResponse.eventSlug, // not .slug
-        },
-      });
+      setTimeout(() => {
+        navigate("/share-details", {
+          state: {
+            qrCodeValue: qrValue,
+            eventData: formData,
+            eventSlug: eventResponse.eventSlug,
+          },
+        });
+      }, 6000);
     } catch (error) {
       console.error("Failed to create event:", error);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50">
+    <div className="min-h-screen bg-linear-to-br from-pink-50 via-white to-rose-50">
       {/* Navigation */}
       <Navigation />
 
       {/* Decorative elements */}
-      <div className="fixed top-20 left-10 w-32 h-32 bg-pink-200 rounded-full opacity-20 blur-3xl"></div>
-      <div className="fixed bottom-20 right-10 w-40 h-40 bg-rose-200 rounded-full opacity-20 blur-3xl"></div>
+      <div className="fixed top-20 left-10 w-24 h-24 md:w-32 md:h-32 bg-pink-200 rounded-full opacity-20 blur-3xl"></div>
+      <div className="fixed bottom-20 right-10 w-28 h-28 md:w-40 md:h-40 bg-rose-200 rounded-full opacity-20 blur-3xl"></div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8 relative z-10">
@@ -232,36 +231,6 @@ const Booking = () => {
               </div>
             </div>
 
-            {/* Privacy Settings Card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">
-                Privacy Settings
-              </h2>
-
-              <div className="flex items-center justify-between">
-                <span className="text-gray-700">
-                  Allow guests to download photos
-                </span>
-                <button
-                  onClick={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      allowDownload: !prev.allowDownload,
-                    }))
-                  }
-                  className={`relative w-12 h-6 rounded-full transition-colors ${
-                    formData.allowDownload ? "bg-pink-500" : "bg-gray-300"
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                      formData.allowDownload ? "translate-x-6" : "translate-x-0"
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-
             {/* Create Button */}
             <button
               onClick={handleCreateEvent}
@@ -279,14 +248,20 @@ const Booking = () => {
                 Live Preview
               </h2>
 
-              <div className="bg-linear-to-br from-pink-50 to-rose-50 rounded-2xl p-8 text-center">
+              <div className="bg-linear-to-br from-pink-50 to-rose-50 rounded-2xl p-6 md:p-8 text-center">
                 {/* QR Code */}
                 <div className="bg-white rounded-xl p-6 mb-4 inline-block shadow-sm">
                   {qrCodeValue ? (
-                    <QRCodeSVG value={qrCodeValue} size={270} />
+                    <QRCodeSVG
+                      value={qrCodeValue}
+                      size={220}
+                      className="w-full h-full md:w-100 md:h-40"
+                    />
                   ) : (
-                    <div className="w-70 h-70 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <p className="text-gray-500">QR Code will appear here</p>
+                    <div className="w-full max-w-[220px] h-[220px] bg-white rounded-lg border border-gray-200 flex items-center justify-center">
+                      <p className="text-gray-500 text-sm">
+                        QR Code will appear here
+                      </p>
                     </div>
                   )}
                 </div>
@@ -303,6 +278,7 @@ const Booking = () => {
           </div>
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 };

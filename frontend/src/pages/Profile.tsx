@@ -1,325 +1,349 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import BottomNav from "../components/BottomNav";
 import Navigation from "../components/Navigation";
-import EventCard from "../components/EventCard";
-import {
-  Heart,
-  Plus,
-  Edit,
-  Image,
-  Camera,
-  Users,
-  Calendar,
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Heart } from "lucide-react";
 import { useAuth } from "../context/authContext";
-import toast from "react-hot-toast";
+import { Link, useNavigate } from "react-router-dom";
 
-const hostedEvents = [
-  {
-    id: 1,
-    title: "Olivia & Liam's Wedding",
-    date: "October 18, 2021",
-    photoCount: 248,
-    images: [{ color: "from-green-100 to-emerald-100" }],
-    status: "ended" as const,
-    progress: 100,
-    lastUpdated: "2 days ago",
-  },
-  {
-    id: 2,
-    title: "The Chen Engagement Party",
-    date: "August 15, 2021",
-    photoCount: 87,
-    images: [{ color: "from-blue-200 to-cyan-200" }],
-    status: "active" as const,
-    progress: 65,
-    lastUpdated: "1 hour ago",
-  },
-];
-
-const attendedEvents = [
-  {
-    id: 3,
-    title: "Sarah & Michael's Wedding",
-    date: "September 22, 2021",
-    photoCount: 156,
-    status: "ended" as const,
-    progress: 100,
-  },
-];
+// Simple placeholder dataset to simulate a Pinterest-like gallery
+// label: "L" for liked, "U" for uploads
 
 const Profile = () => {
-  const [activeTab, setActiveTab] = useState("hosting");
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<"created" | "attended">("created");
   const { getUserDisplayInfo } = useAuth();
   const userInfo = getUserDisplayInfo();
+  const navigate = useNavigate();
+  const eventsCreated = useMemo<
+    Array<{
+      id: number;
+      title: string;
+      date: string;
+      slug: string;
+      photos: string[];
+    }>
+  >(
+    () => [
+      {
+        id: 1,
+        title: "Olivia & Liam's Wedding",
+        date: "Oct 18, 2024",
+        slug: "olivia-liam",
+        photos: [
+          "from-rose-200 to-pink-300",
+          "from-amber-100 to-orange-200",
+          "from-blue-100 to-sky-200",
+        ],
+      },
+      {
+        id: 2,
+        title: "The Chen Engagement Party",
+        date: "Aug 15, 2024",
+        slug: "chen-engagement",
+        photos: [
+          "from-emerald-200 to-teal-300",
+          "from-purple-100 to-violet-200",
+          "from-gray-100 to-zinc-200",
+        ],
+      },
+      {
+        id: 3,
+        title: "Sarah & Michael's Wedding",
+        date: "Sep 22, 2024",
+        slug: "sarah-michael",
+        photos: [
+          "from-indigo-200 to-blue-300",
+          "from-rose-100 to-pink-200",
+          "from-amber-200 to-yellow-300",
+        ],
+      },
+    ],
+    []
+  );
 
-  const handleCreateEvent = () => {
-    navigate("/book");
-  };
-
-  const handleEditProfile = () => {
-    setIsEditModalOpen(true);
-  };
-
-  const profileCompletion = 75; // Example: 75% complete
+  const attendedPhotos = useMemo(
+    () => [
+      {
+        id: 1,
+        color: "from-pink-100 to-rose-100",
+        h: 220,
+        likes: 24,
+        src: "https://picsum.photos/id/1011/600/800",
+      },
+      {
+        id: 2,
+        color: "from-amber-50 to-orange-50",
+        h: 280,
+        likes: 11,
+        src: "https://picsum.photos/id/1012/800/600",
+      },
+      {
+        id: 3,
+        color: "from-emerald-50 to-teal-100",
+        h: 180,
+        likes: 8,
+        src: "https://picsum.photos/id/1015/700/700",
+      },
+      {
+        id: 4,
+        color: "from-blue-50 to-sky-100",
+        h: 260,
+        likes: 17,
+        src: "https://picsum.photos/id/1024/700/900",
+      },
+      {
+        id: 5,
+        color: "from-purple-50 to-violet-100",
+        h: 210,
+        likes: 5,
+        src: "https://picsum.photos/id/1035/800/900",
+      },
+      {
+        id: 6,
+        color: "from-slate-100 to-gray-200",
+        h: 300,
+        likes: 32,
+        src: "https://picsum.photos/id/1039/900/700",
+      },
+      {
+        id: 7,
+        color: "from-rose-50 to-pink-50",
+        h: 190,
+        likes: 12,
+        src: "https://picsum.photos/id/1040/700/700",
+      },
+      {
+        id: 8,
+        color: "from-amber-100 to-yellow-100",
+        h: 240,
+        likes: 9,
+        src: "https://picsum.photos/id/1041/800/700",
+      },
+      {
+        id: 9,
+        color: "from-teal-50 to-cyan-100",
+        h: 230,
+        likes: 21,
+        src: "https://picsum.photos/id/1043/700/800",
+      },
+      {
+        id: 10,
+        color: "from-rose-200 to-pink-200",
+        h: 270,
+        likes: 15,
+        src: "https://picsum.photos/id/1050/900/900",
+      },
+      {
+        id: 11,
+        color: "from-indigo-50 to-blue-100",
+        h: 200,
+        likes: 4,
+        src: "https://picsum.photos/id/1052/700/700",
+      },
+      {
+        id: 12,
+        color: "from-zinc-100 to-neutral-200",
+        h: 260,
+        likes: 6,
+        src: "https://picsum.photos/id/1060/800/900",
+      },
+    ],
+    []
+  );
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-pink-50 via-white to-rose-50">
-      {/* Decorative background */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-pink-200 rounded-full opacity-20 blur-3xl"></div>
-
-      {/* Navigation */}
-      <Navigation />
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8 relative z-10">
-        {/* Profile Header */}
-        <div className="mb-8 bg-white rounded-3xl shadow-lg border border-gray-100 p-8">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            {/* User Info */}
-            <div className="flex items-start gap-6">
-              {/* Avatar */}
-              <div className="w-24 h-24 bg-linear-to-br from-pink-400 to-rose-500 rounded-full flex items-center justify-center shadow-lg">
-                <span className="text-4xl font-bold text-white">
-                  {userInfo?.fullname?.charAt(0).toUpperCase() || "U"}
-                </span>
-              </div>
-
-              {/* User Details */}
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-1">
-                  {userInfo?.fullname || "User"}
-                </h1>
-                <p className="text-gray-500 mb-3">
-                  {userInfo?.email || "user@example.com"}
-                </p>
-
-                {/* Profile Completion */}
-                <div className="flex items-center gap-2">
-                  <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-linear-to-r from-pink-500 to-rose-500 transition-all"
-                      style={{ width: `${profileCompletion}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-xs font-medium text-gray-600">
-                    {profileCompletion}% Complete
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 w-full md:w-auto">
-              <button
-                onClick={handleEditProfile}
-                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-white text-gray-700 hover:bg-gray-50 rounded-lg border border-gray-200 font-medium transition-all"
-              >
-                <Edit className="w-4 h-4" />
-                Edit Profile
-              </button>
-              <button
-                onClick={handleCreateEvent}
-                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-linear-to-r from-pink-500 to-rose-500 text-white hover:from-pink-600 hover:to-rose-600 rounded-lg font-medium transition-all shadow-lg"
-              >
-                <Plus className="w-4 h-4" />
-                Create Event
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium mb-1">
-                  Events Hosted
-                </p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {hostedEvents.length}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-pink-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium mb-1">
-                  Total Photos
-                </p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {hostedEvents.reduce((sum, e) => sum + e.photoCount, 0)}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <Camera className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium mb-1">
-                  Guests Invited
-                </p>
-                <p className="text-3xl font-bold text-gray-900">128</p>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <Users className="w-6 h-6 text-purple-600" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 mb-8 border-b border-gray-200">
-          <button
-            onClick={() => setActiveTab("hosting")}
-            className={`px-4 py-3 font-medium transition-colors relative ${
-              activeTab === "hosting"
-                ? "text-pink-600"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <Heart
-                className={`w-4 h-4 ${
-                  activeTab === "hosting" ? "fill-pink-600" : ""
-                }`}
-              />
-              Events I'm Hosting
-            </div>
-            {activeTab === "hosting" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-pink-600"></div>
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab("attended")}
-            className={`px-4 py-3 font-medium transition-colors relative ${
-              activeTab === "attended"
-                ? "text-pink-600"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <Image className="w-4 h-4" />
-              Events I've Attended
-            </div>
-            {activeTab === "attended" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-pink-600"></div>
-            )}
-          </button>
-        </div>
-
-        {/* Events Grid */}
-        {activeTab === "hosting" && (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {hostedEvents.map((event) => (
-              <div key={event.id}>
-                <EventCard
-                  image={event.images[0]?.color || ""}
-                  title={event.title}
-                  date={event.date}
-                  photoCount={event.photoCount}
-                  status={event.status}
-                  progress={event.progress}
-                  lastUpdated={event.lastUpdated}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {activeTab === "attended" && (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {attendedEvents.map((event) => (
-              <EventCard
-                key={event.id}
-                title={event.title}
-                date={event.date}
-                photoCount={event.photoCount}
-                status={event.status}
-                progress={event.progress}
-              />
-            ))}
-          </div>
-        )}
+    <div className="min-h-screen bg-linear-to-br from-pink-50 via-white to-rose-50 ">
+      <div>
+        <Navigation />
+        <Link
+          to="/profile"
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity md:hidden ml-5 pt-5"
+        >
+          <Heart className="w-6 h-6 text-pink-500 fill-pink-500" />
+          <span className="text-xl font-bold bg-linear-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
+            MyMemori
+          </span>
+        </Link>
       </div>
-
-      {/* Edit Profile Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Edit Profile
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  defaultValue={userInfo?.fullname}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  defaultValue={userInfo?.email}
-                  disabled
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Bio
-                </label>
-                <textarea
-                  placeholder="Tell us about yourself..."
-                  rows={3}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
-                />
-              </div>
+      {/* Profile header */}
+      <section className="max-w-7xl mx-auto px-6 pt-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+          <div className="flex items-start gap-4">
+            <div className="w-20 h-20 rounded-full bg-linear-to-br from-pink-400 to-rose-500 flex items-center justify-center shadow-md">
+              <span className="text-3xl font-bold text-white">
+                {userInfo?.fullname?.charAt(0).toUpperCase() || "U"}
+              </span>
             </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setIsEditModalOpen(false)}
-                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  toast.success("Profile updated successfully!");
-                  setIsEditModalOpen(false);
-                }}
-                className="flex-1 px-4 py-2.5 bg-linear-to-r from-pink-500 to-rose-500 text-white rounded-lg hover:from-pink-600 hover:to-rose-600 font-medium transition-all"
-              >
-                Save Changes
-              </button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {userInfo?.fullname || "User"}
+              </h1>
+              <p className="text-gray-500 text-sm">
+                {userInfo?.email || "user@example.com"}
+              </p>
             </div>
           </div>
+
+          {/* Tabs */}
+          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl w-full sm:w-auto">
+            <button
+              onClick={() => setActiveTab("created")}
+              className={`flex-1 sm:flex-none px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                activeTab === "created"
+                  ? "bg-white text-pink-600 shadow"
+                  : "text-gray-700 hover:text-gray-900"
+              }`}
+            >
+              Events Created
+            </button>
+            <button
+              onClick={() => setActiveTab("attended")}
+              className={`flex-1 sm:flex-none px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                activeTab === "attended"
+                  ? "bg-white text-pink-600 shadow"
+                  : "text-gray-700 hover:text-gray-900"
+              }`}
+            >
+              Events Attended
+            </button>
+          </div>
         </div>
+      </section>
+      {activeTab === "created" && (
+        <section className="max-w-7xl mx-auto px-6 py-8">
+          {eventsCreated.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
+              <div className="mx-auto w-14 h-14 rounded-full bg-pink-50 text-pink-600 flex items-center justify-center mb-3">
+                ❤️
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                No events created yet
+              </h3>
+              <p className="text-sm text-gray-600">
+                Create an event to start collecting memories.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {eventsCreated.map((ev) => (
+                  <div
+                    key={ev.id}
+                    className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
+                  >
+                    <div className="relative h-40 mb-4">
+                      <div
+                        className={`absolute inset-0 mx-auto w-40 h-40 rounded-xl shadow-md bg-linear-to-br ${ev.photos[0]} z-20`}
+                      />
+                      <div
+                        className={`absolute top-2 left-6 w-36 h-36 rounded-xl shadow bg-linear-to-br ${ev.photos[1]} -rotate-6 -translate-x-4 translate-y-2 z-10`}
+                      />
+                      <div
+                        className={`absolute top-3 right-6 w-36 h-36 rounded-xl shadow bg-linear-to-br ${ev.photos[2]} rotate-6 translate-x-4 z-10`}
+                      />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-900 mb-1 line-clamp-2">
+                        {ev.title}
+                      </h3>
+                      <p className="text-sm text-gray-500">{ev.date}</p>
+                    </div>
+                    <div className="mt-4">
+                      <button
+                        onClick={() => navigate(`/gallery?event=${ev.slug}`)}
+                        className="w-full px-4 py-2.5 bg-linear-to-r from-pink-500 to-rose-500 text-white rounded-lg hover:from-pink-600 hover:to-rose-600 font-medium transition-all"
+                      >
+                        View Gallery
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </section>
       )}
+
+      {activeTab === "attended" && (
+        <section className="max-w-7xl mx-auto px-6 py-8">
+          {attendedPhotos.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
+              <div className="mx-auto w-14 h-14 rounded-full bg-pink-50 text-pink-600 flex items-center justify-center mb-3">
+                📸
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                No photos yet
+              </h3>
+              <p className="text-sm text-gray-600">
+                Photos from events you attend will appear here.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({
+                  length: Math.ceil(attendedPhotos.length / 3),
+                }).map((_, idx) => {
+                  const start = idx * 3;
+                  const group = attendedPhotos.slice(start, start + 3);
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => navigate(`/gallery`)}
+                      className="relative h-40 rounded-2xl overflow-hidden text-left"
+                    >
+                      <div className="relative h-40 mb-4">
+                        <div
+                          className={`absolute inset-0 mx-auto w-40 h-40 rounded-xl  bg-linear-to-br ${
+                            group[0]?.color || "from-gray-100 to-gray-200"
+                          } z-20`}
+                        />
+                        <div
+                          className={`absolute top-2 left-6 w-36 h-36 rounded-xl  bg-linear-to-br ${
+                            group[1]?.color || "from-gray-100 to-gray-200"
+                          } -rotate-6 -translate-x-4 translate-y-2 z-10`}
+                        />
+                        <div
+                          className={`absolute top-3 right-6 w-36 h-36 rounded-xl  bg-linear-to-br ${
+                            group[2]?.color || "from-gray-100 to-gray-200"
+                          } rotate-6 translate-x-4 z-10`}
+                        />
+                      </div>
+
+                      <div className="absolute bottom-2 right-3 px-2 py-1 text-[10px] font-semibold rounded-full bg-white/80 text-pink-600 flex items-center gap-1 z-30">
+                        <Heart className="w-3 h-3" />
+                        {group.reduce((sum, p) => sum + (p.likes || 0), 0)}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <h4 className="mt-10 mb-3 text-sm font-semibold text-gray-700">
+                All Photos
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {attendedPhotos.map((photo) => (
+                  <button
+                    key={photo.id}
+                    onClick={() => navigate(`/gallery`)}
+                    className={`mb-4 break-inside-avoid rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-linear-to-br ${photo.color}`}
+                    style={{ height: `${photo.h}px` }}
+                  >
+                    <div className="relative w-full h-full">
+                      <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors" />
+                      <div className="absolute bottom-2 right-2 px-2 py-1 text-[10px] font-semibold rounded-full bg-white/80 text-pink-600 flex items-center gap-1">
+                        <Heart className="w-3 h-3" /> {photo.likes}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </section>
+      )}
+
+      <BottomNav />
     </div>
   );
 };

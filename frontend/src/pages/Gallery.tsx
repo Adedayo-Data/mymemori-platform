@@ -1,18 +1,14 @@
-import { useState } from "react";
-import {
-  Upload,
-  Download,
-  ChevronDown,
-  Grid3x3,
-  List,
-  ArrowLeft,
-  Search,
-  X,
-  Heart,
-  Share2,
-} from "lucide-react";
+import { useState, useRef } from "react";
+import { Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import BottomNav from "../components/BottomNav";
+import GalleryHeader from "../components/GalleryHeader";
+import GalleryFilters from "../components/GalleryFilters";
+import PhotoGrid from "../components/PhotoGrid";
+import PhotoModal from "../components/PhotoModal";
+import UploadModal from "../components/UploadModal";
+import type { Photo } from "../components/PhotoGrid";
 
 const Gallery = () => {
   const [viewMode, setViewMode] = useState("grid");
@@ -21,9 +17,13 @@ const Gallery = () => {
   const [sortBy, setSortBy] = useState("recent");
   const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
   const [likedPhotos, setLikedPhotos] = useState<Set<number>>(new Set());
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  const photos = [
+  const photos: Photo[] = [
     {
       id: 1,
       type: "portrait",
@@ -123,7 +123,46 @@ const Gallery = () => {
   ];
 
   const handleUpload = () => {
-    toast.success("Opening photo upload...");
+    setShowUploadModal(true);
+  };
+
+  const handleGalleryUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleCameraUpload = () => {
+    cameraInputRef.current?.click();
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const fileArray = Array.from(files);
+
+      // Validate file types
+      const validFiles = fileArray.filter((file) =>
+        file.type.startsWith("image/")
+      );
+      if (validFiles.length !== fileArray.length) {
+        toast.error("Only image files are allowed");
+      }
+
+      // Validate file sizes (max 10MB each)
+      const oversizedFiles = validFiles.filter(
+        (file) => file.size > 10 * 1024 * 1024
+      );
+      if (oversizedFiles.length > 0) {
+        toast.error("Some images exceed 10MB limit");
+        return;
+      }
+
+      setUploadedImages((prev) => [...prev, ...validFiles]);
+      toast.success(`${validFiles.length} photo(s) selected`);
+      setShowUploadModal(false);
+
+      // Here you would typically upload to your backend
+      console.log("Files to upload:", validFiles);
+    }
   };
 
   const handleLike = (photoId: number) => {
@@ -137,10 +176,12 @@ const Gallery = () => {
   };
 
   const handleShare = (photoId: number) => {
+    console.log("Sharing photo:", photoId);
     toast.success("Photo link copied to clipboard!");
   };
 
   const handleDownload = (photoId: number) => {
+    console.log("Downloading photo:", photoId);
     toast.success("Photo downloaded!");
   };
 
@@ -160,284 +201,51 @@ const Gallery = () => {
     return 0;
   });
 
+  // Event data - this would come from props or context in real app
+  const eventData = {
+    title: "Eleanor & James' Wedding",
+    date: "Dec 14, 2024",
+  };
+
+  const handleDownloadAll = () => {
+    toast.success("Downloading all photos...");
+  };
+
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 to-blue-50">
-      {/* Header */}
+      {/* Header - Mobile Optimized */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <button
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                onClick={() => navigate("/profile")}
-              >
-                <ArrowLeft className="w-5 h-5 text-gray-600" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Eleanor & James' Wedding
-                </h1>
-                <p className="text-sm text-gray-500">
-                  {sortedPhotos.length} photos • December 14, 2024
-                </p>
-              </div>
-            </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+          <GalleryHeader
+            eventTitle={eventData.title}
+            eventDate={eventData.date}
+            photoCount={sortedPhotos.length}
+            onBack={() => navigate("/profile")}
+            onDownloadAll={handleDownloadAll}
+          />
 
-            <button className="flex items-center gap-2 px-4 py-2 text-gray-600 border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors font-medium">
-              <Download className="w-4 h-4" />
-              <span className="text-sm">Download All</span>
-            </button>
-          </div>
-
-          {/* Search and Filters */}
-          <div className="space-y-4">
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by uploader or photo type..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                >
-                  <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-                </button>
-              )}
-            </div>
-
-            {/* Filter and Sort Controls */}
-            <div className="flex flex-wrap gap-3">
-              {/* Sort Dropdown */}
-              <div className="relative group">
-                <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors">
-                  <span className="text-sm font-medium text-gray-700">
-                    Sort: {sortBy === "recent" ? "Most Recent" : "Oldest"}
-                  </span>
-                  <ChevronDown className="w-4 h-4 text-gray-600" />
-                </button>
-                <div className="absolute left-0 mt-0 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                  <button
-                    onClick={() => setSortBy("recent")}
-                    className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm font-medium text-gray-700 border-b border-gray-100"
-                  >
-                    Most Recent
-                  </button>
-                  <button
-                    onClick={() => setSortBy("oldest")}
-                    className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm font-medium text-gray-700"
-                  >
-                    Oldest First
-                  </button>
-                </div>
-              </div>
-
-              {/* Category Filter */}
-              <div className="relative group">
-                <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors">
-                  <span className="text-sm font-medium text-gray-700">
-                    Category:{" "}
-                    {selectedFilter === "all" ? "All" : selectedFilter}
-                  </span>
-                  <ChevronDown className="w-4 h-4 text-gray-600" />
-                </button>
-                <div className="absolute left-0 mt-0 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                  {[
-                    "all",
-                    "portrait",
-                    "detail",
-                    "venue",
-                    "couple",
-                    "group",
-                  ].map((filter) => (
-                    <button
-                      key={filter}
-                      onClick={() => setSelectedFilter(filter)}
-                      className={`w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm font-medium border-b border-gray-100 last:border-b-0 ${
-                        selectedFilter === filter
-                          ? "bg-pink-50 text-pink-600"
-                          : "text-gray-700"
-                      }`}
-                    >
-                      {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* View Mode Toggle */}
-              <div className="flex items-center gap-2 ml-auto">
-                <button
-                  onClick={() => setViewMode("grid")}
-                  className={`p-2 rounded-lg transition-colors ${
-                    viewMode === "grid"
-                      ? "bg-pink-100 text-pink-600"
-                      : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  <Grid3x3 className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setViewMode("list")}
-                  className={`p-2 rounded-lg transition-colors ${
-                    viewMode === "list"
-                      ? "bg-pink-100 text-pink-600"
-                      : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  <List className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
+          <GalleryFilters
+            sortBy={sortBy}
+            selectedFilter={selectedFilter}
+            viewMode={viewMode}
+            onSortChange={setSortBy}
+            onFilterChange={setSelectedFilter}
+            onViewModeChange={setViewMode}
+          />
         </div>
       </header>
 
       {/* Photo Grid/List */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {viewMode === "grid" ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-[200px]">
-            {sortedPhotos.map((photo) => (
-              <div
-                key={photo.id}
-                className={`
-                  relative group overflow-hidden rounded-xl cursor-pointer
-                  transition-all hover:scale-[1.02] hover:shadow-xl
-                  bg-linear-to-br ${photo.color}
-                  ${photo.size === "large" ? "md:row-span-2 md:col-span-1" : ""}
-                  ${photo.size === "medium" ? "md:row-span-2" : ""}
-                  ${photo.size === "wide" ? "md:col-span-2" : ""}
-                `}
-                onClick={() => setSelectedPhoto(photo.id)}
-              >
-                {/* Placeholder content */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-full h-full bg-black/10 flex items-center justify-center">
-                    <span className="text-white/40 text-4xl font-bold">
-                      {photo.id}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Hover overlay */}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all"></div>
-
-                {/* Action buttons on hover */}
-                <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleLike(photo.id);
-                    }}
-                    className="p-3 bg-white rounded-full hover:bg-pink-50 transition-colors shadow-lg"
-                    title="Like"
-                  >
-                    <Heart
-                      className={`w-5 h-5 ${
-                        likedPhotos.has(photo.id)
-                          ? "fill-pink-600 text-pink-600"
-                          : "text-gray-700"
-                      }`}
-                    />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleShare(photo.id);
-                    }}
-                    className="p-3 bg-white rounded-full hover:bg-blue-50 transition-colors shadow-lg"
-                    title="Share"
-                  >
-                    <Share2 className="w-5 h-5 text-gray-700" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDownload(photo.id);
-                    }}
-                    className="p-3 bg-white rounded-full hover:bg-green-50 transition-colors shadow-lg"
-                    title="Download"
-                  >
-                    <Download className="w-5 h-5 text-gray-700" />
-                  </button>
-                </div>
-
-                {/* Photo info on hover */}
-                <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <p className="text-white text-xs font-medium">
-                    {photo.uploader}
-                  </p>
-                  <p className="text-white/70 text-xs">{photo.uploadedAt}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {sortedPhotos.map((photo) => (
-              <div
-                key={photo.id}
-                className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all cursor-pointer flex items-center justify-between"
-                onClick={() => setSelectedPhoto(photo.id)}
-              >
-                <div className="flex items-center gap-4 flex-1">
-                  <div
-                    className={`w-16 h-16 rounded-lg bg-linear-to-br ${photo.color}`}
-                  ></div>
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      Photo #{photo.id}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Uploaded by {photo.uploader} • {photo.uploadedAt}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleLike(photo.id);
-                    }}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <Heart
-                      className={`w-5 h-5 ${
-                        likedPhotos.has(photo.id)
-                          ? "fill-pink-600 text-pink-600"
-                          : "text-gray-400"
-                      }`}
-                    />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleShare(photo.id);
-                    }}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <Share2 className="w-5 h-5 text-gray-400" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDownload(photo.id);
-                    }}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <Download className="w-5 h-5 text-gray-400" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <PhotoGrid
+          photos={sortedPhotos}
+          viewMode={viewMode as "grid" | "list"}
+          likedPhotos={likedPhotos}
+          onPhotoClick={setSelectedPhoto}
+          onLike={handleLike}
+          onShare={handleShare}
+          onDownload={handleDownload}
+        />
 
         {sortedPhotos.length === 0 && (
           <div className="text-center py-12">
@@ -457,87 +265,51 @@ const Gallery = () => {
 
       {/* Photo Details Modal */}
       {selectedPhoto && (
-        <div
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedPhoto(null)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Photo Display */}
-            <div className="relative h-96 bg-linear-to-br from-pink-100 to-rose-100 flex items-center justify-center">
-              <span className="text-6xl font-bold text-white/20">
-                {selectedPhoto}
-              </span>
-              <button
-                onClick={() => setSelectedPhoto(null)}
-                className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-
-            {/* Photo Info */}
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">
-                    Photo #{selectedPhoto}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Uploaded by Sarah • 2 hours ago
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleLike(selectedPhoto)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <Heart
-                      className={`w-6 h-6 ${
-                        likedPhotos.has(selectedPhoto)
-                          ? "fill-pink-600 text-pink-600"
-                          : "text-gray-400"
-                      }`}
-                    />
-                  </button>
-                  <span className="text-sm font-medium text-gray-600">
-                    {likedPhotos.has(selectedPhoto) ? "1" : "0"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => handleShare(selectedPhoto)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg font-medium transition-colors"
-                >
-                  <Share2 className="w-4 h-4" />
-                  Share
-                </button>
-                <button
-                  onClick={() => handleDownload(selectedPhoto)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg font-medium transition-colors"
-                >
-                  <Download className="w-4 h-4" />
-                  Download
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PhotoModal
+          photoId={selectedPhoto}
+          isLiked={likedPhotos.has(selectedPhoto)}
+          onClose={() => setSelectedPhoto(null)}
+          onLike={handleLike}
+          onShare={handleShare}
+          onDownload={handleDownload}
+        />
       )}
+
+      {/* Upload Modal */}
+      <UploadModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onCameraUpload={handleCameraUpload}
+        onGalleryUpload={handleGalleryUpload}
+      />
+
+      {/* Hidden File Inputs */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
 
       {/* Floating Upload Button */}
       <button
         onClick={handleUpload}
-        className="fixed bottom-8 right-8 px-6 py-4 bg-linear-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-full font-semibold shadow-2xl hover:shadow-pink-500/50 transition-all flex items-center gap-2 hover:scale-105 z-10"
+        className="fixed bottom-20 sm:bottom-8 right-4 sm:right-8 px-4 sm:px-6 py-3 sm:py-4 bg-linear-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-full font-semibold shadow-2xl hover:shadow-pink-500/50 transition-all flex items-center gap-2 hover:scale-105 z-10"
       >
         <Upload className="w-5 h-5" />
-        Upload Photo
+        <span className="hidden sm:inline">Upload Photo</span>
       </button>
+      <BottomNav />
     </div>
   );
 };
