@@ -65,6 +65,7 @@ public class EventService {
         eventResponse.setLocation(event.getLocation());
         eventResponse.setDescription(event.getDescription());
         eventResponse.setEventSlug(event.getEventSlug());
+        eventResponse.setImageUrl(event.getImageUrl());
 
         return eventResponse;
     }
