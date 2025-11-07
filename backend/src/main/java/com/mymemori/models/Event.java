@@ -24,6 +24,7 @@ public class Event {
     private String location;
     private String description;
     private String eventSlug; // unique
+    private String imageUrl;
 
     @CreationTimestamp
     private Instant created_at;

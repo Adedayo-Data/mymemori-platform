@@ -35,6 +35,7 @@ public class EventService {
         newEvent.setLocation(request.getLocation());
         newEvent.setDescription(request.getDescription());
         newEvent.setEventSlug(generateEventSlug());
+        newEvent.setImageUrl(request.getImageUrl());
 
         Event savedEvent = eventRepo.save(newEvent);
 
@@ -45,6 +46,7 @@ public class EventService {
         response.setLocation(savedEvent.getLocation());
         response.setDescription(savedEvent.getDescription());
         response.setEventSlug(savedEvent.getEventSlug());
+        response.setImageUrl(savedEvent.getImageUrl());
 
         return response;
     }
