@@ -18,7 +18,7 @@ public class Photo {
     private UUID id;
 
     private UUID eventId;
-    private String fileUrl;
+    private String imageUrl;
     private UUID uploadedBySessionId;
     private UUID uploadedByUserId;
 
