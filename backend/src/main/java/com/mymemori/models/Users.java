@@ -8,6 +8,7 @@ import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Data
@@ -22,4 +23,6 @@ public class Users {
 
     @CreationTimestamp
     private Instant created_At;
+
+    private UUID originalSessionId;
 }
