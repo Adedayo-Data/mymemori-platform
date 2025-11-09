@@ -32,15 +32,17 @@ public class AuthController {
 
     @PostMapping("/sign-up")
     public ResponseEntity<AuthMessage> register(@RequestBody UserRequestDTO request){
-
+        System.out.println("COntroller entered!");
+        System.out.println("Request data: " +request.getEmail());
         Users user = new Users();
 
         user.setEmail(request.getEmail());
         user.setFullName(request.getFullName());
         user.setPassword(passEncoder.encode(request.getPassword()));
-
+        System.out.println("Done Passing info to model");
         // save user
         Users savedUser = userRepo.save(user);
+        System.out.println("Saved user: " + savedUser);
 
         // generate JWT
         String token = jwtService.generateToken(savedUser);

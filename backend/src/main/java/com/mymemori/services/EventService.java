@@ -26,6 +26,7 @@ public class EventService {
 
         // fetch authenticated User
         Users user = authUser.fetchAuthenticatedUser();
+        System.out.println("User email is: " + user.getEmail());
 
         // build Event
         Event newEvent = new Event();
