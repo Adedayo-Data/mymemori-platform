@@ -14,4 +14,8 @@ public interface PhotoRepository extends JpaRepository<Photo, UUID> {
 
     @Query(value = "SELECT * FROM photo ORDER BY RANDOM() LIMIT 10", nativeQuery = true)
     List<Photo> findRandomTen();
+
+    List<Photo> findByUploadedBySessionId(UUID sessionId);
+
+    List<Photo> findByUploadedByUserId(UUID userId);
 }
