@@ -1,6 +1,8 @@
 spring:
   application:
     name: mymemori
+#  profiles:
+#    active: test
 
   datasource:
     url: ${DB_URL}
