@@ -9,6 +9,6 @@ import java.util.UUID;
 public class PhotoRequestDTO {
 
     private UUID sessionId;
-    private UUID eventId;
+    private String eventSlug;
     private List<String> imageUrl;
 }
