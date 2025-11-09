@@ -1,8 +1,10 @@
 package com.mymemori.services;
 
+import com.mymemori.Repository.EventRepository;
 import com.mymemori.Repository.SessionRepository;
 import com.mymemori.dto.SessionRequestDTO;
 import com.mymemori.dto.SessionResponseDTO;
+import com.mymemori.models.Event;
 import com.mymemori.models.Session;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,13 +16,16 @@ import java.time.Instant;
 public class SessionService {
 
     private final SessionRepository sessionRepo;
+    private final EventRepository eventRepo;
 
     // create Session
     public SessionResponseDTO createSession(SessionRequestDTO req){
 
         Session session = new Session();
 
-        session.setEventId(req.getEventId());
+        Event event = eventRepo.findByEventSlug(req.getEventSlug());
+
+        session.setEventId(event.getId());
         session.setDeviceType(req.getDeviceType());
         session.setCreatedAt(Instant.now());
         session.setLastActiveAt(Instant.now());

@@ -7,7 +7,7 @@ import java.util.UUID;
 @Data
 public class SessionRequestDTO {
 
-    private UUID eventId;
+    private String eventSlug;
     private String deviceType;
 
 }
