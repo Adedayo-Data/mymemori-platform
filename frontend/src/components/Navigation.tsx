@@ -8,6 +8,7 @@ import {
   Settings,
   Home,
   Calendar,
+  QrCode,
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/authContext";
@@ -39,6 +40,7 @@ const Navigation = () => {
   const navLinks = [
     { path: "/profile", label: "Profile", icon: Home },
     { path: "/book", label: "Create Event", icon: Calendar },
+    { path: "/event-list", label: "Details", icon: QrCode },
   ];
 
   return (

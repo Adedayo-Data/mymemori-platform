@@ -3,15 +3,15 @@ import { Camera, Image as ImageIcon, X } from "lucide-react";
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCameraUpload: () => void;
-  onGalleryUpload: () => void;
+  onCameraSelect: () => void;
+  onGallerySelect: () => void;
 }
 
 const UploadModal = ({
   isOpen,
   onClose,
-  onCameraUpload,
-  onGalleryUpload,
+  onCameraSelect,
+  onGallerySelect,
 }: UploadModalProps) => {
   if (!isOpen) return null;
 
@@ -44,7 +44,7 @@ const UploadModal = ({
         <div className="p-6 space-y-3">
           {/* Camera Option */}
           <button
-            onClick={onCameraUpload}
+            onClick={onCameraSelect}
             className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 hover:border-pink-400 hover:bg-pink-50 rounded-xl transition-all group"
           >
             <div className="p-3 bg-pink-100 group-hover:bg-pink-200 rounded-xl transition-colors">
@@ -62,7 +62,7 @@ const UploadModal = ({
 
           {/* Gallery Option */}
           <button
-            onClick={onGalleryUpload}
+            onClick={onGallerySelect}
             className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 rounded-xl transition-all group"
           >
             <div className="p-3 bg-blue-100 group-hover:bg-blue-200 rounded-xl transition-colors">
@@ -77,13 +77,6 @@ const UploadModal = ({
               </p>
             </div>
           </button>
-        </div>
-
-        {/* Modal Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-          <p className="text-xs text-gray-500 text-center">
-            Maximum file size: 10MB per photo
-          </p>
         </div>
       </div>
     </div>

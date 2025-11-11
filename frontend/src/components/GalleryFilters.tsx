@@ -1,12 +1,15 @@
 import { ChevronDown, Grid3x3, List } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+
+type ViewMode = "grid" | "list";
 
 interface GalleryFiltersProps {
   sortBy: string;
   selectedFilter: string;
-  viewMode: string;
+  viewMode: ViewMode;
   onSortChange: (sort: string) => void;
   onFilterChange: (filter: string) => void;
-  onViewModeChange: (mode: string) => void;
+  onViewModeChange: (mode: ViewMode) => void;
   categories?: string[];
 }
 
@@ -17,27 +20,62 @@ const GalleryFilters = ({
   onSortChange,
   onFilterChange,
   onViewModeChange,
-  categories = ["all", "portrait", "detail", "venue", "couple", "group"],
+  categories = ["all", "uploaded"],
 }: GalleryFiltersProps) => {
+  const [openDropdown, setOpenDropdown] = useState<'sort' | 'filter' | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const toggleDropdown = (dropdown: 'sort' | 'filter') => {
+    setOpenDropdown(openDropdown === dropdown ? null : dropdown);
+  };
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide" ref={dropdownRef}>
       {/* Sort Dropdown */}
-      <div className="relative group flex-shrink-0">
-        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors text-sm whitespace-nowrap">
+      <div className="relative flex-shrink-0">
+        <button 
+          onClick={() => toggleDropdown('sort')}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors text-sm whitespace-nowrap"
+        >
           <span className="font-medium text-gray-700">
             {sortBy === "recent" ? "Recent" : "Oldest"}
           </span>
-          <ChevronDown className="w-3.5 h-3.5 text-gray-600" />
+          <ChevronDown className={`w-3.5 h-3.5 text-gray-600 transition-transform ${openDropdown === 'sort' ? 'rotate-180' : ''}`} />
         </button>
-        <div className="absolute left-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+        <div 
+          className={`absolute left-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg transition-all z-50 ${
+            openDropdown === 'sort' ? 'opacity-100 visible' : 'opacity-0 invisible'
+          }`}
+        >
           <button
-            onClick={() => onSortChange("recent")}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSortChange("recent");
+                setOpenDropdown(null);
+              }}
             className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm font-medium text-gray-700 border-b border-gray-100"
           >
             Most Recent
           </button>
           <button
-            onClick={() => onSortChange("oldest")}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSortChange("oldest");
+                setOpenDropdown(null);
+              }}
             className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm font-medium text-gray-700"
           >
             Oldest First
@@ -46,18 +84,29 @@ const GalleryFilters = ({
       </div>
 
       {/* Category Filter */}
-      <div className="relative group flex-shrink-0">
-        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors text-sm whitespace-nowrap">
+      <div className="relative flex-shrink-0">
+        <button 
+          onClick={() => toggleDropdown('filter')}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors text-sm whitespace-nowrap"
+        >
           <span className="font-medium text-gray-700">
             {selectedFilter === "all" ? "All" : selectedFilter}
           </span>
-          <ChevronDown className="w-3.5 h-3.5 text-gray-600" />
+          <ChevronDown className={`w-3.5 h-3.5 text-gray-600 transition-transform ${openDropdown === 'filter' ? 'rotate-180' : ''}`} />
         </button>
-        <div className="absolute left-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 max-h-60 overflow-y-auto">
+        <div 
+          className={`absolute left-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg transition-all z-50 max-h-60 overflow-y-auto ${
+            openDropdown === 'filter' ? 'opacity-100 visible' : 'opacity-0 invisible'
+          }`}
+        >
           {categories.map((filter) => (
             <button
               key={filter}
-              onClick={() => onFilterChange(filter)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onFilterChange(filter);
+                setOpenDropdown(null);
+              }}
               className={`w-full text-left px-3 py-2 hover:bg-gray-50 text-sm font-medium border-b border-gray-100 last:border-b-0 ${
                 selectedFilter === filter
                   ? "bg-pink-50 text-pink-600"

@@ -343,7 +343,9 @@ const Profile = () => {
         </section>
       )}
 
-      <BottomNav />
+      <div className="pb-20 md:pb-0">
+        <BottomNav />
+      </div>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useCallback } from "react";
 import apiClient from "../api/apiClient";
 import toast from "react-hot-toast";
 
@@ -7,7 +7,7 @@ interface EventData {
   eventDate: string;
   location: string;
   description: string;
-  allowDownload: boolean;
+  imageUrl: string | null;
 }
 
 interface EventResponse {
@@ -48,24 +48,27 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const getEventBySlug = async (eventSlug: string): Promise<EventResponse> => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await apiClient.get(`/api/event/${eventSlug}`);
-      console.log("Event fetch response:", response.data);
-      return response.data as EventResponse;
-    } catch (err: unknown) {
-      const errorMessage =
-        (err as any)?.response?.data?.message ||
-        "Failed to fetch event. Please try again.";
-      setError(errorMessage);
-      toast.error(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const getEventBySlug = useCallback(
+    async (eventSlug: string): Promise<EventResponse> => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await apiClient.get(`/api/event/${eventSlug}`);
+        console.log("Event fetch response:", response.data);
+        return response.data as EventResponse;
+      } catch (err: unknown) {
+        const errorMessage =
+          (err as any)?.response?.data?.message ||
+          "Failed to fetch event. Please try again.";
+        setError(errorMessage);
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
   const value: EventContextType = {
     createEvent,
     getEventBySlug,
