@@ -70,7 +70,7 @@ const EventList = () => {
                 with your guests.
               </p>
               <button
-                onClick={() => navigate("/booking")}
+                onClick={() => navigate("/book")}
                 className="px-6 py-3 bg-linear-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:from-pink-600 hover:to-purple-600 font-medium transition-all shadow-lg"
               >
                 Create Your First Event
@@ -129,7 +129,9 @@ const EventList = () => {
         </div>
       </div>
 
-      <BottomNav />
+      <div className="pb-20 md:pb-0">
+        <BottomNav />
+      </div>
     </div>
   );
 };

@@ -4,8 +4,8 @@ import BottomNav from "../components/BottomNav";
 import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { useEvent } from "../context/eventContext";
+import { usePicture } from "../context/pictureContext";
 import { Upload as UploadIcon, X } from "lucide-react";
-import toast from "react-hot-toast";
 
 const Booking = () => {
   const [formData, setFormData] = useState({
@@ -14,12 +14,13 @@ const Booking = () => {
     location: "",
     description: "",
     allowDownload: false,
-    eventImage: null as File | null,
+    imageUrl: null as string | null,
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [qrCodeValue, setQrCodeValue] = useState("");
   const navigate = useNavigate();
   const { createEvent, loading } = useEvent();
+  const { uploadImage } = usePicture();
   const handleInputChange = (
     e:
       | React.ChangeEvent<HTMLInputElement>
@@ -32,52 +33,54 @@ const Booking = () => {
     }));
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        toast.error("Please upload an image file");
-        return;
-      }
-
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image size must be less than 5MB");
-        return;
-      }
-
-      setFormData((prev) => ({
-        ...prev,
-        eventImage: file,
-      }));
-
       // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-      toast.success("Image uploaded successfully!");
+
+      try {
+        const imageUrl = await uploadImage(file);
+        setFormData((prev) => ({
+          ...prev,
+          imageUrl: imageUrl, // store the Cloudinary image URL
+        }));
+      } catch (error) {
+        // Error handling is done in the context
+        console.error("Upload failed:", error);
+      }
     }
   };
 
   const handleRemoveImage = () => {
     setFormData((prev) => ({
       ...prev,
-      eventImage: null,
+      imageUrl: null,
     }));
     setImagePreview(null);
   };
 
   const handleCreateEvent = async () => {
     try {
-      const eventResponse = await createEvent(formData);
+      // Prepare the data to match exactly what the backend expects
+      const eventData = {
+        eventName: formData.eventName,
+        eventDate: formData.eventDate,
+        location: formData.location,
+        description: formData.description,
+        imageUrl: formData.imageUrl
+      };
+
+      const eventResponse = await createEvent(eventData);
 
       // Generate QR code value using the slug from backend response
       const qrValue = `${window.location.origin}/visit/${eventResponse.eventSlug}/`;
       setQrCodeValue(qrValue);
-      console.log("Creating event with data:", formData);
+      console.log("Creating event with data:", eventData);
       console.log("Event slug:", eventResponse.eventSlug);
 
       // Navigate to details page with QR code data
@@ -85,7 +88,7 @@ const Booking = () => {
         navigate("/share-details", {
           state: {
             qrCodeValue: qrValue,
-            eventData: formData,
+            eventData: eventData,
             eventSlug: eventResponse.eventSlug,
           },
         });
@@ -278,7 +281,9 @@ const Booking = () => {
           </div>
         </div>
       </div>
-      <BottomNav />
+      <div className="pb-20 md:pb-0">
+        <BottomNav />
+      </div>
     </div>
   );
 };

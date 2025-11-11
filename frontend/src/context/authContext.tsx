@@ -35,7 +35,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (token && userData) {
       try {
         setUser(JSON.parse(userData) as User);
-      } catch (err) {
+      } catch (error) {
+        console.error("Failed to parse user data:", error);
         localStorage.removeItem("authToken");
         localStorage.removeItem("userData");
       }
@@ -51,7 +52,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setError(null);
     try {
       const response = await apiClient.post("/api/auth/sign-up", data);
-      const { token, user: userData } = response.data;
+      const { token, email, fullName } = response.data;
+      const userData = { email, fullName };
       localStorage.setItem("authToken", token);
       localStorage.setItem("userData", JSON.stringify(userData));
       setUser(userData);

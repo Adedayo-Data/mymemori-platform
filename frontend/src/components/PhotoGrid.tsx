@@ -1,4 +1,4 @@
-import { Download, Heart, Share2 } from "lucide-react";
+import { Download, Heart } from "lucide-react";
 
 export interface Photo {
   id: number;
@@ -7,6 +7,7 @@ export interface Photo {
   color: string;
   uploader: string;
   uploadedAt: string;
+  imageUrl?: string;
 }
 
 interface PhotoGridProps {
@@ -15,7 +16,6 @@ interface PhotoGridProps {
   likedPhotos: Set<number>;
   onPhotoClick: (photoId: number) => void;
   onLike: (photoId: number) => void;
-  onShare: (photoId: number) => void;
   onDownload: (photoId: number) => void;
 }
 
@@ -25,12 +25,11 @@ const PhotoGrid = ({
   likedPhotos,
   onPhotoClick,
   onLike,
-  onShare,
   onDownload,
 }: PhotoGridProps) => {
   if (viewMode === "grid") {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-[200px]">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-[minmax(200px,auto)]">
         {photos.map((photo) => (
           <div
             key={photo.id}
@@ -38,20 +37,34 @@ const PhotoGrid = ({
               relative group overflow-hidden rounded-xl cursor-pointer
               transition-all hover:scale-[1.02] hover:shadow-xl
               bg-linear-to-br ${photo.color}
-              ${photo.size === "large" ? "md:row-span-2 md:col-span-1" : ""}
+              ${photo.size === "large" ? "md:row-span-2" : ""}
               ${photo.size === "medium" ? "md:row-span-2" : ""}
               ${photo.size === "wide" ? "md:col-span-2" : ""}
             `}
             onClick={() => onPhotoClick(photo.id)}
           >
-            {/* Placeholder content */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-full h-full bg-black/10 flex items-center justify-center">
-                <span className="text-white/40 text-4xl font-bold">
-                  {photo.id}
-                </span>
+            {/* Photo content */}
+            {photo.imageUrl ? (
+              <img
+                src={photo.imageUrl}
+                alt={`Photo by ${photo.uploader}`}
+                className="w-full h-full object-cover"
+                style={{
+                  objectFit: "cover",
+                  width: "100%",
+                  height: "100%",
+                  aspectRatio: "auto", // Allow natural aspect ratio
+                }}
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-full h-full bg-black/10 flex items-center justify-center">
+                  <span className="text-white/40 text-4xl font-bold">
+                    {photo.id}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Hover overlay */}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all"></div>
@@ -74,16 +87,7 @@ const PhotoGrid = ({
                   }`}
                 />
               </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onShare(photo.id);
-                }}
-                className="p-3 bg-white rounded-full hover:bg-blue-50 transition-colors shadow-lg"
-                title="Share"
-              >
-                <Share2 className="w-5 h-5 text-gray-700" />
-              </button>
+
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -117,13 +121,21 @@ const PhotoGrid = ({
           onClick={() => onPhotoClick(photo.id)}
         >
           <div className="flex items-center gap-4 flex-1">
-            <div
-              className={`w-16 h-16 rounded-lg bg-linear-to-br ${photo.color}`}
-            ></div>
+            {photo.imageUrl ? (
+              <img
+                src={photo.imageUrl}
+                alt={`Photo by ${photo.uploader}`}
+                className="w-16 h-16 rounded-lg object-cover"
+              />
+            ) : (
+              <div
+                className={`w-16 h-16 rounded-lg bg-linear-to-br ${photo.color}`}
+              ></div>
+            )}
             <div>
-              <p className="font-medium text-gray-900">Photo #{photo.id}</p>
               <p className="text-sm text-gray-600">
-                Uploaded by {photo.uploader} • {photo.uploadedAt}
+                Uploaded by {photo.uploader} <br />
+                {photo.uploadedAt}
               </p>
             </div>
           </div>
@@ -144,15 +156,7 @@ const PhotoGrid = ({
                 }`}
               />
             </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onShare(photo.id);
-              }}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <Share2 className="w-5 h-5 text-gray-400" />
-            </button>
+
             <button
               onClick={(e) => {
                 e.stopPropagation();
