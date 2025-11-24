@@ -43,7 +43,7 @@ const GalleryFilters = ({
     setOpenDropdown(openDropdown === dropdown ? null : dropdown);
   };
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide" ref={dropdownRef}>
+    <div className="flex items-center gap-2 flex-wrap pb-1" ref={dropdownRef}>
       {/* Sort Dropdown */}
       <div className="relative flex-shrink-0">
         <button 

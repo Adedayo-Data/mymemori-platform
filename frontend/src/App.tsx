@@ -4,9 +4,12 @@ import { AuthProvider } from "./context/authContext";
 import { Toaster } from "react-hot-toast";
 import { EventProvider } from "./context/eventContext";
 import { PictureProvider } from "./context/pictureContext";
+import { ProtectedRoute } from "./hooks/ProtectedRoute";
+import Layout from "./components/Layout";
 
 // Lazy load all page components
 const Home = lazy(() => import("./pages/Home"));
+const Home2 = lazy(() => import("./pages/NewHome"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Booking = lazy(() => import("./pages/Booking"));
 const EventList = lazy(() => import("./pages/EventList"));
@@ -31,15 +34,25 @@ const App = () => {
               }
             >
               <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/book" element={<Booking />} />
-                <Route path="/event-list" element={<EventList />} />
-                <Route path="/share-details" element={<ShareDetails />} />
-                <Route path="/visit/:slug" element={<Visit />} />
-                <Route path="/gallery" element={<Gallery />} />
-                <Route path="/verify" element={<Verification />} />
-                <Route path="/profile" element={<Profile />} />
+                <Route element={<Layout />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/home" element={<Home2 />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/book" element={<Booking />} />
+                  <Route path="/event-list" element={<EventList />} />
+                  <Route path="/share-details" element={<ShareDetails />} />
+                  <Route path="/visit/:slug" element={<Visit />} />
+                  <Route path="/gallery" element={<Gallery />} />
+                  <Route path="/verify" element={<Verification />} />
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute>
+                        <Profile />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Route>
               </Routes>
             </Suspense>
           </PictureProvider>

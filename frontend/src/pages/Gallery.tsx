@@ -1,19 +1,23 @@
 import { useState, useRef, useEffect } from "react";
-import { Upload, Loader2 } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Upload, Loader2, Camera } from "lucide-react";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
-import BottomNav from "../components/BottomNav";
+import Masonry from "react-masonry-css";
+
 import GalleryHeader from "../components/GalleryHeader";
 import GalleryFilters from "../components/GalleryFilters";
 import PhotoGrid from "../components/PhotoGrid";
-import PhotoModal from "../components/PhotoModal";
+import EnhancedPhotoModal from "../components/EnhancedPhotoModal";
 import UploadModal from "../components/UploadModal";
+import PhotoSkeleton from "../components/PhotoSkeleton";
 import { useEvent } from "../context/eventContext";
 import { usePicture } from "../context/pictureContext";
-import apiClient from "../api/apiClient";
+import { useAuth } from "../context/authContext";
+import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
+import { downloadImage } from "../utils/downloadUtils";
 
 interface Photo {
-  id: number;
+  photoId: string;
   imageUrl: string;
   uploader: string;
   uploadedAt: string;
@@ -27,8 +31,8 @@ const Gallery = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("recent");
-  const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
-  const [likedPhotos, setLikedPhotos] = useState<Set<number>>(new Set());
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
+  const [likedPhotos, setLikedPhotos] = useState<Set<string>>(new Set());
   const [showUploadModal, setShowUploadModal] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [eventData, setEventData] = useState<{ title: string; date: string }>({
@@ -43,58 +47,76 @@ const Gallery = () => {
   // Hooks
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const { getSessionContext } = useAuth();
   const { getEventBySlug } = useEvent();
   const {
-    uploadImage,
+    uploadGalleryImage,
     uploadedPhotos: contextPhotos,
     addUploadedPhoto,
     fetchDefaultImages,
+    loading: isUploading,
   } = usePicture();
 
   // Categories for filtering
-  const categories = [
-    { value: "all", label: "All Photos" },
-    { value: "uploaded", label: "Uploaded" },
-    { value: "portrait", label: "Portraits" },
-    { value: "landscape", label: "Landscapes" },
-    { value: "group", label: "Group Photos" },
-  ];
+  const categories = ["all", "uploaded", ];
 
   // Track if we've already loaded data to prevent multiple loads
   const hasLoadedRef = useRef(false);
 
-  // Load data on component mount
+  // Load data on component mount or when auth state changes
   useEffect(() => {
-    // Only run this effect once on mount
+    // Only run this effect once on mount or when auth state changes
     if (hasLoadedRef.current) return;
 
     const loadData = async () => {
       try {
         setIsLoading(true);
-        const { slug, sessionId } = location.state || {};
-        
+
+        // Get event slug from URL or state
+        const slug = searchParams.get("event") || location.state?.slug;
+
         if (!slug) {
           toast.error("Event information is missing");
+          navigate("/");
           return;
         }
-        
-        // If we have a session ID from the Visit page, ensure it's stored
-        if (sessionId) {
-          localStorage.setItem('sessionId', sessionId);
+
+        // Get session context
+        const sessionContext = await getSessionContext(
+          searchParams,
+          location.state
+        );
+        const { isAuthenticated, sessionId, userId } = sessionContext;
+
+        // Fetch event details
+        try {
+          const data = await getEventBySlug(slug);
+          setEventData({
+            title: data.eventName || "Gallery",
+            date: data.eventDate || "",
+          });
+        } catch (error) {
+          console.error("Failed to load event details:", error);
+          toast.error("Failed to load event details");
         }
-        
-        // Fetch images with the current session
-        await fetchDefaultImages(slug);
-        
-        // Get event details
-        const data = await getEventBySlug(slug);
-        setEventData({
-          title: data.eventName || "Gallery",
-          date: data.eventDate || "",
-        });
+
+        // Fetch photos based on auth state
+        try {
+          if (isAuthenticated && userId) {
+            // For authenticated users, fetch their photos
+            await fetchDefaultImages(slug);
+          } else if (sessionId) {
+            // For guests, fetch photos for this session
+            await fetchDefaultImages(slug);
+          }
+        } catch (error) {
+          console.error("Failed to load photos:", error);
+          toast.error("Failed to load photos");
+        }
       } catch (error) {
-        console.error("Failed to load gallery data:", error);
-        toast.error("Failed to load gallery. Please try again.");
+        console.error("Failed to initialize gallery:", error);
+        // Error is already handled in getSessionContext
       } finally {
         setIsLoading(false);
         hasLoadedRef.current = true;
@@ -107,7 +129,26 @@ const Gallery = () => {
     return () => {
       hasLoadedRef.current = false;
     };
-  }, [location.state?.slug, getEventBySlug, fetchDefaultImages]);
+  }, [
+    getSessionContext,
+    getEventBySlug,
+    fetchDefaultImages,
+    navigate,
+    location.state,
+    searchParams,
+  ]);
+
+  // Helper function to get a random gradient
+  const getRandomGradient = () => {
+    const gradients = [
+      "from-blue-100 to-indigo-100",
+      "from-pink-100 to-rose-100",
+      "from-green-100 to-emerald-100",
+      "from-purple-100 to-violet-100",
+      "from-amber-100 to-orange-100",
+    ];
+    return gradients[Math.floor(Math.random() * gradients.length)];
+  };
 
   // Additional effect to handle the case where default images are already loaded
   useEffect(() => {
@@ -116,74 +157,28 @@ const Gallery = () => {
     }
   }, [contextPhotos, isLoading]);
 
-  // Create a new session for non-authenticated users
-  const createNewSession = async (eventSlug: string): Promise<string> => {
-    try {
-      const response = await apiClient.post('/api/public/create-session', {
-        eventSlug,
-        deviceType: 'web' // or detect device type if needed
-      });
-      
-      const { sessionId } = response.data;
-      if (!sessionId) throw new Error('No session ID in response');
-      
-      // Store the session ID for future use
-      localStorage.setItem('sessionId', sessionId);
-      console.log('Created new session:', sessionId);
-      return sessionId;
-    } catch (error) {
-      console.error('Failed to create session:', error);
-      throw new Error('Failed to create a new session');
-    }
-  };
-
-  // Get existing session ID or create a new one
-  const getSessionId = async (): Promise<string> => {
-    // First try to get from localStorage
-    let sessionId = localStorage.getItem('sessionId');
-    
-    // If not found, create a new session
-    if (!sessionId && location.state?.slug) {
-      sessionId = await createNewSession(location.state.slug);
-    } else if (!sessionId) {
-      throw new Error('Event slug is required to create a session');
-    }
-    
-    console.log('Using session ID:', sessionId);
-    return sessionId;
-  };
-
   // Handle file selection
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     try {
-      // Get session ID and slug
-      const sessionId = await getSessionId();
-      const slug = location.state?.slug || "";
-      
-      console.log("Upload attempt with:", { sessionId, slug, locationState: location.state });
+      // Get session context and event slug
+      const { isAuthenticated, sessionId, userId } = await getSessionContext(
+        searchParams,
+        location.state
+      );
+      const slug = searchParams.get("event") || location.state?.slug;
 
-      if (!sessionId || !slug) {
-        console.error("Validation failed - Missing:", { 
-          hasSessionId: !!sessionId, 
-          hasSlug: !!slug,
-          locationState: location.state
-        });
-        
-        if (!sessionId) {
-          toast.error("Please log in to upload photos");
-        } else if (!slug) {
-          toast.error("Event information is missing. Please try accessing the gallery from the event page.");
-        }
+      if (!slug) {
+        toast.error("Event information is missing");
         return;
       }
 
       // Process each file
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        
+
         // Check file type
         if (!file.type.startsWith("image/")) {
           toast.error(`Skipped ${file.name}: Not an image file`);
@@ -191,99 +186,100 @@ const Gallery = () => {
         }
 
         try {
-          // Upload to Cloudinary and save to backend
-          const imageUrl = await uploadImage(file, sessionId, slug);
+          let imageUrl: string;
+
+          if (isAuthenticated && userId) {
+            // Authenticated upload
+            imageUrl = await uploadGalleryImage(file, userId, slug);
+          } else if (sessionId) {
+            // Guest upload
+            imageUrl = await uploadGalleryImage(file, sessionId, slug);
+          } else {
+            throw new Error("No valid authentication");
+          }
 
           // Add to local state
           const newPhoto: Photo = {
-            id: Date.now() + i,
+            photoId: (Date.now() + i).toString(),
             imageUrl,
-            uploader: "You",
+            uploader: isAuthenticated ? "You" : "Guest",
             uploadedAt: "Just now",
             type: "uploaded",
             size: "medium",
-            color: "from-blue-100 to-indigo-100",
+            color: getRandomGradient(),
           };
 
           addUploadedPhoto(newPhoto);
           toast.success(`Uploaded ${file.name}`);
         } catch (error) {
-          console.error('Error in file upload:', error);
-          toast.error('Failed to process file upload');
+          console.error("Error in file upload:", error);
+          toast.error(`Failed to upload ${file.name}`);
         }
       }
     } catch (error) {
       console.error("Upload failed:", error);
-      toast.error("Failed to upload files");
+      toast.error("Please sign in or use a valid event link");
+    } finally {
+      // Reset file input
+      if (e.target) e.target.value = "";
     }
   };
 
   // Handle camera capture
-  const handleCameraCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCameraCapture = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
-      // Get session ID and slug
-      const sessionId = await getSessionId();
-      const slug = location.state?.slug || "";
-      
-      console.log("Upload attempt with:", { sessionId, slug, locationState: location.state });
+      // Get session context and event slug
+      const { isAuthenticated, sessionId, userId } = await getSessionContext(
+        searchParams,
+        location.state
+      );
+      const slug = searchParams.get("event") || location.state?.slug;
 
-      if (!sessionId || !slug) {
-        console.error("Validation failed - Missing:", { 
-          hasSessionId: !!sessionId, 
-          hasSlug: !!slug,
-          locationState: location.state
-        });
-        
-        if (!sessionId) {
-          toast.error("Please log in to upload photos");
-        } else if (!slug) {
-          toast.error("Event information is missing. Please try accessing the gallery from the event page.");
-        }
+      if (!slug) {
+        toast.error("Event information is missing");
         return;
       }
 
-      // Process the captured image
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        try {
-          // First upload to Cloudinary
-          const imageUrl = await uploadImage(file, sessionId, slug);
-          
-          // Then add to local state
-          const newPhoto: Photo = {
-            id: Date.now(),
-            imageUrl,
-            uploader: "You",
-            uploadedAt: "Just now",
-            type: "uploaded",
-            size: "medium",
-            color: "from-green-100 to-teal-100",
-          };
+      // Upload the captured image
+      let imageUrl: string;
 
-          addUploadedPhoto(newPhoto);
-          toast.success("Photo captured and uploaded successfully!");
-        } catch (error) {
-          console.error("Failed to process captured photo:", error);
-          toast.error("Failed to upload photo");
-        }
-      };
-      reader.readAsDataURL(file);
-      
-      // Reset the input to allow capturing another photo
-      if (e.target) {
-        e.target.value = "";
+      if (isAuthenticated && userId) {
+        imageUrl = await uploadGalleryImage(file, userId, slug);
+      } else if (sessionId) {
+        imageUrl = await uploadGalleryImage(file, sessionId, slug);
+      } else {
+        throw new Error("No valid authentication");
       }
+
+      // Add to context
+      const newPhoto: Photo = {
+        photoId: Date.now().toString(),
+        imageUrl,
+        uploader: isAuthenticated ? "You" : "Guest",
+        uploadedAt: "Just now",
+        type: "uploaded",
+        size: "medium",
+        color: getRandomGradient(),
+      };
+
+      addUploadedPhoto(newPhoto);
+      toast.success("Photo uploaded successfully!");
     } catch (error) {
       console.error("Failed to process captured photo:", error);
       toast.error("Failed to upload photo");
+    } finally {
+      // Reset the input to allow capturing another photo
+      if (e.target) e.target.value = "";
     }
   };
 
   // Handle photo like
-  const handleLike = (photoId: number) => {
+  const handleLike = (photoId: string) => {
     setLikedPhotos((prev) => {
       const newLiked = new Set(prev);
       if (newLiked.has(photoId)) {
@@ -296,12 +292,10 @@ const Gallery = () => {
   };
 
   // Handle photo download
-  const handleDownload = (photoId: number) => {
-    const photo = contextPhotos.find((p) => p.id === photoId);
+  const handleDownload = (photoId: string) => {
+    const photo = contextPhotos.find((p) => p.photoId === photoId);
     if (photo) {
-      // In a real app, you would implement actual download logic here
-      console.log("Downloading:", photo.imageUrl);
-      toast.success("Download started!");
+      downloadImage(photo.imageUrl, `photo-${photoId}.jpg`);
     }
   };
 
@@ -312,22 +306,21 @@ const Gallery = () => {
 
   const sortedPhotos = [...filteredPhotos].sort((a, b) => {
     if (sortBy === "recent") {
-      return b.id - a.id; // Sort by ID (newest first)
+      // Sort by photoId (assuming it's timestamp based for uploaded photos)
+      return b.photoId.localeCompare(a.photoId);
     }
     return 0;
   });
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 text-blue-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading gallery...</p>
-        </div>
-      </div>
-    );
-  }
+
+
+  // Infinite scroll for performance
+  const { displayedItems, hasMore, isLoadingMore, observerRef } = useInfiniteScroll({
+    items: sortedPhotos,
+    batchSize: 20,
+  });
+
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -338,7 +331,6 @@ const Gallery = () => {
             eventTitle={eventData.title}
             eventDate={eventData.date}
             photoCount={sortedPhotos.length}
-            onBack={() => navigate(-1)}
             onDownloadAll={() => toast.success("Preparing download...")}
           />
 
@@ -351,62 +343,82 @@ const Gallery = () => {
               onSortChange={setSortBy}
               onFilterChange={setSelectedFilter}
               onViewModeChange={setViewMode}
-              categories={categories.map((cat) => cat.value)}
+              categories={categories}
             />
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-12 w-12 text-blue-600 animate-spin" />
-          </div>
-        ) : sortedPhotos.length > 0 ? (
-          <PhotoGrid
-            photos={sortedPhotos}
-            viewMode={viewMode}
-            likedPhotos={likedPhotos}
-            onPhotoClick={setSelectedPhoto}
-            onLike={handleLike}
-            onDownload={handleDownload}
-          />
-        ) : (
-          <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-            <div className="bg-gray-100 p-6 rounded-full mb-4">
-              <svg
-                className="w-12 h-12 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.5"
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                ></path>
-              </svg>
+      {isLoading ? (
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+          <Masonry
+            breakpointCols={{ default: 5, 1100: 4, 768: 3, 500: 2 }}
+            className="masonry-grid"
+            columnClassName="masonry-grid-column"
+          >
+            <PhotoSkeleton count={15} />
+          </Masonry>
+        </main>
+      ) : (
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+          {displayedItems.length > 0 ? (
+            <>
+              <PhotoGrid
+                photos={displayedItems}
+                viewMode={viewMode}
+                likedPhotos={likedPhotos}
+                onPhotoClick={(photoId) => {
+                  const index = displayedItems.findIndex(p => p.photoId === photoId);
+                  setSelectedPhotoIndex(index);
+                }}
+                onLike={handleLike}
+                onDownload={handleDownload}
+              />
+              
+              {/* Loading indicator and observer target */}
+              {hasMore && (
+                <div 
+                  ref={observerRef}
+                  className="flex justify-center items-center py-8"
+                >
+                  {isLoadingMore && (
+                    <div className="flex items-center gap-3">
+                      <Loader2 className="h-6 w-6 text-pink-600 animate-spin" />
+                      <p className="text-gray-600 text-sm">Loading more photos...</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+              <div className="w-24 h-24 bg-linear-to-br from-pink-100 to-rose-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                <Camera className="w-10 h-10 text-pink-500" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                No photos yet
+              </h3>
+              <p className="text-gray-500 max-w-md mb-8 text-lg">
+                Be the first to capture the moment! Upload a photo to start the gallery.
+              </p>       
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">
-              No photos yet
-            </h3>
-            <p className="text-gray-500 max-w-md mb-6">
-              Get started by uploading your first photo to the gallery.
-            </p>
-          </div>
-        )}
-      </main>
+          )}
+        </main>
+      )}
 
       {/* Upload Button (Mobile) */}
       <div className="fixed bottom-20 right-4 z-10">
         <button
           onClick={() => setShowUploadModal(true)}
           className="fixed bottom-20 sm:bottom-8 right-4 sm:right-8 px-4 sm:px-6 py-3 sm:py-4 bg-linear-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-full font-semibold shadow-2xl hover:shadow-pink-500/50 transition-all flex items-center gap-2 hover:scale-105 z-10"
+          disabled={isUploading}
         >
-          <Upload className="w-5 h-5" />
+          {isUploading ? (
+            <Loader2 className="w-6 h-6 animate-spin" />
+          ) : (
+            <Upload className="w-6 h-6" />
+          )}
           <span className="hidden sm:inline">Upload Photo</span>
         </button>
       </div>
@@ -415,8 +427,14 @@ const Gallery = () => {
       <UploadModal
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
-        onGallerySelect={() => fileInputRef.current?.click()}
-        onCameraSelect={() => cameraInputRef.current?.click()}
+        onGallerySelect={() => {
+          fileInputRef.current?.click();
+          setShowUploadModal(false);
+        }}
+        onCameraSelect={() => {
+          cameraInputRef.current?.click();
+          setShowUploadModal(false);
+        }}
       />
 
       {/* Hidden file inputs */}
@@ -437,20 +455,22 @@ const Gallery = () => {
         onChange={handleCameraCapture}
       />
 
-      {/* Photo Modal */}
-      {selectedPhoto !== null && (
-        <PhotoModal
-          photo={sortedPhotos.find((p) => p.id === selectedPhoto)!}
-          isLiked={likedPhotos.has(selectedPhoto)}
-          onClose={() => setSelectedPhoto(null)}
-          onLike={() => handleLike(selectedPhoto)}
-          onDownload={() => handleDownload(selectedPhoto)}
+
+      {/* Enhanced Photo Modal */}
+      {selectedPhotoIndex !== null && (
+        <EnhancedPhotoModal
+          photos={displayedItems}
+          currentIndex={selectedPhotoIndex}
+          isLiked={likedPhotos.has(displayedItems[selectedPhotoIndex].photoId)}
+          onClose={() => setSelectedPhotoIndex(null)}
+          onLike={(photoId) => handleLike(photoId)}
+          onDownload={(photoId) => handleDownload(photoId)}
+          onNavigate={(index) => setSelectedPhotoIndex(index)}
         />
       )}
 
-      <div className="pb-20 md:pb-0">
-        <BottomNav />
-      </div>
+
+
     </div>
   );
 };

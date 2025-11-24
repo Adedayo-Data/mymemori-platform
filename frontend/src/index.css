@@ -1,4 +1,17 @@
+/* Import Design System */
+@import './styles/design-system.css';
+
+/* Import Masonry Grid Styles */
+@import './styles/masonry.css';
+
 @import 'tailwindcss';
+
+/* Apply Inter font globally */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
 /* Hide scrollbar for horizontal scroll */
 .scrollbar-hide {

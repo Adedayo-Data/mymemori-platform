@@ -12,7 +12,7 @@ interface EventData {
 
 interface EventResponse {
   eventSlug: string;
-  [key: string]: any;
+  [key: string]: string;
 }
 
 interface EventContextType {
