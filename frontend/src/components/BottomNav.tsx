@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Settings, QrCode, PlusCircle, User, X } from "lucide-react";
+import { Settings, QrCode, PlusCircle, User, X, Home } from "lucide-react";
 import { useAuth } from "../context/authContext";
 
 const BottomNav = () => {
@@ -12,17 +12,17 @@ const BottomNav = () => {
   return (
     <>
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white md:hidden">
-        <div className="mx-auto grid grid-cols-4 py-2">
+        <div className="mx-auto grid grid-cols-5 py-2">
           <Link
-            to="/profile"
+            to="/Home"
             className={`flex flex-col items-center gap-1 py-2 text-xs font-medium ${
               isActive("/profile")
                 ? "text-pink-600"
                 : "text-gray-600 hover:text-gray-900"
             }`}
           >
-            <User className="w-5 h-5" />
-            <span>Profile</span>
+            <Home className="w-5 h-5" />
+            <span>Home</span>
           </Link>
 
           <Link
@@ -47,6 +47,17 @@ const BottomNav = () => {
           >
             <QrCode className="w-5 h-5" />
             <span>Details</span>
+          </Link>
+          <Link
+            to="/profile"
+            className={`flex flex-col items-center gap-1 py-2 text-xs font-medium ${
+              isActive("/profile")
+                ? "text-pink-600"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            <User className="w-5 h-5" />
+            <span>Profile</span>
           </Link>
 
           <button

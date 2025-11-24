@@ -1,10 +1,9 @@
-import { ArrowLeft, Download } from "lucide-react";
+import {  Download } from "lucide-react";
 
 interface GalleryHeaderProps {
   eventTitle: string;
   eventDate: string;
   photoCount: number;
-  onBack: () => void;
   onDownloadAll: () => void;
 }
 
@@ -12,18 +11,11 @@ const GalleryHeader = ({
   eventTitle,
   eventDate,
   photoCount,
-  onBack,
   onDownloadAll,
 }: GalleryHeaderProps) => {
   return (
     <div className="flex items-center justify-between gap-3 mb-4">
       <div className="flex items-center gap-2 flex-1 min-w-0">
-        <button
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
-          onClick={onBack}
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
-        </button>
         <div className="min-w-0 flex-1">
           <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate">
             {eventTitle}

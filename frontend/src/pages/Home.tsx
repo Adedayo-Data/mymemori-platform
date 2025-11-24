@@ -7,11 +7,6 @@ const Home = () => {
     navigate("/auth");
   };
 
-  const handleLearnMore = () => {
-    console.log("Learn More clicked");
-    alert("Showing more information...");
-  };
-
   return (
     <div className="relative h-screen w-full overflow-hidden bg-linear-to-br from-pink-50 via-rose-50 to-orange-50">
       {/* Animated background elements */}

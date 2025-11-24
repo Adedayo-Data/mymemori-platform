@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
-import BottomNav from "../components/BottomNav";
-import Navigation from "../components/Navigation";
+
 import { Heart } from "lucide-react";
 import { useAuth } from "../context/authContext";
 import { Link, useNavigate } from "react-router-dom";
@@ -153,7 +152,7 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-linear-to-br from-pink-50 via-white to-rose-50 ">
       <div>
-        <Navigation />
+
         <Link
           to="/profile"
           className="flex items-center gap-2 hover:opacity-80 transition-opacity md:hidden ml-5 pt-5"
@@ -343,9 +342,7 @@ const Profile = () => {
         </section>
       )}
 
-      <div className="pb-20 md:pb-0">
-        <BottomNav />
-      </div>
+
     </div>
   );
 };

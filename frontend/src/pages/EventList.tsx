@@ -1,6 +1,5 @@
 import { useMemo } from "react";
-import Navigation from "../components/Navigation";
-import BottomNav from "../components/BottomNav";
+
 import { Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -42,7 +41,7 @@ const EventList = () => {
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-pink-50 overflow-x-hidden">
       {/* Navigation */}
-      <Navigation />
+
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-6 py-8 relative z-10">
@@ -129,9 +128,7 @@ const EventList = () => {
         </div>
       </div>
 
-      <div className="pb-20 md:pb-0">
-        <BottomNav />
-      </div>
+
     </div>
   );
 };
