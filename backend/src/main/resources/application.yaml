@@ -1,18 +1,37 @@
 spring:
   application:
     name: mymemori
-#  profiles:
-#    active: test
 
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 3  # Neon free tier limit
+      minimum-idle: 1
+      connection-timeout: 10000
+      idle-timeout: 300000
+      max-lifetime: 600000
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: update  # TODO: Change to 'validate' after Flyway setup
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:86400000}  # 24 hours default
+
+logging:
+  level:
+    root: INFO
+    com.mymemori: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
