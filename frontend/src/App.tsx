@@ -16,7 +16,6 @@ const EventList = lazy(() => import("./pages/EventList"));
 const ShareDetails = lazy(() => import("./pages/ShareDetails"));
 const Visit = lazy(() => import("./pages/Visit"));
 const Gallery = lazy(() => import("./pages/Gallery"));
-const Verification = lazy(() => import("./pages/Verification"));
 const Profile = lazy(() => import("./pages/Profile"));
 
 const App = () => {
@@ -43,7 +42,6 @@ const App = () => {
                   <Route path="/share-details" element={<ShareDetails />} />
                   <Route path="/visit/:slug" element={<Visit />} />
                   <Route path="/gallery" element={<Gallery />} />
-                  <Route path="/verify" element={<Verification />} />
                   <Route
                     path="/profile"
                     element={
