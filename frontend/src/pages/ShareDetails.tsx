@@ -5,6 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 import domtoimage from "dom-to-image";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
+import { formatEventDate } from "../utils/dateUtils";
 
 // Confetti Component
 const Confetti = () => {
@@ -196,11 +197,7 @@ const Details = () => {
               <p className="text-sm text-gray-500 mt-1">
                 {eventData?.date ||
                   (eventData?.eventDate
-                    ? new Date(eventData.eventDate).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })
+                    ? formatEventDate(eventData.eventDate)
                     : "Date not available")}
               </p>
             </div>

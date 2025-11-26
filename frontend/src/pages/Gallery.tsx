@@ -10,11 +10,15 @@ import PhotoGrid from "../components/PhotoGrid";
 import EnhancedPhotoModal from "../components/EnhancedPhotoModal";
 import UploadModal from "../components/UploadModal";
 import PhotoSkeleton from "../components/PhotoSkeleton";
+import FloatingUploadIndicator from "../components/FloatingUploadIndicator";
 import { useEvent } from "../context/eventContext";
 import { usePicture } from "../context/pictureContext";
 import { useAuth } from "../context/authContext";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { downloadImage } from "../utils/downloadUtils";
+import { uploadQueueManager } from "../utils/uploadQueueManager";
+import type { UploadTask } from "../utils/uploadQueueManager";
+import apiClient from "../api/apiClient";
 
 interface Photo {
   photoId: string;
@@ -51,7 +55,6 @@ const Gallery = () => {
   const { getSessionContext } = useAuth();
   const { getEventBySlug } = useEvent();
   const {
-    uploadGalleryImage,
     uploadedPhotos: contextPhotos,
     addUploadedPhoto,
     fetchDefaultImages,
@@ -87,7 +90,7 @@ const Gallery = () => {
           searchParams,
           location.state
         );
-        const { isAuthenticated, sessionId, userId } = sessionContext;
+        const { isAuthenticated, sessionId } = sessionContext;
 
         // Fetch event details
         try {
@@ -103,12 +106,14 @@ const Gallery = () => {
 
         // Fetch photos based on auth state
         try {
-          if (isAuthenticated && userId) {
+          if (isAuthenticated) {
             // For authenticated users, fetch their photos
             await fetchDefaultImages(slug);
           } else if (sessionId) {
             // For guests, fetch photos for this session
             await fetchDefaultImages(slug);
+          } else {
+            console.log("No valid session, skipping photo fetch");
           }
         } catch (error) {
           console.error("Failed to load photos:", error);
@@ -157,14 +162,14 @@ const Gallery = () => {
     }
   }, [contextPhotos, isLoading]);
 
-  // Handle file selection
+  // Handle file selection - Add to background upload queue
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     try {
       // Get session context and event slug
-      const { isAuthenticated, sessionId, userId } = await getSessionContext(
+      const { isAuthenticated, sessionId } = await getSessionContext(
         searchParams,
         location.state
       );
@@ -175,66 +180,48 @@ const Gallery = () => {
         return;
       }
 
-      // Process each file
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-
-        // Check file type
+      // Filter out non-image files
+      const imageFiles = Array.from(files).filter(file => {
         if (!file.type.startsWith("image/")) {
           toast.error(`Skipped ${file.name}: Not an image file`);
-          continue;
+          return false;
         }
+        return true;
+      });
 
-        try {
-          let imageUrl: string;
-
-          if (isAuthenticated && userId) {
-            // Authenticated upload
-            imageUrl = await uploadGalleryImage(file, userId, slug);
-          } else if (sessionId) {
-            // Guest upload
-            imageUrl = await uploadGalleryImage(file, sessionId, slug);
-          } else {
-            throw new Error("No valid authentication");
-          }
-
-          // Add to local state
-          const newPhoto: Photo = {
-            photoId: (Date.now() + i).toString(),
-            imageUrl,
-            uploader: isAuthenticated ? "You" : "Guest",
-            uploadedAt: "Just now",
-            type: "uploaded",
-            size: "medium",
-            color: getRandomGradient(),
-          };
-
-          addUploadedPhoto(newPhoto);
-          toast.success(`Uploaded ${file.name}`);
-        } catch (error) {
-          console.error("Error in file upload:", error);
-          toast.error(`Failed to upload ${file.name}`);
-        }
+      if (imageFiles.length === 0) {
+        toast.error("No valid image files selected");
+        return;
       }
+
+      // Add to background upload queue
+      await uploadQueueManager.addToQueue(imageFiles, {
+        eventSlug: slug,
+        sessionId,
+        isAuthenticated,
+      });
+
+      // Close modal
+      setShowUploadModal(false);
     } catch (error) {
-      console.error("Upload failed:", error);
-      toast.error("Please sign in or use a valid event link");
+      console.error("Failed to add files to queue:", error);
+      toast.error("Failed to start upload");
     } finally {
       // Reset file input
       if (e.target) e.target.value = "";
     }
   };
 
-  // Handle camera capture
+  // Handle camera capture - Add to background upload queue
   const handleCameraCapture = async (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     try {
       // Get session context and event slug
-      const { isAuthenticated, sessionId, userId } = await getSessionContext(
+      const { isAuthenticated, sessionId } = await getSessionContext(
         searchParams,
         location.state
       );
@@ -245,33 +232,19 @@ const Gallery = () => {
         return;
       }
 
-      // Upload the captured image
-      let imageUrl: string;
+      // Add all captured photos to upload queue
+      const imageFiles = Array.from(files);
+      await uploadQueueManager.addToQueue(imageFiles, {
+        eventSlug: slug,
+        sessionId,
+        isAuthenticated,
+      });
 
-      if (isAuthenticated && userId) {
-        imageUrl = await uploadGalleryImage(file, userId, slug);
-      } else if (sessionId) {
-        imageUrl = await uploadGalleryImage(file, sessionId, slug);
-      } else {
-        throw new Error("No valid authentication");
-      }
-
-      // Add to context
-      const newPhoto: Photo = {
-        photoId: Date.now().toString(),
-        imageUrl,
-        uploader: isAuthenticated ? "You" : "Guest",
-        uploadedAt: "Just now",
-        type: "uploaded",
-        size: "medium",
-        color: getRandomGradient(),
-      };
-
-      addUploadedPhoto(newPhoto);
-      toast.success("Photo uploaded successfully!");
+      // Close modal
+      setShowUploadModal(false);
     } catch (error) {
-      console.error("Failed to process captured photo:", error);
-      toast.error("Failed to upload photo");
+      console.error("Failed to process captured photos:", error);
+      toast.error("Failed to start upload");
     } finally {
       // Reset the input to allow capturing another photo
       if (e.target) e.target.value = "";
@@ -296,6 +269,54 @@ const Gallery = () => {
     const photo = contextPhotos.find((p) => p.photoId === photoId);
     if (photo) {
       downloadImage(photo.imageUrl, `photo-${photoId}.jpg`);
+    }
+  };
+
+  // Handle completed uploads from background queue
+  const handleUploadComplete = async (task: UploadTask) => {
+    try {
+      const { eventSlug, sessionId, isAuthenticated } = task.metadata;
+      
+      if (!task.imageUrl) return;
+
+      // Save to backend using the correct endpoint
+      try {
+        await apiClient.post(
+          '/api/public/save-image',
+          {
+            sessionId: isAuthenticated ? undefined : sessionId,
+            eventSlug,
+            imageUrl: [task.imageUrl], // Backend expects an array
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+            },
+          }
+        );
+
+        // Add to local gallery
+        const newPhoto: Photo = {
+          photoId: Date.now().toString(),
+          imageUrl: task.imageUrl,
+          uploader: isAuthenticated ? "You" : "Guest",
+          uploadedAt: "Just now",
+          type: "uploaded",
+          size: "medium",
+          color: getRandomGradient(),
+        };
+
+        addUploadedPhoto(newPhoto);
+      } catch (saveError: any) {
+        console.error('Failed to save image to backend:', saveError);
+        if (saveError.response) {
+          console.error('Server response:', saveError.response.data);
+        }
+        toast.error('Image uploaded but failed to save to gallery');
+      }
+    } catch (error) {
+      console.error("Failed to process uploaded photo:", error);
     }
   };
 
@@ -452,8 +473,12 @@ const Gallery = () => {
         className="hidden"
         accept="image/*"
         capture="environment"
+        multiple
         onChange={handleCameraCapture}
       />
+
+      {/* Floating Upload Indicator */}
+      <FloatingUploadIndicator onTaskComplete={handleUploadComplete} />
 
 
       {/* Enhanced Photo Modal */}

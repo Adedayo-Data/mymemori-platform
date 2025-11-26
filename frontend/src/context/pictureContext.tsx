@@ -9,6 +9,8 @@ import {
 import { toast } from 'react-hot-toast';
 import apiClient from '../api/apiClient';
 import { uploadToCloudinary } from '../utils/upload';
+import { getOrCreateSession, clearSession } from '../utils/sessionUtils';
+import { handleApiError } from '../utils/errorUtils';
 
 interface UploadedPhoto {
   photoId: string;
@@ -109,35 +111,12 @@ export const PictureProvider = ({
     []
   );
 
-  const createNewSession = useCallback(async (eventSlug: string): Promise<string> => {
-    try {
-      const response = await apiClient.post('/api/public/create-session', {
-        eventSlug,
-        deviceType: 'web',
-      });
-
-      const { sessionId } = response.data;
-      if (!sessionId) throw new Error('No session ID in response');
-
-      localStorage.setItem('sessionId', sessionId);
-      return sessionId;
-    } catch (error) {
-      console.error('Failed to create session:', error);
-      throw new Error('Failed to create a new session');
-    }
-  }, []);
-
   const fetchDefaultImages = useCallback(async (eventSlug: string) => {
     try {
       setLoading(true);
 
-      // Get or create session ID
-      let sessionId = localStorage.getItem("sessionId");
-
-      // If no session exists, create one
-      if (!sessionId) {
-        sessionId = await createNewSession(eventSlug);
-      }
+      // Get or create session ID using centralized utility
+      const sessionId = await getOrCreateSession(eventSlug);
 
       // Fetch images with the session ID in headers
       const response = await apiClient.get("/api/public/images", {
@@ -167,8 +146,8 @@ export const PictureProvider = ({
       // If unauthorized, clear invalid session and retry once
       if (axiosError.response?.status === 401) {
         try {
-          localStorage.removeItem("sessionId");
-          const newSessionId = await createNewSession(eventSlug);
+          clearSession();
+          const newSessionId = await getOrCreateSession(eventSlug);
           const retryResponse = await apiClient.get("/api/public/images", {
             params: { eventSlug },
             headers: { "X-Session-Id": newSessionId },
@@ -180,10 +159,18 @@ export const PictureProvider = ({
           }
         } catch (retryError) {
           console.error("Retry failed:", retryError);
-          toast.error("Failed to load images. Please try again.");
+          handleApiError(
+            retryError,
+            "Failed to load images. Please try again.",
+            { showToast: true }
+          );
         }
       } else {
-        toast.error("Failed to load images. Please check your connection.");
+        handleApiError(
+          error,
+          "Failed to load images. Please check your connection.",
+          { showToast: true }
+        );
       }
 
       throw error;

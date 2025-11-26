@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback } from "react";
 import apiClient from "../api/apiClient";
 import toast from "react-hot-toast";
+import { handleApiError } from "../utils/errorUtils";
 
 interface EventData {
   eventName: string;
@@ -37,11 +38,11 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
       console.log("Event creation response:", response.data);
       return response.data as EventResponse;
     } catch (err: unknown) {
-      const errorMessage =
-        (err as any)?.response?.data?.message ||
-        "Failed to create event. Please try again.";
-      setError(errorMessage);
-      toast.error(errorMessage);
+      const errorMessage = handleApiError(
+        err,
+        "Failed to create event. Please try again.",
+        { showToast: true, setError }
+      );
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
@@ -57,11 +58,11 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
         console.log("Event fetch response:", response.data);
         return response.data as EventResponse;
       } catch (err: unknown) {
-        const errorMessage =
-          (err as any)?.response?.data?.message ||
-          "Failed to fetch event. Please try again.";
-        setError(errorMessage);
-        toast.error(errorMessage);
+        const errorMessage = handleApiError(
+          err,
+          "Failed to fetch event. Please try again.",
+          { showToast: true, setError }
+        );
         throw new Error(errorMessage);
       } finally {
         setLoading(false);

@@ -5,6 +5,7 @@ import { usePicture } from "../context/pictureContext";
 import { Upload as UploadIcon, X, Calendar, MapPin, Image as ImageIcon, Sparkles, ArrowRight, ArrowLeft, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
+import { formatEventDate } from "../utils/dateUtils";
 
 const Booking = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -595,11 +596,7 @@ const Booking = () => {
                     </label>
                     <p className="text-lg font-semibold text-gray-900">
                       {formData.eventDate
-                        ? new Date(formData.eventDate).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })
+                        ? formatEventDate(formData.eventDate)
                         : "Not set"}
                     </p>
                   </div>
