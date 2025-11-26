@@ -4,6 +4,7 @@ import com.mymemori.dto.ReactionDeleteReq;
 import com.mymemori.dto.ReactionRequestDTO;
 import com.mymemori.dto.ReactionResponse;
 import com.mymemori.services.ReactionService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +22,7 @@ public class ReactionController {
     // save reactions
     @PostMapping("/react")
     public ResponseEntity<ReactionResponse> react(
-            @RequestBody ReactionRequestDTO req,
+            @Valid @RequestBody ReactionRequestDTO req,
             @RequestHeader("sessionId") UUID sessionId){
 
         ReactionResponse response = reactionService.saveReactions(req, sessionId);
@@ -34,8 +35,11 @@ public class ReactionController {
     }
 
     @DeleteMapping("/remove")
-    public ResponseEntity<Void> deleteReaction(ReactionDeleteReq req){
-        reactionService.deleteReactions(req);
+    public ResponseEntity<Void> deleteReaction(
+            @Valid @RequestBody ReactionDeleteReq req,
+            @RequestHeader("sessionId") UUID sessionId){
+
+        reactionService.deleteReactions(req, sessionId);
         return ResponseEntity.status(HttpStatus.ACCEPTED).build();
     }
 }

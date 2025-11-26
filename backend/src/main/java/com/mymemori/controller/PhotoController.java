@@ -4,6 +4,7 @@ import com.mymemori.dto.PhotoRequestDTO;
 import com.mymemori.dto.PhotoResponseDTO;
 import com.mymemori.dto.ViewGalleryRequest;
 import com.mymemori.services.PhotoService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +24,7 @@ public class PhotoController {
     @PostMapping("/save-image")
     public ResponseEntity<List<PhotoResponseDTO>> savePhotos(
             @RequestHeader("sessionId") UUID sessionId,
-            @RequestBody PhotoRequestDTO request){
+            @Valid @RequestBody PhotoRequestDTO request){
 
         System.out.println("Gallery Entered!");
 
@@ -41,7 +42,7 @@ public class PhotoController {
     // FOMO strategy
     @GetMapping("/images")
     public ResponseEntity<List<PhotoResponseDTO>> findFiveImage(
-            @RequestBody ViewGalleryRequest request,
+            @Valid @RequestBody ViewGalleryRequest request,
             @RequestHeader("sessionId") UUID sessionId){
         List<PhotoResponseDTO> response = photoService.getOnlyTen(request, sessionId);
 

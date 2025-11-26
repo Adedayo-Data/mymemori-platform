@@ -26,14 +26,14 @@ public class ReactionService {
         Users user = authUser.fetchAuthenticatedUser();
 
         if (user == null && sessionId == null) {
-            throw new IllegalArgumentException("User must be authenticated with JWT in header or contain sessionID in Requestbody");
+            throw new IllegalArgumentException("User must be authenticated with valid JWT or contain sessionID in header");
         }
 
         Reactions reactions = new Reactions();
 
         reactions.setPhotoId(request.getPhotoId());
         reactions.setSessionId(sessionId);
-        reactions.setUserId(request.getUserId());
+        reactions.setUserId(user.getId());
         reactions.setReactedAt(request.getReactedAt());
 
         return mapToDTO(reactions);
@@ -55,13 +55,19 @@ public class ReactionService {
     }
 
     // delete reactions
-    public void deleteReactions(ReactionDeleteReq req){
+    public void deleteReactions(ReactionDeleteReq req, UUID sessionId){
 
-        if (req.getUserId() == null){
-            Long deletionCount = reactionRepo.deleteByPhotoIdAndSessionId(req.getPhotoId(), req.getSessionId());
+        Users user = authUser.fetchAuthenticatedUser();
+
+        if(user == null && sessionId ==null){
+            throw new IllegalArgumentException("User must be authenticated with valid JWT or contain sessionID in header");
+        }
+
+        if (user == null){
+            Long deletionCount = reactionRepo.deleteByPhotoIdAndSessionId(req.getPhotoId(), sessionId);
             System.out.println("Deleted based on session id. Count is: " +deletionCount); // TO FIX: This was made simple for now. To improve logs later
         }else {
-            Long deletionCount = reactionRepo.deleteByPhotoIdAndUserId(req.getPhotoId(), req.getUserId());
+            Long deletionCount = reactionRepo.deleteByPhotoIdAndUserId(req.getPhotoId(), user.getId());
             System.out.println("Deleted based on session id. Count is: " + deletionCount);
         }
 
