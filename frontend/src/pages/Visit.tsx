@@ -2,12 +2,11 @@ import { Upload, MapPin, Calendar, RefreshCw } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEvent } from "../context/eventContext";
-import apiClient from "../api/apiClient";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
-
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // 1 second
+import { retryWithBackoff } from "../utils/retryUtils";
+import { getOrCreateSession } from "../utils/sessionUtils";
+import { formatEventDate } from "../utils/dateUtils";
 
 // Skeleton Loader Component
 const SkeletonLoader = () => (
@@ -55,9 +54,18 @@ const Visit = () => {
   const { getEventBySlug } = useEvent();
   const imageRef = useRef<HTMLDivElement>(null);
 
-  const fetchWithRetry = async (slug: string, retries = 0): Promise<void> => {
+  const fetchWithRetry = async (slug: string): Promise<void> => {
     try {
-      const data = await getEventBySlug(slug);
+      const data = await retryWithBackoff(
+        async () => await getEventBySlug(slug),
+        {
+          maxRetries: 3,
+          baseDelay: 1000,
+          onRetry: (attempt) => {
+            console.log(`Retry attempt ${attempt} for fetching event`);
+          },
+        }
+      );
       setEventData({
         eventName: data.eventName || "",
         eventDate: data.eventDate || "",
@@ -66,16 +74,8 @@ const Visit = () => {
         imageUrl: data.imageUrl || "",
       });
       setError(null);
-    } catch (error) {
-      if (retries < MAX_RETRIES) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, RETRY_DELAY * (retries + 1))
-        );
-        return fetchWithRetry(slug, retries + 1);
-      }
-      console.error("Failed to fetch event data after retries:", error);
-      setError("Failed to load event. Please try again later.");
-    } finally {
+    } 
+    finally {
       setIsLoading(false);
     }
   };
@@ -94,35 +94,6 @@ const Visit = () => {
     }
   };
 
-  const createNewSession = async (
-    eventSlug: string,
-    retries = 0
-  ): Promise<string> => {
-    try {
-      const response = await apiClient.post("/api/public/create-session", {
-        eventSlug,
-        deviceType: "web",
-      });
-
-      const { sessionId } = response.data;
-      if (!sessionId) throw new Error("No session ID in response");
-
-      localStorage.setItem("sessionId", sessionId);
-      return sessionId;
-    } catch (error) {
-      if (retries < MAX_RETRIES) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, RETRY_DELAY * (retries + 1))
-        );
-        return createNewSession(eventSlug, retries + 1);
-      }
-      console.error("Failed to create session after retries:", error);
-      throw new Error(
-        "Failed to create a new session. Please check your connection and try again."
-      );
-    }
-  };
-
   const handleSharePhotos = async () => {
     if (!slug) {
       toast.error("Event information is missing");
@@ -133,10 +104,7 @@ const Visit = () => {
       const toastId = toast.loading("Preparing photo sharing...");
 
       try {
-        let sessionId = localStorage.getItem("sessionId");
-        if (!sessionId) {
-          sessionId = await createNewSession(slug);
-        }
+        const sessionId = await getOrCreateSession(slug);
 
         toast.dismiss(toastId);
         navigate("/gallery", {
@@ -352,14 +320,7 @@ const Visit = () => {
                           Date
                         </p>
                         <p className="text-base font-bold text-white">
-                          {new Date(eventData.eventDate).toLocaleDateString(
-                            "en-US",
-                            {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            }
-                          )}
+                          {formatEventDate(eventData.eventDate)}
                         </p>
                       </div>
                     </div>

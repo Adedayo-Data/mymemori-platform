@@ -75,7 +75,7 @@ const Auth = () => {
         });
         toast.success("Welcome back!");
       }
-      navigate("/profile");
+      navigate("/home");
     } catch (error) {
       console.error(error);
       // Error is handled by the context/toast

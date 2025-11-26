@@ -1,16 +1,16 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import apiClient from "../api/apiClient";
 import toast from "react-hot-toast";
+import { getOrCreateSession, clearSession } from "../utils/sessionUtils";
+import { handleApiError } from "../utils/errorUtils";
 
 interface User {
-  id?: string;
   email: string;
   fullName: string;
 }
 
 interface SessionContext {
   isAuthenticated: boolean;
-  userId?: string;
   sessionId?: string;
 }
 
@@ -71,41 +71,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     searchParams: URLSearchParams,
     state?: any
   ) => {
-    if (isAuthenticated && user?.id) {
-      return { isAuthenticated: true, userId: user.id };
+    // For authenticated users, backend will identify them from JWT token
+    if (isAuthenticated) {
+      return { isAuthenticated: true };
     }
 
-    // Get session from URL, state, or localStorage
-    const sessionId =
-      searchParams.get("session") ||
-      state?.sessionId ||
-      localStorage.getItem("sessionId");
-
-    if (!sessionId) {
-      const slug = searchParams.get("event") || state?.slug;
-      if (slug) {
-        // If we have an event slug but no session, create one
-        try {
-          const response = await apiClient.post("/api/public/create-session", {
-            eventSlug: slug,
-            deviceType: "web",
-          });
-
-          const newSessionId = response.data?.sessionId;
-          if (newSessionId) {
-            localStorage.setItem("sessionId", newSessionId);
-            return { isAuthenticated: false, sessionId: newSessionId };
-          }
-        } catch (error) {
-          console.error("Failed to create session:", error);
-          throw error;
-        }
-      }
-      // If we get here, we couldn't get or create a session
-      throw new Error("No valid session");
+    // For guest users, get or create a session
+    const slug = searchParams.get("event") || state?.slug;
+    if (!slug) {
+      throw new Error("Event slug is required");
     }
 
-    return { isAuthenticated: false, sessionId };
+    try {
+      // Get session from URL, state, or localStorage, or create new one
+      const sessionId =
+        searchParams.get("session") ||
+        state?.sessionId ||
+        (await getOrCreateSession(slug));
+
+      return { isAuthenticated: false, sessionId };
+    } catch (error) {
+      console.error("Failed to get or create session:", error);
+      throw error;
+    }
   };
 
   const signup = async (data: {
@@ -126,11 +114,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log("Signup response:", response.data);
       console.log("userData:", userData);
     } catch (err: unknown) {
-      const errorMessage =
-        (err as any)?.response?.data?.message ||
-        "Signup failed. Please try again.";
-      setError(errorMessage);
-      toast.error(errorMessage);
+      const errorMessage = handleApiError(
+        err,
+        "Signup failed. Please try again.",
+        { showToast: true, setError }
+      );
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
@@ -151,11 +139,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log("Signin response:", response.data);
       console.log("userData:", userData);
     } catch (err: unknown) {
-      const errorMessage =
-        (err as any)?.response?.data?.message ||
-        "Signin failed. Please check your credentials.";
-      setError(errorMessage);
-      toast.error(errorMessage);
+      const errorMessage = handleApiError(
+        err,
+        "Signin failed. Please check your credentials.",
+        { showToast: true, setError }
+      );
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
@@ -165,6 +153,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("userData");
+    clearSession(); // Also clear guest session
     setUser(null);
     setError(null);
   };
