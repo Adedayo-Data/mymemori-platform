@@ -9,7 +9,7 @@ public class JwtConstant {
     @Value("${jwt.secret}")
     private String jwtKey;
 
-    @Value("${jwt.expiration:86400000}") // Default: 24 hours
+    @Value("${jwt.expiration:604800000}") // Default: 7 hours
     private long expiration;
 
     public static final String HEADER = "Authorization";

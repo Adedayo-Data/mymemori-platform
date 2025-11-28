@@ -1,6 +1,8 @@
 spring:
   application:
     name: mymemori
+#  profiles:
+#    active: test
 
   datasource:
     url: ${DB_URL}
@@ -27,7 +29,7 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION:86400000}  # 24 hours default
+  expiration: ${JWT_EXPIRATION:604800000}  # 7 hours default
 
 logging:
   level:
