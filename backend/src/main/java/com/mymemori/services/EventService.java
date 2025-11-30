@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 @Service
 public class EventService {
@@ -25,7 +26,7 @@ public class EventService {
     private EventRepository eventRepo;
 
     // create Event
-    public EventResponse createEvent(@RequestBody EventRequestDTO request){
+    public EventResponse createEvent(@RequestBody EventRequestDTO request) {
 
         // fetch authenticated User
         Users user = authUser.fetchAuthenticatedUser();
@@ -48,28 +49,28 @@ public class EventService {
     }
 
     // get all events for a user
-    public List<EventResponse> getAllEvent(){
+    public List<EventResponse> getAllEvent() {
 
         Users user = authUser.fetchAuthenticatedUser();
 
-        if(user == null){
+        if (user == null) {
             throw new UsernameNotFoundException("User not found");
         }
 
         List<EventResponse> allEvent = new ArrayList<>();
         List<Event> dbEvents = eventRepo.findByHostId(user.getId());
 
-        for(Event e : dbEvents){
+        for (Event e : dbEvents) {
             EventResponse response = mapToDto(e);
             allEvent.add(response);
         }
         return allEvent;
     }
-    
+
     // find By Event Slug
-    public EventResponse findByEventSlug(String slug){
+    public EventResponse findByEventSlug(String slug) {
         Event event = eventRepo.findByEventSlug(slug);
-        if (event == null){
+        if (event == null) {
             throw new RuntimeException("Event Details not found");
         }
 
@@ -85,18 +86,25 @@ public class EventService {
         return eventResponse;
     }
 
-    private String generateEventSlug(){
+    private String generateEventSlug() {
         String chars = "abcdefghijklmnopqrstuvwxyz0123456789";
         StringBuilder sb = new StringBuilder();
         java.util.Random random = new Random();
-        for(int i = 0; i<6; i++){
+        for (int i = 0; i < 6; i++) {
             sb.append(chars.charAt(random.nextInt(chars.length())));
         }
         return sb.toString();
     }
 
+    // get Event by ID
+    public EventResponse getEventById(UUID eventId) {
+        Event event = eventRepo.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Event not found with ID: " + eventId));
+        return mapToDto(event);
+    }
+
     // ======================= UTIL METHOD =================
-    public EventResponse mapToDto(Event event){
+    public EventResponse mapToDto(Event event) {
 
         EventResponse response = new EventResponse();
         response.setEventName(event.getEventName());

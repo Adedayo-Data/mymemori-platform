@@ -30,7 +30,8 @@ public class PhotoService {
         Users user = authUser.fetchAuthenticatedUser();
 
         if (user == null && sessionId == null) {
-            throw new IllegalArgumentException("User must be authenticated with JWT in header or contain sessionID in Requestbody");
+            throw new IllegalArgumentException(
+                    "User must be authenticated with JWT in header or contain sessionID in Requestbody");
         }
 
         List<PhotoResponseDTO> response = new ArrayList<>();
@@ -64,30 +65,57 @@ public class PhotoService {
 
     // FOMO STRATEGY:
     /*
-     * In this strategy, users only get to see a random array of 5 images and can only see more if they upload.
+     * In this strategy, users only get to see a random array of 5 images and can
+     * only see more if they upload.
      *
-     * TO FIX: implement a better strategy as this allow database level sorting thereby increasing database use of resources'
-     * */
-    public List<PhotoResponseDTO> getOnlyTen(ViewGalleryRequest request, UUID sessionId){
+     * TO FIX: implement a better strategy as this allow database level sorting
+     * thereby increasing database use of resources'
+     */
+    public List<PhotoResponseDTO> getOnlyTen(ViewGalleryRequest request, UUID sessionId) {
 
         Users user = authUser.fetchAuthenticatedUser();
 
         if (user == null && sessionId == null) {
-            throw new IllegalArgumentException("User must be authenticated with JWT in header or contain sessionID in Requestbody");
+            throw new IllegalArgumentException(
+                    "User must be authenticated with JWT in header or contain sessionID in Requestbody");
         }
 
         List<Photo> getTenPhotos = photoRepo.findRandomTen();
 
         List<PhotoResponseDTO> response = new ArrayList<>();
 
-        for(Photo p : getTenPhotos){
+        for (Photo p : getTenPhotos) {
             PhotoResponseDTO photoResponse = mapToDTO(p);
             response.add(photoResponse);
         }
         return response;
     }
 
-    public PhotoResponseDTO mapToDTO(Photo photo){
+    // Get all photos for authenticated user or session
+    public List<PhotoResponseDTO> getPhotosByUserOrSession(UUID sessionId) {
+        Users user = authUser.fetchAuthenticatedUser();
+
+        List<Photo> photos;
+
+        if (user != null) {
+            // Authenticated user - get their photos
+            photos = photoRepo.findByUploadedByUserId(user.getId());
+        } else if (sessionId != null) {
+            // Session user - get photos by session ID
+            photos = photoRepo.findByUploadedBySessionId(sessionId);
+        } else {
+            throw new IllegalArgumentException("User must be authenticated with JWT or provide a valid session ID");
+        }
+
+        List<PhotoResponseDTO> response = new ArrayList<>();
+        for (Photo photo : photos) {
+            response.add(mapToDTO(photo));
+        }
+
+        return response;
+    }
+
+    public PhotoResponseDTO mapToDTO(Photo photo) {
         PhotoResponseDTO response = new PhotoResponseDTO();
         response.setPhotoId(photo.getId());
         response.setEventId(photo.getEventId());
@@ -99,4 +127,3 @@ public class PhotoService {
     }
 
 }
-

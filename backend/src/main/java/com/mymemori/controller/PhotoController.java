@@ -23,29 +23,38 @@ public class PhotoController {
     // save photos
     @PostMapping("/save-image")
     public ResponseEntity<List<PhotoResponseDTO>> savePhotos(
-            @RequestHeader("sessionId") UUID sessionId,
-            @Valid @RequestBody PhotoRequestDTO request){
+            @RequestHeader("X-Session-Id") UUID sessionId,
+            @Valid @RequestBody PhotoRequestDTO request) {
 
         System.out.println("Gallery Entered!");
 
         List<PhotoResponseDTO> response = photoService.savePhoto(request, sessionId);
 
-        if (response.isEmpty()){
+        if (response.isEmpty()) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    //TO FIX: Implement the strategy by which images are loaded back to the list. For now UI should randomize output
+    // TO FIX: Implement the strategy by which images are loaded back to the list.
+    // For now UI should randomize output
 
     // Initial Gallery Call
     // FOMO strategy
     @GetMapping("/images")
     public ResponseEntity<List<PhotoResponseDTO>> findFiveImage(
             @Valid @RequestBody ViewGalleryRequest request,
-            @RequestHeader("sessionId") UUID sessionId){
+            @RequestHeader("X-Session-Id") UUID sessionId) {
         List<PhotoResponseDTO> response = photoService.getOnlyTen(request, sessionId);
 
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+    }
+
+    // Get all photos for authenticated user or session
+    @GetMapping("/my-photos")
+    public ResponseEntity<List<PhotoResponseDTO>> getMyPhotos(
+            @RequestHeader(value = "X-Session-Id", required = false) UUID sessionId) {
+        List<PhotoResponseDTO> response = photoService.getPhotosByUserOrSession(sessionId);
+        return ResponseEntity.ok(response);
     }
 }
