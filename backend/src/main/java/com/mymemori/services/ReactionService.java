@@ -8,12 +8,14 @@ import com.mymemori.models.Reactions;
 import com.mymemori.models.Users;
 import com.mymemori.util.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ReactionService {
 
     private final ReactionRepository reactionRepo;
@@ -21,12 +23,13 @@ public class ReactionService {
 
     // save reactions
     // FE must always check if jwt exist and do the expected
-    public ReactionResponse saveReactions(ReactionRequestDTO request, UUID sessionId){
+    public ReactionResponse saveReactions(ReactionRequestDTO request, UUID sessionId) {
 
         Users user = authUser.fetchAuthenticatedUser();
 
         if (user == null && sessionId == null) {
-            throw new IllegalArgumentException("User must be authenticated with valid JWT or contain sessionID in header");
+            throw new IllegalArgumentException(
+                    "User must be authenticated with valid JWT or contain sessionID in header");
         }
 
         Reactions reactions = new Reactions();
@@ -39,7 +42,7 @@ public class ReactionService {
         return mapToDTO(reactions);
     }
 
-    public ReactionResponse mapToDTO(Reactions reactions){
+    public ReactionResponse mapToDTO(Reactions reactions) {
         ReactionResponse response = new ReactionResponse();
 
         response.setPhotoId(reactions.getUserId());
@@ -50,27 +53,29 @@ public class ReactionService {
         return response;
     }
 
-    public Long photoReactionCount(){
+    public Long photoReactionCount() {
         return reactionRepo.count();
     }
 
     // delete reactions
-    public void deleteReactions(ReactionDeleteReq req, UUID sessionId){
+    public void deleteReactions(ReactionDeleteReq req, UUID sessionId) {
 
         Users user = authUser.fetchAuthenticatedUser();
 
-        if(user == null && sessionId ==null){
-            throw new IllegalArgumentException("User must be authenticated with valid JWT or contain sessionID in header");
+        if (user == null && sessionId == null) {
+            throw new IllegalArgumentException(
+                    "User must be authenticated with valid JWT or contain sessionID in header");
         }
 
-        if (user == null){
+        if (user == null) {
             Long deletionCount = reactionRepo.deleteByPhotoIdAndSessionId(req.getPhotoId(), sessionId);
-            System.out.println("Deleted based on session id. Count is: " +deletionCount); // TO FIX: This was made simple for now. To improve logs later
-        }else {
+            log.info("Deleted reaction by sessionId: photoId={}, sessionId={}, count={}", req.getPhotoId(), sessionId,
+                    deletionCount);
+        } else {
             Long deletionCount = reactionRepo.deleteByPhotoIdAndUserId(req.getPhotoId(), user.getId());
-            System.out.println("Deleted based on session id. Count is: " + deletionCount);
+            log.info("Deleted reaction by userId: photoId={}, userId={}, count={}", req.getPhotoId(), user.getId(),
+                    deletionCount);
         }
-
 
     }
 }

@@ -10,6 +10,7 @@ import com.mymemori.models.Photo;
 import com.mymemori.models.Users;
 import com.mymemori.util.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -19,6 +20,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PhotoService {
 
     private final AuthenticatedUser authUser;
@@ -37,8 +39,7 @@ public class PhotoService {
         List<PhotoResponseDTO> response = new ArrayList<>();
 
         Event event = eventRepo.findByEventSlug(request.getEventSlug());
-        System.out.println("Request slug: " + request.getEventSlug());
-        System.out.println("Event is: " + event.getEventName());
+        log.info("Saving photos for event: slug={}, eventName={}", request.getEventSlug(), event.getEventName());
 
         for (String s : request.getImageUrl()) {
             Photo photo = new Photo();
@@ -60,6 +61,7 @@ public class PhotoService {
             Photo savedPhoto = photoRepo.save(photo);
             response.add(mapToDTO(savedPhoto));
         }
+        log.info("Saved {} photos for event: {}", response.size(), event.getEventName());
         return response;
     }
 

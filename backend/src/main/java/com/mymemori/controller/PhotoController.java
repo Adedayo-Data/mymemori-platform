@@ -6,6 +6,7 @@ import com.mymemori.dto.ViewGalleryRequest;
 import com.mymemori.services.PhotoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/public")
 @RequiredArgsConstructor
+@Slf4j
 public class PhotoController {
 
     private final PhotoService photoService;
@@ -26,13 +28,15 @@ public class PhotoController {
             @RequestHeader("X-Session-Id") UUID sessionId,
             @Valid @RequestBody PhotoRequestDTO request) {
 
-        System.out.println("Gallery Entered!");
+        log.info("Photo upload request received: sessionId={}, eventSlug={}", sessionId, request.getEventSlug());
 
         List<PhotoResponseDTO> response = photoService.savePhoto(request, sessionId);
 
         if (response.isEmpty()) {
+            log.warn("No photos were saved for sessionId={}", sessionId);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+        log.info("Successfully saved {} photos", response.size());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
