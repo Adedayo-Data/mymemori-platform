@@ -3,11 +3,13 @@ package com.mymemori.services;
 import com.mymemori.Repository.EventRepository;
 import com.mymemori.dto.EventRequestDTO;
 import com.mymemori.dto.EventResponse;
+import com.mymemori.exception.EventNotFoundException;
+import com.mymemori.exception.UserNotFoundException;
 import com.mymemori.models.Event;
 import com.mymemori.models.Users;
 import com.mymemori.util.AuthenticatedUser;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -17,6 +19,7 @@ import java.util.Random;
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class EventService {
 
     @Autowired
@@ -27,10 +30,9 @@ public class EventService {
 
     // create Event
     public EventResponse createEvent(@RequestBody EventRequestDTO request) {
-
         // fetch authenticated User
         Users user = authUser.fetchAuthenticatedUser();
-        System.out.println("User email is: " + user.getEmail());
+        log.info("Creating event for user: {}", user.getEmail());
 
         // build Event
         Event newEvent = new Event();
@@ -43,6 +45,7 @@ public class EventService {
         newEvent.setImageUrl(request.getImageUrl());
 
         Event savedEvent = eventRepo.save(newEvent);
+        log.info("Event created successfully: eventId={}, slug={}", savedEvent.getId(), savedEvent.getEventSlug());
 
         // Map to Response
         return mapToDto(savedEvent);
@@ -50,13 +53,13 @@ public class EventService {
 
     // get all events for a user
     public List<EventResponse> getAllEvent() {
-
         Users user = authUser.fetchAuthenticatedUser();
 
         if (user == null) {
-            throw new UsernameNotFoundException("User not found");
+            throw new UserNotFoundException("User not found");
         }
 
+        log.debug("Fetching all events for user: {}", user.getId());
         List<EventResponse> allEvent = new ArrayList<>();
         List<Event> dbEvents = eventRepo.findByHostId(user.getId());
 
@@ -64,14 +67,16 @@ public class EventService {
             EventResponse response = mapToDto(e);
             allEvent.add(response);
         }
+        log.info("Retrieved {} events for user: {}", allEvent.size(), user.getId());
         return allEvent;
     }
 
     // find By Event Slug
     public EventResponse findByEventSlug(String slug) {
+        log.debug("Finding event by slug: {}", slug);
         Event event = eventRepo.findByEventSlug(slug);
         if (event == null) {
-            throw new RuntimeException("Event Details not found");
+            throw new EventNotFoundException("Event not found with slug: " + slug);
         }
 
         // Map event to DTO
@@ -98,8 +103,9 @@ public class EventService {
 
     // get Event by ID
     public EventResponse getEventById(UUID eventId) {
+        log.debug("Finding event by ID: {}", eventId);
         Event event = eventRepo.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found with ID: " + eventId));
+                .orElseThrow(() -> new EventNotFoundException("Event not found with ID: " + eventId));
         return mapToDto(event);
     }
 
