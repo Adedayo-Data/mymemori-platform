@@ -31,15 +31,28 @@ public class SecurityConfig {
     @Autowired
     private JwtFilter jwtFilter;
 
+    @Autowired
+    private RateLimitFilter rateLimitFilter;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().permitAll())
+                        // Public endpoints - no authentication required
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/public/**").permitAll()
+
+                        // Protected endpoints - authentication required
+                        .requestMatchers("/api/event/**").authenticated()
+                        .requestMatchers("/api/user/**").authenticated()
+
+                        // Everything else requires authentication
+                        .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
 
@@ -49,7 +62,8 @@ public class SecurityConfig {
         return request -> {
             CorsConfiguration cfg = new CorsConfiguration();
 
-            cfg.setAllowedOrigins(List.of("http://localhost:5173", "https://mymemori-platform.vercel.app", "https://mymemori.vercel.app"));
+            cfg.setAllowedOrigins(List.of("http://localhost:5173", "https://mymemori-platform.vercel.app",
+                    "https://mymemori.vercel.app"));
             cfg.setAllowedHeaders(Collections.singletonList("*"));
             cfg.setAllowedMethods(Collections.singletonList("*"));
             cfg.setAllowCredentials(true);
@@ -61,12 +75,12 @@ public class SecurityConfig {
     }// end CorsConfiguration
 
     @Bean
-    public PasswordEncoder passwordEncoder(){
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(){
+    public AuthenticationManager authenticationManager() {
         DaoAuthenticationProvider providerManager = new DaoAuthenticationProvider(userDetailsService);
         providerManager.setPasswordEncoder(passwordEncoder());
         return new ProviderManager(providerManager);
