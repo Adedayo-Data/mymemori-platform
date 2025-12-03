@@ -10,6 +10,8 @@ export const extractErrorMessage = (
   error: unknown,
   defaultMessage: string = "An error occurred"
 ): string => {
+  let message = defaultMessage;
+
   // Check for Axios error response
   if (
     error &&
@@ -21,21 +23,33 @@ export const extractErrorMessage = (
   ) {
     const data = (error.response as any).data;
     if (data && typeof data === "object" && "message" in data) {
-      return data.message;
+      message = data.message;
     }
   }
-
   // Check for Error instance
-  if (error instanceof Error) {
-    return error.message;
+  else if (error instanceof Error) {
+    message = error.message;
   }
-
   // Check for string error
-  if (typeof error === "string") {
-    return error;
+  else if (typeof error === "string") {
+    message = error;
   }
 
-  return defaultMessage;
+  // Clean up the message by removing status codes
+  // Remove patterns like "Status Code: 400", "Status: 500", "[400]", "(404)", etc.
+  message = message
+    .replace(/\bStatus Code:\s*\d{3}\b/gi, "")
+    .replace(/\bStatus:\s*\d{3}\b/gi, "")
+    .replace(/\[\d{3}\]/g, "")
+    .replace(/\(\d{3}\)/g, "")
+    .replace(/\b\d{3}\s*-\s*/g, "")
+    .replace(/\s*-\s*\d{3}\b/g, "")
+    .trim();
+
+  // Remove any leading/trailing punctuation that might be left over
+  message = message.replace(/^[:\-\s]+|[:\-\s]+$/g, "").trim();
+
+  return message || defaultMessage;
 };
 
 /**
@@ -106,13 +120,9 @@ export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
 /**
  * Creates a standardized error object
  * @param message - Error message
- * @param code - Optional error code
  * @returns Error object
  */
-export const createError = (message: string, code?: string): Error => {
+export const createError = (message: string): Error => {
   const error = new Error(message);
-  if (code) {
-    (error as any).code = code;
-  }
   return error;
 };

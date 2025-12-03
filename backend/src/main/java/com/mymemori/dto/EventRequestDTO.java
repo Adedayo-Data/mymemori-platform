@@ -11,5 +11,6 @@ public class EventRequestDTO {
     private LocalDate eventDate;
     private String location;
     private String description;
+    private String imageUrl;
 
 }

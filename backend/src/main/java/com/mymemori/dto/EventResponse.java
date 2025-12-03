@@ -12,5 +12,6 @@ public class EventResponse {
     private String location;
     private String description;
     private String eventSlug;
+    private String imageUrl;
 
 }

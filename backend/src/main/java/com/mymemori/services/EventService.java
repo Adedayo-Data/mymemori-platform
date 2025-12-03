@@ -26,6 +26,7 @@ public class EventService {
 
         // fetch authenticated User
         Users user = authUser.fetchAuthenticatedUser();
+        System.out.println("User email is: " + user.getEmail());
 
         // build Event
         Event newEvent = new Event();
@@ -35,6 +36,7 @@ public class EventService {
         newEvent.setLocation(request.getLocation());
         newEvent.setDescription(request.getDescription());
         newEvent.setEventSlug(generateEventSlug());
+        newEvent.setImageUrl(request.getImageUrl());
 
         Event savedEvent = eventRepo.save(newEvent);
 
@@ -45,8 +47,28 @@ public class EventService {
         response.setLocation(savedEvent.getLocation());
         response.setDescription(savedEvent.getDescription());
         response.setEventSlug(savedEvent.getEventSlug());
+        response.setImageUrl(savedEvent.getImageUrl());
 
         return response;
+    }
+
+    // find By Event Slug
+    public EventResponse findByEventSlug(String slug){
+        Event event = eventRepo.findByEventSlug(slug);
+        if (event == null){
+            throw new RuntimeException("Event Details not found");
+        }
+
+        // Map event to DTO
+        EventResponse eventResponse = new EventResponse();
+        eventResponse.setEventName(event.getEventName());
+        eventResponse.setEventDate(event.getEventDate());
+        eventResponse.setLocation(event.getLocation());
+        eventResponse.setDescription(event.getDescription());
+        eventResponse.setEventSlug(event.getEventSlug());
+        eventResponse.setImageUrl(event.getImageUrl());
+
+        return eventResponse;
     }
 
     private String generateEventSlug(){

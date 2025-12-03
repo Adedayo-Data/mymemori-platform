@@ -2,11 +2,9 @@ import {
   createContext,
   useContext,
   useState,
-  useEffect,
   useMemo,
   useCallback,
 } from 'react';
-import { toast } from 'react-hot-toast';
 import apiClient from '../api/apiClient';
 import { uploadToCloudinary } from '../utils/upload';
 import { getOrCreateSession, clearSession } from '../utils/sessionUtils';
@@ -38,6 +36,7 @@ interface PictureContextType {
   loading: boolean;
   fetchDefaultImages: (eventSlug: string) => Promise<void>;
   defaultImages: UploadedPhoto[];
+  getAllPhoto: () => Promise<UploadedPhoto[]>;
 }
 
 const PictureContext = createContext<PictureContextType | null>(null);
@@ -50,7 +49,6 @@ export const PictureProvider = ({
   const [loading, setLoading] = useState(false);
   const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([]);
   const [defaultImages, setDefaultImages] = useState<UploadedPhoto[]>([]);
-  const [hasLoaded, setHasLoaded] = useState(false);
 
   const addUploadedPhoto = useCallback((photo: UploadedPhoto) => {
     setUploadedPhotos((prev) => [...prev, photo]);
@@ -100,7 +98,8 @@ export const PictureProvider = ({
           if (saveError.response) {
             console.error('Server response:', saveError.response.data);
           }
-          toast.error('Image uploaded but failed to save to gallery');
+          // Don't show toast here - let the calling component handle it
+          throw saveError;
         }
 
         return imageUrl;
@@ -115,17 +114,29 @@ export const PictureProvider = ({
     try {
       setLoading(true);
 
-      // Get or create session ID using centralized utility
-      const sessionId = await getOrCreateSession(eventSlug);
+      // Check if user is authenticated - if so, don't create a session
+      const hasAuthToken = !!localStorage.getItem("authToken");
+      let sessionId: string | undefined;
 
-      // Fetch images with the session ID in headers
+      if (!hasAuthToken) {
+        // Only create session for guest users
+        sessionId = await getOrCreateSession(eventSlug);
+      }
+
+      // Fetch images with the session ID in headers (if guest) or auth token (if authenticated)
+      const headers: Record<string, string> = {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      };
+
+      // Only add session header for guest users
+      if (sessionId) {
+        headers["X-Session-Id"] = sessionId;
+      }
+
       const response = await apiClient.get("/api/public/images", {
         params: { eventSlug },
-        headers: {
-          "X-Session-Id": sessionId,
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
+        headers,
       });
 
       if (response.data) {
@@ -143,27 +154,32 @@ export const PictureProvider = ({
 
       console.error("Failed to fetch default images:", error);
 
-      // If unauthorized, clear invalid session and retry once
+      // If unauthorized, clear invalid session and retry once (only for guest users)
       if (axiosError.response?.status === 401) {
-        try {
-          clearSession();
-          const newSessionId = await getOrCreateSession(eventSlug);
-          const retryResponse = await apiClient.get("/api/public/images", {
-            params: { eventSlug },
-            headers: { "X-Session-Id": newSessionId },
-          });
+        const hasAuthToken = !!localStorage.getItem("authToken");
+        
+        if (!hasAuthToken) {
+          // Only retry with new session for guest users
+          try {
+            clearSession();
+            const newSessionId = await getOrCreateSession(eventSlug);
+            const retryResponse = await apiClient.get("/api/public/images", {
+              params: { eventSlug },
+              headers: { "X-Session-Id": newSessionId },
+            });
 
-          if (retryResponse.data) {
-            setDefaultImages(retryResponse.data);
-            return retryResponse.data;
+            if (retryResponse.data) {
+              setDefaultImages(retryResponse.data);
+              return retryResponse.data;
+            }
+          } catch (retryError) {
+            console.error("Retry failed:", retryError);
+            handleApiError(
+              retryError,
+              "Failed to load images. Please try again.",
+              { showToast: true }
+            );
           }
-        } catch (retryError) {
-          console.error("Retry failed:", retryError);
-          handleApiError(
-            retryError,
-            "Failed to load images. Please try again.",
-            { showToast: true }
-          );
         }
       } else {
         handleApiError(
@@ -179,22 +195,15 @@ export const PictureProvider = ({
     }
   }, []);
 
-  // Load default images once when the component mounts
-  useEffect(() => {
-    if (!hasLoaded) {
-      // Get eventSlug from URL or location state
-      const eventSlug = window.location.pathname.split("/").pop() || "";
-      if (eventSlug) {
-        fetchDefaultImages(eventSlug)
-          .then(() => {
-            setHasLoaded(true);
-          })
-          .catch((error) => {
-            console.error("Failed to load default images:", error);
-          });
-      }
-    }
-  }, [fetchDefaultImages, hasLoaded]);
+  const getAllPhoto = async () => {
+   try {
+    const response = await apiClient.get("/api/public/my-photos");
+    console.log("Event fetch response:", response.data);
+    return response.data;
+   } catch (error) {
+    console.error("Failed to fetch default images:", error);
+   }
+  }
 
   // Memoize the merged photos array to prevent unnecessary re-renders
   const mergedPhotos = useMemo(
@@ -212,6 +221,7 @@ export const PictureProvider = ({
       loading,
       fetchDefaultImages,
       defaultImages,
+      getAllPhoto
     }),
     [
       uploadEventImage,
@@ -221,6 +231,7 @@ export const PictureProvider = ({
       loading,
       fetchDefaultImages,
       defaultImages,
+      getAllPhoto
     ]
   );
 

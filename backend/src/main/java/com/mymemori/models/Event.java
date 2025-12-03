@@ -9,6 +9,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Entity
 @Data
@@ -16,14 +17,15 @@ public class Event {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
+    private UUID id;
 
-    private Long hostId; // Gotten from user_id
+    private UUID hostId; // Gotten from user_id
     private String eventName;
     private LocalDate eventDate;
     private String location;
     private String description;
     private String eventSlug; // unique
+    private String imageUrl;
 
     @CreationTimestamp
     private Instant created_at;

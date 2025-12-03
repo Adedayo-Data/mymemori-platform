@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import apiClient from "../api/apiClient";
-import toast from "react-hot-toast";
 import { getOrCreateSession, clearSession } from "../utils/sessionUtils";
 import { handleApiError } from "../utils/errorUtils";
 
@@ -72,11 +71,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     state?: any
   ) => {
     // For authenticated users, backend will identify them from JWT token
+    // No need to create a session for them
     if (isAuthenticated) {
       return { isAuthenticated: true };
     }
 
-    // For guest users, get or create a session
+    // Check if user is currently authenticating (has token but user state not yet set)
+    // This prevents session creation during the sign up/sign in process
+    const hasAuthToken = !!localStorage.getItem("authToken");
+    if (hasAuthToken) {
+      // User is authenticated but state hasn't updated yet
+      return { isAuthenticated: true };
+    }
+
+    // For guest users only, get or create a session
     const slug = searchParams.get("event") || state?.slug;
     if (!slug) {
       throw new Error("Event slug is required");
@@ -110,7 +118,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       localStorage.setItem("authToken", token);
       localStorage.setItem("userData", JSON.stringify(userData));
       setUser(userData);
-      toast.success("Account created successfully!");
       console.log("Signup response:", response.data);
       console.log("userData:", userData);
     } catch (err: unknown) {
@@ -135,7 +142,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       localStorage.setItem("authToken", token);
       localStorage.setItem("userData", JSON.stringify(userData));
       setUser(userData);
-      toast.success("Signed in successfully!");
       console.log("Signin response:", response.data);
       console.log("userData:", userData);
     } catch (err: unknown) {

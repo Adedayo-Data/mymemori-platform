@@ -8,6 +8,7 @@ import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Data
@@ -15,11 +16,13 @@ public class Users {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
+    private UUID id;
     private String email;
     private String fullName;
     private String password;
 
     @CreationTimestamp
     private Instant created_At;
+
+    private UUID originalSessionId;
 }
