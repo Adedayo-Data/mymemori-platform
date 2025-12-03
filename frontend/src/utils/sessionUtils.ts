@@ -2,7 +2,9 @@ import apiClient from "../api/apiClient";
 import { retryWithBackoff } from "./retryUtils";
 
 /**
- * Creates a new session for guest users
+ * Creates a new session for GUEST USERS ONLY
+ * This should NOT be called for authenticated users during sign up/sign in
+ * Sessions are only for anonymous users accessing event galleries
  * @param eventSlug - The event slug to create a session for
  * @returns The session ID
  */

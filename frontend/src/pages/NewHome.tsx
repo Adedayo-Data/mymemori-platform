@@ -1,40 +1,44 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Image as ImageIcon, Heart, Users, MapPin, Camera, Plus } from "lucide-react";
+import { Calendar, Image as ImageIcon, Users, MapPin, Camera, Plus } from "lucide-react";
 import ProfilePanel from "../components/ProfilePanel";
+import { useEvent } from "../context/eventContext";
+import { usePicture } from "../context/pictureContext";
 
-// Mock data - will be replaced with real API calls
-const mockEvents = {
-  created: [
-    { id: "1", name: "Sarah's Birthday Party", date: "2024-01-15", location: "NYC", imageUrl: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400", photoCount: 45, guestCount: 23 },
-    { id: "2", name: "Summer BBQ 2024", date: "2024-06-20", location: "LA", imageUrl: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400", photoCount: 67, guestCount: 34 },
-  ],
-  attended: [
-    { id: "3", name: "John's Wedding", date: "2024-03-10", location: "Miami", imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?w=400", photoCount: 120, guestCount: 89 },
-  ],
-};
+interface Event {
+  eventName: string;
+  eventDate: string;
+  location: string;
+  description: string;
+  eventSlug: string;
+  imageUrl: string;
+  [key: string]: string;
+}
 
-const mockPictures = {
-  yours: [
-    { id: "1", imageUrl: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400", eventName: "Sarah's Birthday", date: "2024-01-15", likes: 12 },
-    { id: "2", imageUrl: "https://images.unsplash.com/photo-1464047736614-af63643285bf?w=400", eventName: "Summer BBQ", date: "2024-06-20", likes: 8 },
-    { id: "3", imageUrl: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=400", eventName: "Beach Day", date: "2024-07-04", likes: 15 },
-    { id: "4", imageUrl: "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?w=400", eventName: "Concert Night", date: "2024-08-12", likes: 20 },
-  ],
-  liked: [
-    { id: "5", imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400", eventName: "John's Wedding", date: "2024-03-10", likes: 45 },
-    { id: "6", imageUrl: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400", eventName: "Mountain Trip", date: "2024-05-22", likes: 32 },
-  ],
-};
+interface Photo {
+  photoId: string;
+  imageUrl: string;
+  uploader: string;
+  uploadedAt: string;
+  type: string;
+  size: string;
+  color: string;
+}
 
 const NewHome = () => {
-  const navigate = useNavigate();
+    const navigate = useNavigate();
+    const {getAllEvent} = useEvent()
+    const {getAllPhoto} = usePicture()
   const location = useLocation();
   const [mainTab, setMainTab] = useState<"events" | "pictures">("events");
   const [eventsSubTab, setEventsSubTab] = useState<"created" | "attended">("created");
   const [picturesSubTab, setPicturesSubTab] = useState<"yours" | "liked">("yours");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [createdEvents, setCreatedEvents] = useState<Event[]>([]);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+  const [userPhotos, setUserPhotos] = useState<Photo[]>([]);
+  const [isLoadingPhotos, setIsLoadingPhotos] = useState(true);
 
   // Check if we should open profile panel based on route
   useEffect(() => {
@@ -45,6 +49,36 @@ const NewHome = () => {
     }
   }, [location.state, location.pathname, navigate]);
 
+  // Fetch all events and photos on component load
+  useEffect(() => {
+    const fetchData = async () => {
+      // Fetch events
+      setIsLoadingEvents(true);
+      try {
+        const events = await getAllEvent();
+        setCreatedEvents(events || []);
+      } catch (error) {
+        console.error("Error fetching events:", error);
+        setCreatedEvents([]);
+      } finally {
+        setIsLoadingEvents(false);
+      }
+
+      // Fetch photos
+      setIsLoadingPhotos(true);
+      try {
+        const photos = await getAllPhoto();
+        setUserPhotos(photos || []);
+      } catch (error) {
+        console.error("Error fetching photos:", error);
+        setUserPhotos([]);
+      } finally {
+        setIsLoadingPhotos(false);
+      }
+    };
+
+    fetchData();
+  }, []);
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
       {/* Header */}
@@ -111,7 +145,7 @@ const NewHome = () => {
                       : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
-                  Created ({mockEvents.created.length})
+                  Created ({createdEvents.length})
                   {eventsSubTab === "created" && (
                     <motion.div
                       layoutId="eventsSubTab"
@@ -128,7 +162,7 @@ const NewHome = () => {
                       : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
-                  Attended ({mockEvents.attended.length})
+                  Attended (0)
                   {eventsSubTab === "attended" && (
                     <motion.div
                       layoutId="eventsSubTab"
@@ -137,13 +171,34 @@ const NewHome = () => {
                   )}
                 </button>
               </div>
-
-              {/* Events Grid - 2 cols mobile, 3 cols tablet, 4 cols desktop */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {(eventsSubTab === "created" ? mockEvents.created : mockEvents.attended).map((event) => (
-                  <EventCard key={event.id} event={event} />
-                ))}
-              </div>
+              {/* Events Content */}
+              {isLoadingEvents ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
+                </div>
+              ) : eventsSubTab === "created" ? (
+                createdEvents.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {createdEvents.map((event) => (
+                      <EventCard key={event.eventSlug} event={event} />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState 
+                    icon={Calendar}
+                    title="No events created yet"
+                    description="Start creating memorable events and share them with your friends and family."
+                    actionText="Create Event"
+                    onAction={() => navigate("/book")}
+                  />
+                )
+              ) : (
+                <EmptyState 
+                  icon={Users}
+                  title="No attended events"
+                  description="Events you've attended will appear here."
+                />
+              )}
             </motion.div>
           ) : (
             <motion.div
@@ -163,7 +218,7 @@ const NewHome = () => {
                       : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
-                  Your Pictures ({mockPictures.yours.length})
+                  Your Pictures ({userPhotos.length})
                   {picturesSubTab === "yours" && (
                     <motion.div
                       layoutId="picturesSubTab"
@@ -180,7 +235,7 @@ const NewHome = () => {
                       : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
-                  Liked Pictures ({mockPictures.liked.length})
+                  Liked Pictures (0)
                   {picturesSubTab === "liked" && (
                     <motion.div
                       layoutId="picturesSubTab"
@@ -189,13 +244,32 @@ const NewHome = () => {
                   )}
                 </button>
               </div>
-
-              {/* Pictures Grid - 2 cols mobile, 3 cols tablet, 4 cols desktop */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {(picturesSubTab === "yours" ? mockPictures.yours : mockPictures.liked).map((picture) => (
-                  <PictureCard key={picture.id} picture={picture} />
-                ))}
-              </div>
+              {/* Pictures Content */}
+              {isLoadingPhotos ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
+                </div>
+              ) : picturesSubTab === "yours" ? (
+                userPhotos.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {userPhotos.map((picture) => (
+                      <PictureCard key={picture.photoId} picture={picture} />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState 
+                    icon={Camera}
+                    title="No pictures yet"
+                    description="Pictures you've uploaded to events will appear here."
+                  />
+                )
+              ) : (
+                <EmptyState 
+                  icon={ImageIcon}
+                  title="No liked pictures"
+                  description="Pictures you've liked will appear here."
+                />
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -217,37 +291,75 @@ const NewHome = () => {
   );
 };
 
+// Empty State Component
+const EmptyState = ({ 
+  icon: Icon, 
+  title, 
+  description, 
+  actionText, 
+  onAction 
+}: { 
+  icon: any; 
+  title: string; 
+  description: string; 
+  actionText?: string; 
+  onAction?: () => void; 
+}) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col items-center justify-center py-20 px-4"
+    >
+      <div className="bg-gradient-to-br from-pink-100 to-purple-100 rounded-full p-6 mb-4">
+        <Icon className="w-12 h-12 text-pink-600" />
+      </div>
+      <h3 className="text-xl font-semibold text-gray-900 mb-2">{title}</h3>
+      <p className="text-gray-500 text-center max-w-md mb-6">{description}</p>
+      {actionText && onAction && (
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={onAction}
+          className="bg-gradient-to-r from-pink-600 to-purple-600 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-shadow"
+        >
+          {actionText}
+        </motion.button>
+      )}
+    </motion.div>
+  );
+};
+
 // Event Card Component
-const EventCard = ({ event }: { event: any }) => {
+interface EventCardProps {
+  event: Event;
+}
+
+const EventCard = ({ event }: EventCardProps) => {
+  const navigate = useNavigate();
+  
   return (
     <motion.div
       whileHover={{ y: -4, scale: 1.02 }}
+      onClick={() => navigate(`/gallery?event=${event.eventSlug}`)}
       className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer"
     >
       <div className="relative aspect-[4/3]">
         <img
           src={event.imageUrl}
-          alt={event.name}
+          alt={event.eventName}
           className="w-full h-full object-cover"
         />
-        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
-          <Camera className="w-3 h-3 text-pink-600" />
-          <span className="text-xs font-medium">{event.photoCount}</span>
-        </div>
       </div>
       <div className="p-3">
-        <h3 className="font-semibold text-sm mb-1 truncate">{event.name}</h3>
+        <h3 className="font-semibold text-sm mb-1 truncate">{event.eventName}</h3>
         <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
           <Calendar className="w-3 h-3" />
-          <span>{new Date(event.date).toLocaleDateString()}</span>
+          <span>{new Date(event.eventDate).toLocaleDateString()}</span>
         </div>
-        <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
+        <div className="flex items-center gap-1 text-xs text-gray-500">
           <MapPin className="w-3 h-3" />
           <span>{event.location}</span>
-        </div>
-        <div className="flex items-center gap-1 text-xs text-gray-600">
-          <Users className="w-3 h-3" />
-          <span>{event.guestCount} guests</span>
         </div>
       </div>
     </motion.div>
@@ -255,7 +367,8 @@ const EventCard = ({ event }: { event: any }) => {
 };
 
 // Picture Card Component
-const PictureCard = ({ picture }: { picture: any }) => {
+const PictureCard = ({ picture }: { picture: Photo }) => {
+main
   return (
     <motion.div
       whileHover={{ y: -4, scale: 1.02 }}
@@ -264,18 +377,14 @@ const PictureCard = ({ picture }: { picture: any }) => {
       <div className="relative aspect-square">
         <img
           src={picture.imageUrl}
-          alt={picture.eventName}
+          alt={`Photo by ${picture.uploader}`}
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
-          <Heart className="w-3 h-3 text-pink-600 fill-pink-600" />
-          <span className="text-xs font-medium">{picture.likes}</span>
-        </div>
       </div>
       <div className="p-2">
-        <p className="text-xs font-medium truncate">{picture.eventName}</p>
-        <p className="text-xs text-gray-500">{new Date(picture.date).toLocaleDateString()}</p>
+        <p className="text-xs font-medium truncate">By {picture.uploader}</p>
+        <p className="text-xs text-gray-500">{new Date(picture.uploadedAt).toLocaleDateString()}</p>
       </div>
     </motion.div>
   );

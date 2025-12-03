@@ -119,6 +119,8 @@ const Booking = () => {
       };
 
       const eventResponse = await createEvent(eventData);
+      toast.success("Event created successfully!");
+      
       const qrValue = `${window.location.origin}/visit/${eventResponse.eventSlug}/`;
 
       // Clear draft
