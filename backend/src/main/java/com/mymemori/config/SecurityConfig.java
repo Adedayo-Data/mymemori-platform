@@ -68,7 +68,7 @@ public class SecurityConfig {
             cfg.setAllowedHeaders(Collections.singletonList("*"));
             cfg.setAllowedMethods(Collections.singletonList("*"));
             cfg.setAllowCredentials(true);
-            cfg.setExposedHeaders(List.of("Authorization"));
+            cfg.setExposedHeaders(List.of("Authorization", "X-Session-Id"));
             cfg.setMaxAge(3600L);
 
             return cfg;

@@ -40,7 +40,7 @@ interface PictureContextType {
   defaultImages: UploadedPhoto[];
 }
 
-const PictureContext = createContext<PictureContextType | null>(null);
+const PictureContext = createContext < PictureContextType | null > (null);
 
 export const PictureProvider = ({
   children,
@@ -48,8 +48,8 @@ export const PictureProvider = ({
   children: React.ReactNode;
 }) => {
   const [loading, setLoading] = useState(false);
-  const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([]);
-  const [defaultImages, setDefaultImages] = useState<UploadedPhoto[]>([]);
+  const [uploadedPhotos, setUploadedPhotos] = useState < UploadedPhoto[] > ([]);
+  const [defaultImages, setDefaultImages] = useState < UploadedPhoto[] > ([]);
   const [hasLoaded, setHasLoaded] = useState(false);
 
   const addUploadedPhoto = useCallback((photo: UploadedPhoto) => {
@@ -152,7 +152,6 @@ export const PictureProvider = ({
             params: { eventSlug },
             headers: { "X-Session-Id": newSessionId },
           });
-
           if (retryResponse.data) {
             setDefaultImages(retryResponse.data);
             return retryResponse.data;
@@ -203,7 +202,7 @@ export const PictureProvider = ({
   );
 
   // Memoize the context value to prevent unnecessary re-renders
-  const value = useMemo<PictureContextType>(
+  const value = useMemo < PictureContextType > (
     () => ({
       uploadEventImage,
       uploadGalleryImage,

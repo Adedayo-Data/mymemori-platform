@@ -45,13 +45,14 @@ public class PhotoController {
 
     // Initial Gallery Call
     // FOMO strategy
-    @GetMapping("/images")
+    @PostMapping("/images")
     public ResponseEntity<List<PhotoResponseDTO>> findFiveImage(
-            @Valid @RequestBody ViewGalleryRequest request,
+            @RequestBody ViewGalleryRequest request,
             @RequestHeader("X-Session-Id") UUID sessionId) {
+        System.out.println("Session id is: " + sessionId);
         List<PhotoResponseDTO> response = photoService.getOnlyTen(request, sessionId);
 
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     // Get all photos for authenticated user or session

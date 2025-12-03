@@ -10,7 +10,7 @@ public class ViewGalleryRequest {
 
     public UUID sessionId;
 
-    @NotBlank(message = "Event slug is absent")
+//    @NotBlank(message = "Event slug is absent")
     public String eventSlug;
 
 }

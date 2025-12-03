@@ -82,7 +82,16 @@ public class PhotoService {
                     "User must be authenticated with JWT in header or contain sessionID in Requestbody");
         }
 
-        List<Photo> getTenPhotos = photoRepo.findRandomTen();
+        // Fetch the event by slug
+        Event event = eventRepo.findByEventSlug(request.getEventSlug());
+        if (event == null) {
+            throw new IllegalArgumentException("Event not found with slug: " + request.getEventSlug());
+        }
+
+        log.info("Fetching random 10 photos for event: slug={}, eventId={}", request.getEventSlug(), event.getId());
+
+        // Fetch random 10 photos for this specific event
+        List<Photo> getTenPhotos = photoRepo.findRandomTenByEventId(event.getId());
 
         List<PhotoResponseDTO> response = new ArrayList<>();
 
@@ -90,6 +99,8 @@ public class PhotoService {
             PhotoResponseDTO photoResponse = mapToDTO(p);
             response.add(photoResponse);
         }
+
+        log.info("Returning {} photos for event: {}", response.size(), event.getEventName());
         return response;
     }
 
