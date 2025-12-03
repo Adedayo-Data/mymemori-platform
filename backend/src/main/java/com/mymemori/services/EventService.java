@@ -7,9 +7,12 @@ import com.mymemori.models.Event;
 import com.mymemori.models.Users;
 import com.mymemori.util.AuthenticatedUser;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 @Service
@@ -41,17 +44,28 @@ public class EventService {
         Event savedEvent = eventRepo.save(newEvent);
 
         // Map to Response
-        EventResponse response = new EventResponse();
-        response.setEventName(savedEvent.getEventName());
-        response.setEventDate(savedEvent.getEventDate());
-        response.setLocation(savedEvent.getLocation());
-        response.setDescription(savedEvent.getDescription());
-        response.setEventSlug(savedEvent.getEventSlug());
-        response.setImageUrl(savedEvent.getImageUrl());
-
-        return response;
+        return mapToDto(savedEvent);
     }
 
+    // get all events for a user
+    public List<EventResponse> getAllEvent(){
+
+        Users user = authUser.fetchAuthenticatedUser();
+
+        if(user == null){
+            throw new UsernameNotFoundException("User not found");
+        }
+
+        List<EventResponse> allEvent = new ArrayList<>();
+        List<Event> dbEvents = eventRepo.findByHostId(user.getId());
+
+        for(Event e : dbEvents){
+            EventResponse response = mapToDto(e);
+            allEvent.add(response);
+        }
+        return allEvent;
+    }
+    
     // find By Event Slug
     public EventResponse findByEventSlug(String slug){
         Event event = eventRepo.findByEventSlug(slug);
@@ -79,5 +93,19 @@ public class EventService {
             sb.append(chars.charAt(random.nextInt(chars.length())));
         }
         return sb.toString();
+    }
+
+    // ======================= UTIL METHOD =================
+    public EventResponse mapToDto(Event event){
+
+        EventResponse response = new EventResponse();
+        response.setEventName(event.getEventName());
+        response.setEventDate(event.getEventDate());
+        response.setLocation(event.getLocation());
+        response.setDescription(event.getDescription());
+        response.setEventSlug(event.getEventSlug());
+        response.setImageUrl(event.getImageUrl());
+
+        return response;
     }
 }

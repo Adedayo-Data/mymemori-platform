@@ -79,7 +79,6 @@ const NewHome = () => {
 
     fetchData();
   }, []);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
       {/* Header */}
@@ -172,7 +171,6 @@ const NewHome = () => {
                   )}
                 </button>
               </div>
-
               {/* Events Content */}
               {isLoadingEvents ? (
                 <div className="flex items-center justify-center py-20">
@@ -246,7 +244,6 @@ const NewHome = () => {
                   )}
                 </button>
               </div>
-
               {/* Pictures Content */}
               {isLoadingPhotos ? (
                 <div className="flex items-center justify-center py-20">
@@ -371,6 +368,7 @@ const EventCard = ({ event }: EventCardProps) => {
 
 // Picture Card Component
 const PictureCard = ({ picture }: { picture: Photo }) => {
+main
   return (
     <motion.div
       whileHover={{ y: -4, scale: 1.02 }}

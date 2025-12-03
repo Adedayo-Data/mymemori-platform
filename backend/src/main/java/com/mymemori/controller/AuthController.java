@@ -6,6 +6,7 @@ import com.mymemori.dto.LoginRequest;
 import com.mymemori.dto.UserRequestDTO;
 import com.mymemori.models.Users;
 import com.mymemori.security.JwtService;
+import jakarta.validation.Valid;
 import org.apache.logging.log4j.message.Message;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -31,9 +32,9 @@ public class AuthController {
     private JwtService jwtService;
 
     @PostMapping("/sign-up")
-    public ResponseEntity<AuthMessage> register(@RequestBody UserRequestDTO request){
-        System.out.println("COntroller entered!");
-        System.out.println("Request data: " +request.getEmail());
+    public ResponseEntity<AuthMessage> register(@Valid @RequestBody UserRequestDTO request) {
+        System.out.println("Controller entered!");
+        System.out.println("Request data: " + request.getEmail());
         Users user = new Users();
 
         user.setEmail(request.getEmail());
@@ -60,17 +61,17 @@ public class AuthController {
 
     // sign in
     @PostMapping("/sign-in")
-    public ResponseEntity<AuthMessage> Login(@RequestBody LoginRequest request){
+    public ResponseEntity<AuthMessage> Login(@Valid @RequestBody LoginRequest request) {
 
         // check if user Exist in the db
         Users user = userRepo.findByEmail(request.getEmail());
 
-        if (user == null){
+        if (user == null) {
             throw new RuntimeException("User not found!");
         }
 
         String reqPass = request.getPassword();
-        if (!passEncoder.matches(reqPass, user.getPassword())){
+        if (!passEncoder.matches(reqPass, user.getPassword())) {
             throw new RuntimeException("Incorrect password"); // TO FIX: Should return error message instead
         }
 

@@ -11,7 +11,6 @@ export const extractErrorMessage = (
   defaultMessage: string = "An error occurred"
 ): string => {
   let message = defaultMessage;
-
   // Check for Axios error response
   if (
     error &&

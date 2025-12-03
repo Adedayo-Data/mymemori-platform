@@ -71,7 +71,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     state?: any
   ) => {
     // For authenticated users, backend will identify them from JWT token
-    // No need to create a session for them
     if (isAuthenticated) {
       return { isAuthenticated: true };
     }
@@ -83,8 +82,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // User is authenticated but state hasn't updated yet
       return { isAuthenticated: true };
     }
-
-    // For guest users only, get or create a session
     const slug = searchParams.get("event") || state?.slug;
     if (!slug) {
       throw new Error("Event slug is required");

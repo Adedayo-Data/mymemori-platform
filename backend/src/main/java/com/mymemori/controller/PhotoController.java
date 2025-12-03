@@ -4,12 +4,14 @@ import com.mymemori.dto.PhotoRequestDTO;
 import com.mymemori.dto.PhotoResponseDTO;
 import com.mymemori.dto.ViewGalleryRequest;
 import com.mymemori.services.PhotoService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/public")
@@ -20,9 +22,13 @@ public class PhotoController {
 
     // save photos
     @PostMapping("/save-image")
-    public ResponseEntity<List<PhotoResponseDTO>> savePhotos(@RequestBody PhotoRequestDTO request){
+    public ResponseEntity<List<PhotoResponseDTO>> savePhotos(
+            @RequestHeader("sessionId") UUID sessionId,
+            @Valid @RequestBody PhotoRequestDTO request){
+
         System.out.println("Gallery Entered!");
-        List<PhotoResponseDTO> response = photoService.savePhoto(request);
+
+        List<PhotoResponseDTO> response = photoService.savePhoto(request, sessionId);
 
         if (response.isEmpty()){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -35,8 +41,10 @@ public class PhotoController {
     // Initial Gallery Call
     // FOMO strategy
     @GetMapping("/images")
-    public ResponseEntity<List<PhotoResponseDTO>> findFiveImage(ViewGalleryRequest request){
-        List<PhotoResponseDTO> response = photoService.getOnlyTen(request);
+    public ResponseEntity<List<PhotoResponseDTO>> findFiveImage(
+            @Valid @RequestBody ViewGalleryRequest request,
+            @RequestHeader("sessionId") UUID sessionId){
+        List<PhotoResponseDTO> response = photoService.getOnlyTen(request, sessionId);
 
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
     }

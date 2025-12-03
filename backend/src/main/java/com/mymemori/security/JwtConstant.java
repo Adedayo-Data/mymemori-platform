@@ -1,13 +1,24 @@
 package com.mymemori.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class JwtConstant {
 
-    // @Value("${jwt-key}")
-    public String JWTKEY = "128DTuErZA30SDGb5C3bRJr/HYkG5G6duPyaaPPUiVQ=";
+    @Value("${jwt.secret}")
+    private String jwtKey;
+
+    @Value("${jwt.expiration:604800000}") // Default: 7 hours
+    private long expiration;
 
     public static final String HEADER = "Authorization";
 
+    public String getJwtKey() {
+        return jwtKey;
+    }
+
+    public long getExpiration() {
+        return expiration;
+    }
 }

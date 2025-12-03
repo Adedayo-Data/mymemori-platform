@@ -113,7 +113,6 @@ export const PictureProvider = ({
   const fetchDefaultImages = useCallback(async (eventSlug: string) => {
     try {
       setLoading(true);
-
       // Check if user is authenticated - if so, don't create a session
       const hasAuthToken = !!localStorage.getItem("authToken");
       let sessionId: string | undefined;

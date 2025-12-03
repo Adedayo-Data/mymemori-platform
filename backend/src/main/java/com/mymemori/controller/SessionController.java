@@ -3,6 +3,7 @@ package com.mymemori.controller;
 import com.mymemori.dto.SessionRequestDTO;
 import com.mymemori.dto.SessionResponseDTO;
 import com.mymemori.services.SessionService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +20,7 @@ public class SessionController {
     private final SessionService sessionService;
     // create Session
     @PostMapping("/create-session")
-    public ResponseEntity<SessionResponseDTO> createSession(@RequestBody SessionRequestDTO request){
+    public ResponseEntity<SessionResponseDTO> createSession(@Valid @RequestBody SessionRequestDTO request){
 
         SessionResponseDTO response = sessionService.createSession(request);
 

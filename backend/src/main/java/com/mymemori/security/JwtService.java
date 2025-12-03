@@ -19,35 +19,35 @@ public class JwtService {
     @Autowired
     JwtConstant constant;
 
-    public String generateToken(Users users){
+    public String generateToken(Users users) {
 
         Map<String, String> claim = new HashMap<>();
         claim.put("fullName", users.getFullName());
         return Jwts.builder()
                 .subject(users.getEmail())
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 100000 * 60 * 60))
+                .expiration(new Date(System.currentTimeMillis() + constant.getExpiration()))
                 .claims(claim)
-                .signWith(Keys.hmacShaKeyFor(constant.JWTKEY.getBytes()))
+                .signWith(Keys.hmacShaKeyFor(constant.getJwtKey().getBytes()))
                 .compact();
     } // end Generate token
 
     // validate the token
-    public Claims getAllClaims(String token){
+    public Claims getAllClaims(String token) {
         return Jwts.parser()
-                .verifyWith(Keys.hmacShaKeyFor(constant.JWTKEY.getBytes()))
+                .verifyWith(Keys.hmacShaKeyFor(constant.getJwtKey().getBytes()))
                 .build()
                 .parseSignedClaims(token) // Meaning: with the verified key check this claim
                 .getPayload();
     }// end getAllClaims
 
     // get token payload data
-    public <T> T getClaim(String token, Function<Claims, T> claimsFunction){
+    public <T> T getClaim(String token, Function<Claims, T> claimsFunction) {
         Claims claims = getAllClaims(token);
         return claimsFunction.apply(claims);
     }// end getClaims
 
-    public String extractUsername(String token){
+    public String extractUsername(String token) {
         return getClaim(token, Claims::getSubject);
     }
 

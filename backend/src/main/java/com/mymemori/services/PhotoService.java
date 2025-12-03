@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -25,10 +26,10 @@ public class PhotoService {
     private final EventRepository eventRepo;
 
     // save Photos
-    public List<PhotoResponseDTO> savePhoto(PhotoRequestDTO request) {
+    public List<PhotoResponseDTO> savePhoto(PhotoRequestDTO request, UUID sessionId) {
         Users user = authUser.fetchAuthenticatedUser();
 
-        if (user == null && request.getSessionId() == null) {
+        if (user == null && sessionId == null) {
             throw new IllegalArgumentException("User must be authenticated with JWT in header or contain sessionID in Requestbody");
         }
 
@@ -49,7 +50,7 @@ public class PhotoService {
 
             if (user == null) {
                 photo.setUploadedByUserId(null);
-                photo.setUploadedBySessionId(request.getSessionId());
+                photo.setUploadedBySessionId((UUID) sessionId);
             } else {
                 photo.setUploadedByUserId(user.getId());
                 photo.setUploadedBySessionId(null);
@@ -67,11 +68,11 @@ public class PhotoService {
      *
      * TO FIX: implement a better strategy as this allow database level sorting thereby increasing database use of resources'
      * */
-    public List<PhotoResponseDTO> getOnlyTen(ViewGalleryRequest request){
+    public List<PhotoResponseDTO> getOnlyTen(ViewGalleryRequest request, UUID sessionId){
 
         Users user = authUser.fetchAuthenticatedUser();
 
-        if (user == null && request.getSessionId() == null) {
+        if (user == null && sessionId == null) {
             throw new IllegalArgumentException("User must be authenticated with JWT in header or contain sessionID in Requestbody");
         }
 
