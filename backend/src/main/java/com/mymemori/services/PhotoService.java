@@ -2,6 +2,7 @@ package com.mymemori.services;
 
 import com.mymemori.Repository.EventRepository;
 import com.mymemori.Repository.PhotoRepository;
+import com.mymemori.Repository.ReactionRepository;
 import com.mymemori.dto.PhotoRequestDTO;
 import com.mymemori.dto.PhotoResponseDTO;
 import com.mymemori.dto.ViewGalleryRequest;
@@ -26,6 +27,7 @@ public class PhotoService {
     private final AuthenticatedUser authUser;
     private final PhotoRepository photoRepo;
     private final EventRepository eventRepo;
+    private final ReactionRepository reactionRepo;
 
     // save Photos
     public List<PhotoResponseDTO> savePhoto(PhotoRequestDTO request, UUID sessionId) {
@@ -113,6 +115,8 @@ public class PhotoService {
         List<PhotoResponseDTO> response = new ArrayList<>();
         for (Photo p : photos) {
             PhotoResponseDTO photoResponse = mapToDTO(p);
+            // Set like status for current user/session
+            setLikeStatus(photoResponse, user != null ? user.getId() : null, sessionId);
             response.add(photoResponse);
         }
 
@@ -151,8 +155,24 @@ public class PhotoService {
         response.setSessionId(photo.getUploadedBySessionId());
         response.setUserId(photo.getUploadedByUserId());
         response.setImageUrl(photo.getImageUrl());
+        response.setReactionCount(photo.getReactionCount() != null ? photo.getReactionCount() : 0);
+
+        // Note: isLikedByCurrentUser will be set separately when fetching photos
+        // because we need the current user/session context
+        response.setIsLikedByCurrentUser(false);
 
         return response;
+    }
+
+    // Helper method to set like status for current user/session
+    public void setLikeStatus(PhotoResponseDTO photo, UUID userId, UUID sessionId) {
+        boolean isLiked = false;
+        if (userId != null) {
+            isLiked = reactionRepo.existsByPhotoIdAndUserId(photo.getPhotoId(), userId);
+        } else if (sessionId != null) {
+            isLiked = reactionRepo.existsByPhotoIdAndSessionId(photo.getPhotoId(), sessionId);
+        }
+        photo.setIsLikedByCurrentUser(isLiked);
     }
 
     // Get event by slug (for public access)

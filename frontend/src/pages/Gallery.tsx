@@ -19,6 +19,7 @@ import { downloadImage } from "../utils/downloadUtils";
 import { uploadQueueManager } from "../utils/uploadQueueManager";
 import type { UploadTask } from "../utils/uploadQueueManager";
 import apiClient from "../api/apiClient";
+import { addReaction, removeReaction } from "../api/reactionApi";
 
 interface Photo {
   photoId: string;
@@ -252,16 +253,54 @@ const Gallery = () => {
   };
 
   // Handle photo like
-  const handleLike = (photoId: string) => {
-    setLikedPhotos((prev) => {
-      const newLiked = new Set(prev);
-      if (newLiked.has(photoId)) {
-        newLiked.delete(photoId);
-      } else {
-        newLiked.add(photoId);
+  const handleLike = async (photoId: string) => {
+    try {
+      // Get session context
+      const { isAuthenticated, sessionId: currentSessionId } = await getSessionContext(
+        searchParams,
+        location.state
+      );
+
+      const isCurrentlyLiked = likedPhotos.has(photoId);
+
+      // Optimistic update
+      setLikedPhotos((prev) => {
+        const newLiked = new Set(prev);
+        if (isCurrentlyLiked) {
+          newLiked.delete(photoId);
+        } else {
+          newLiked.add(photoId);
+        }
+        return newLiked;
+      });
+
+      // Call API - backend handles toggle (like/unlike)
+      await addReaction(photoId, !isAuthenticated ? currentSessionId : undefined);
+
+      // Refresh gallery to get updated reaction counts
+      const slug = searchParams.get("event") || location.state?.slug;
+      if (slug) {
+        await fetchDefaultImages(slug);
       }
-      return newLiked;
-    });
+    } catch (error: any) {
+      console.error("Failed to update reaction:", error);
+
+      // Revert optimistic update on error
+      setLikedPhotos((prev) => {
+        const newLiked = new Set(prev);
+        if (newLiked.has(photoId)) {
+          newLiked.delete(photoId);
+        } else {
+          newLiked.add(photoId);
+        }
+        return newLiked;
+      });
+
+      // Only show error for non-toggle errors
+      if (!error.response?.data?.message?.includes("already reacted")) {
+        toast.error("Failed to update reaction");
+      }
+    }
   };
 
   // Handle photo download
