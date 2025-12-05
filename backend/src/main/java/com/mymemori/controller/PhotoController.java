@@ -25,7 +25,7 @@ public class PhotoController {
     // save photos
     @PostMapping("/save-image")
     public ResponseEntity<List<PhotoResponseDTO>> savePhotos(
-            @RequestHeader("X-Session-Id") UUID sessionId,
+            @RequestHeader(value = "X-Session-Id", required = false) UUID sessionId,
             @Valid @RequestBody PhotoRequestDTO request) {
 
         log.info("Photo upload request received: sessionId={}, eventSlug={}", sessionId, request.getEventSlug());
@@ -48,7 +48,7 @@ public class PhotoController {
     @PostMapping("/images")
     public ResponseEntity<List<PhotoResponseDTO>> findFiveImage(
             @RequestBody ViewGalleryRequest request,
-            @RequestHeader("X-Session-Id") UUID sessionId) {
+            @RequestHeader(value = "X-Session-Id", required = false) UUID sessionId) {
         System.out.println("Session id is: " + sessionId);
         List<PhotoResponseDTO> response = photoService.getOnlyTen(request, sessionId);
 
