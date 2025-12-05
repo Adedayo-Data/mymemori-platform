@@ -18,16 +18,17 @@ interface EventResponse {
 
 interface EventContextType {
   createEvent: (data: EventData) => Promise<EventResponse>;
+
   getEventBySlug: (slug: string) => Promise<EventResponse>;
   loading: boolean;
   error: string | null;
 }
 
-const EventContext = createContext<EventContextType | null>(null);
+const EventContext = createContext < EventContextType | null > (null);
 
 export const EventProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState < string | null > (null);
 
   const createEvent = async (data: EventData): Promise<EventResponse> => {
     setLoading(true);
@@ -49,12 +50,13 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+
   const getEventBySlug = useCallback(
     async (eventSlug: string): Promise<EventResponse> => {
       setLoading(true);
       setError(null);
       try {
-        const response = await apiClient.get(`/api/event/${eventSlug}`);
+        const response = await apiClient.get(`/api/public/event/${eventSlug}`);
         console.log("Event fetch response:", response.data);
         return response.data as EventResponse;
       } catch (err: unknown) {

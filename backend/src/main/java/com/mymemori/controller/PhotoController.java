@@ -62,4 +62,11 @@ public class PhotoController {
         List<PhotoResponseDTO> response = photoService.getPhotosByUserOrSession(sessionId);
         return ResponseEntity.ok(response);
     }
+
+    // Get event details by slug (public endpoint for gallery access)
+    @GetMapping("/event/{slug}")
+    public ResponseEntity<com.mymemori.dto.EventResponse> getEventBySlug(@PathVariable String slug) {
+        com.mymemori.dto.EventResponse response = photoService.getEventBySlug(slug);
+        return ResponseEntity.ok(response);
+    }
 }

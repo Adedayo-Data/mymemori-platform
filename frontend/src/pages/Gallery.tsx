@@ -32,21 +32,21 @@ interface Photo {
 
 const Gallery = () => {
   // State management
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [selectedFilter, setSelectedFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<string>("recent");
-  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
-  const [likedPhotos, setLikedPhotos] = useState<Set<string>>(new Set());
-  const [showUploadModal, setShowUploadModal] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [eventData, setEventData] = useState<{ title: string; date: string }>({
+  const [viewMode, setViewMode] = useState < "grid" | "list" > ("grid");
+  const [selectedFilter, setSelectedFilter] = useState < string > ("all");
+  const [sortBy, setSortBy] = useState < string > ("recent");
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState < number | null > (null);
+  const [likedPhotos, setLikedPhotos] = useState < Set < string >> (new Set());
+  const [showUploadModal, setShowUploadModal] = useState < boolean > (false);
+  const [isLoading, setIsLoading] = useState < boolean > (true);
+  const [eventData, setEventData] = useState < { title: string; date: string } > ({
     title: "Gallery",
     date: "",
   });
 
   // Refs
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef < HTMLInputElement > (null);
+  const cameraInputRef = useRef < HTMLInputElement > (null);
 
   // Hooks
   const navigate = useNavigate();
@@ -62,7 +62,7 @@ const Gallery = () => {
   } = usePicture();
 
   // Categories for filtering
-  const categories = ["all", "uploaded", ];
+  const categories = ["all", "uploaded",];
 
   // Track if we've already loaded data to prevent multiple loads
   const hasLoadedRef = useRef(false);
@@ -276,24 +276,28 @@ const Gallery = () => {
   const handleUploadComplete = async (task: UploadTask) => {
     try {
       const { eventSlug, sessionId, isAuthenticated } = task.metadata;
-      
+
       if (!task.imageUrl) return;
 
       // Save to backend using the correct endpoint
       try {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        };
+
+        // Add session ID to header for guest users
+        if (!isAuthenticated && sessionId) {
+          headers['X-Session-Id'] = sessionId;
+        }
+
         await apiClient.post(
           '/api/public/save-image',
           {
-            sessionId: isAuthenticated ? undefined : sessionId,
             eventSlug,
             imageUrl: [task.imageUrl], // Backend expects an array
           },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              Accept: 'application/json',
-            },
-          }
+          { headers }
         );
 
         // Add to local gallery
@@ -396,10 +400,10 @@ const Gallery = () => {
                 onLike={handleLike}
                 onDownload={handleDownload}
               />
-              
+
               {/* Loading indicator and observer target */}
               {hasMore && (
-                <div 
+                <div
                   ref={observerRef}
                   className="flex justify-center items-center py-8"
                 >
@@ -422,7 +426,7 @@ const Gallery = () => {
               </h3>
               <p className="text-gray-500 max-w-md mb-8 text-lg">
                 Be the first to capture the moment! Upload a photo to start the gallery.
-              </p>       
+              </p>
             </div>
           )}
         </main>

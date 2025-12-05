@@ -139,4 +139,22 @@ public class PhotoService {
         return response;
     }
 
+    // Get event by slug (for public access)
+    public com.mymemori.dto.EventResponse getEventBySlug(String slug) {
+        Event event = eventRepo.findByEventSlug(slug);
+        if (event == null) {
+            throw new IllegalArgumentException("Event not found with slug: " + slug);
+        }
+
+        com.mymemori.dto.EventResponse response = new com.mymemori.dto.EventResponse();
+        response.setEventName(event.getEventName());
+        response.setEventDate(event.getEventDate());
+        response.setLocation(event.getLocation());
+        response.setDescription(event.getDescription());
+        response.setEventSlug(event.getEventSlug());
+        response.setImageUrl(event.getImageUrl());
+
+        return response;
+    }
+
 }

@@ -81,19 +81,23 @@ export const PictureProvider = ({
 
         // Save to backend
         try {
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          };
+
+          // Add session ID to header
+          if (sessionId) {
+            headers['X-Session-Id'] = sessionId;
+          }
+
           await apiClient.post(
             '/api/public/save-image',
             {
-              sessionId,
               eventSlug,
               imageUrl: [imageUrl],
             },
-            {
-              headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-              },
-            }
+            { headers }
           );
         } catch (saveError: any) {
           console.error('Failed to save image to backend:', saveError);
