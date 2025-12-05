@@ -312,6 +312,11 @@ const Gallery = () => {
         };
 
         addUploadedPhoto(newPhoto);
+
+        // FOMO Strategy: Refresh gallery to show all photos after first upload
+        // This will fetch all photos from backend since user has now uploaded
+        await fetchDefaultImages(eventSlug);
+
       } catch (saveError: any) {
         console.error('Failed to save image to backend:', saveError);
         if (saveError.response) {

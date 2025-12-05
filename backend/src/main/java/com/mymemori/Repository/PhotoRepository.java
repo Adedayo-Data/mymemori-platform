@@ -20,4 +20,15 @@ public interface PhotoRepository extends JpaRepository<Photo, UUID> {
     List<Photo> findByUploadedBySessionId(UUID sessionId);
 
     List<Photo> findByUploadedByUserId(UUID userId);
+
+    // Get all photos for a specific event
+    List<Photo> findByEventId(UUID eventId);
+
+    // Check if user has uploaded photos for this event
+    @Query("SELECT COUNT(p) > 0 FROM Photo p WHERE p.eventId = :eventId AND p.uploadedByUserId = :userId")
+    boolean hasUserUploadedForEvent(UUID eventId, UUID userId);
+
+    // Check if session has uploaded photos for this event
+    @Query("SELECT COUNT(p) > 0 FROM Photo p WHERE p.eventId = :eventId AND p.uploadedBySessionId = :sessionId")
+    boolean hasSessionUploadedForEvent(UUID eventId, UUID sessionId);
 }

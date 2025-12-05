@@ -67,11 +67,10 @@ public class PhotoService {
 
     // FOMO STRATEGY:
     /*
-     * In this strategy, users only get to see a random array of 5 images and can
-     * only see more if they upload.
-     *
-     * TO FIX: implement a better strategy as this allow database level sorting
-     * thereby increasing database use of resources'
+     * In this strategy, users only get to see a random array of 10 images
+     * initially.
+     * Once they upload at least one photo, they can see ALL photos for the event.
+     * This encourages user participation and engagement.
      */
     public List<PhotoResponseDTO> getOnlyTen(ViewGalleryRequest request, UUID sessionId) {
 
@@ -79,7 +78,7 @@ public class PhotoService {
 
         if (user == null && sessionId == null) {
             throw new IllegalArgumentException(
-                    "User must be authenticated with JWT in header or contain sessionID in Requestbody");
+                    "User must be authenticated with JWT in header or contain sessionID in header");
         }
 
         // Fetch the event by slug
@@ -88,14 +87,31 @@ public class PhotoService {
             throw new IllegalArgumentException("Event not found with slug: " + request.getEventSlug());
         }
 
-        log.info("Fetching random 10 photos for event: slug={}, eventId={}", request.getEventSlug(), event.getId());
+        log.info("Fetching photos for event: slug={}, eventId={}", request.getEventSlug(), event.getId());
 
-        // Fetch random 10 photos for this specific event
-        List<Photo> getTenPhotos = photoRepo.findRandomTenByEventId(event.getId());
+        // Check if user/session has uploaded photos for this event
+        boolean hasUploaded = false;
+        if (user != null) {
+            hasUploaded = photoRepo.hasUserUploadedForEvent(event.getId(), user.getId());
+            log.info("User {} has uploaded: {}", user.getEmail(), hasUploaded);
+        } else if (sessionId != null) {
+            hasUploaded = photoRepo.hasSessionUploadedForEvent(event.getId(), sessionId);
+            log.info("Session {} has uploaded: {}", sessionId, hasUploaded);
+        }
+
+        List<Photo> photos;
+        if (hasUploaded) {
+            // User has uploaded - show ALL photos for this event
+            photos = photoRepo.findByEventId(event.getId());
+            log.info("User has uploaded, returning ALL {} photos", photos.size());
+        } else {
+            // User hasn't uploaded - show only 10 random photos (FOMO)
+            photos = photoRepo.findRandomTenByEventId(event.getId());
+            log.info("User hasn't uploaded, returning {} random photos (FOMO)", photos.size());
+        }
 
         List<PhotoResponseDTO> response = new ArrayList<>();
-
-        for (Photo p : getTenPhotos) {
+        for (Photo p : photos) {
             PhotoResponseDTO photoResponse = mapToDTO(p);
             response.add(photoResponse);
         }
