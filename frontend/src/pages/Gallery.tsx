@@ -163,6 +163,23 @@ const Gallery = () => {
     }
   }, [contextPhotos, isLoading]);
 
+  // Initialize liked photos from contextPhotos (when they load or change)
+  useEffect(() => {
+    if (contextPhotos.length > 0) {
+      const likedPhotoIds = new Set < string > ();
+      contextPhotos.forEach((photo: any) => {
+        if (photo.isLikedByCurrentUser) {
+          likedPhotoIds.add(photo.photoId);
+        }
+      });
+
+      if (likedPhotoIds.size > 0) {
+        setLikedPhotos(likedPhotoIds);
+        console.log("Initialized liked photos from context:", Array.from(likedPhotoIds));
+      }
+    }
+  }, [contextPhotos]);
+
   // Handle file selection - Add to background upload queue
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
