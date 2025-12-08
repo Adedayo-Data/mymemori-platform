@@ -28,6 +28,7 @@ public class PhotoService {
     private final PhotoRepository photoRepo;
     private final EventRepository eventRepo;
     private final ReactionRepository reactionRepo;
+    private final EventAttendanceService attendanceService;
 
     // save Photos
     public List<PhotoResponseDTO> savePhoto(PhotoRequestDTO request, UUID sessionId) {
@@ -63,6 +64,13 @@ public class PhotoService {
             Photo savedPhoto = photoRepo.save(photo);
             response.add(mapToDTO(savedPhoto));
         }
+
+        // Auto-mark attendance: User attended event by uploading photo
+        if (user != null) {
+            attendanceService.markAttendance(event.getId(), user.getId());
+            log.info("Marked user {} as attendee for event {}", user.getId(), event.getId());
+        }
+
         log.info("Saved {} photos for event: {}", response.size(), event.getEventName());
         return response;
     }

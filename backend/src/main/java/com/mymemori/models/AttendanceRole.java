@@ -2,5 +2,5 @@ package com.mymemori.models;
 
 public enum AttendanceRole {
 
-    HOST, GUEST
+    HOST, GUEST, ATTENDEE
 }
