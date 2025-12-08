@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +25,7 @@ public class PhotoController {
 
     // save photos
     @PostMapping("/save-image")
+    @Transactional
     public ResponseEntity<List<PhotoResponseDTO>> savePhotos(
             @RequestHeader(value = "X-Session-Id", required = false) UUID sessionId,
             @Valid @RequestBody PhotoRequestDTO request) {
