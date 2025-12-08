@@ -8,13 +8,13 @@ import { usePicture } from "../context/pictureContext";
 import apiClient from "../api/apiClient";
 
 interface Event {
-  eventName: string;
-  eventDate: string;
-  location: string;
-  description: string;
+  eventName?: string;
+  eventDate?: string;
+  location?: string;
+  description?: string;
   eventSlug: string;
-  imageUrl: string;
-  [key: string]: string;
+  imageUrl?: string;
+  [key: string]: string | undefined;
 }
 
 interface Photo {
@@ -391,7 +391,7 @@ className = "w-full h-full object-cover"
     <h3 className="font-semibold text-sm mb-1 truncate" > { event.eventName } </h3>
       < div className = "flex items-center gap-1 text-xs text-gray-500 mb-1" >
         <Calendar className="w-3 h-3" />
-          <span>{ new Date(event.eventDate).toLocaleDateString() } </span>
+          <span>{ event.eventDate ? new Date(event.eventDate).toLocaleDateString() : 'TBD' } </span>
           </div>
           < div className = "flex items-center gap-1 text-xs text-gray-500" >
             <MapPin className="w-3 h-3" />

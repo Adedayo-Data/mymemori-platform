@@ -19,7 +19,7 @@ import { downloadImage } from "../utils/downloadUtils";
 import { uploadQueueManager } from "../utils/uploadQueueManager";
 import type { UploadTask } from "../utils/uploadQueueManager";
 import apiClient from "../api/apiClient";
-import { addReaction, removeReaction } from "../api/reactionApi";
+import { addReaction } from "../api/reactionApi";
 
 interface Photo {
   photoId: string;

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, User, Camera, ChevronDown, ChevronUp, LogOut, Trash2, Bell, Lock } from "lucide-react";
+import { X, User, Camera, ChevronDown, ChevronUp, LogOut, Trash2, Lock } from "lucide-react";
 import { useAuth } from "../context/authContext";
 
 interface ProfilePanelProps {
@@ -10,8 +10,8 @@ interface ProfilePanelProps {
 
 const ProfilePanel = ({ isOpen, onClose }: ProfilePanelProps) => {
   const { user, logout } = useAuth();
-  const [expandedSection, setExpandedSection] = useState<string | null>("personal");
-  
+  const [expandedSection, setExpandedSection] = useState < string | null > ("personal");
+
   // Form state
   const [formData, setFormData] = useState({
     fullName: user?.fullName || "John Doe",
@@ -260,32 +260,6 @@ const Section = ({
   );
 };
 
-// Stat Card Component
-const StatCard = ({ label, value }: { label: string; value: string }) => {
-  return (
-    <div className="p-4 bg-gradient-to-br from-pink-50 to-purple-50 rounded-lg">
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
-      <p className="text-xs text-gray-600 mt-1">{label}</p>
-    </div>
-  );
-};
-
-// Toggle Component
-const Toggle = ({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) => {
-  return (
-    <button
-      onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-        checked ? "bg-pink-600" : "bg-gray-300"
-      }`}
-    >
-      <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-          checked ? "translate-x-6" : "translate-x-1"
-        }`}
-      />
-    </button>
-  );
-};
 
 export default ProfilePanel;
+
