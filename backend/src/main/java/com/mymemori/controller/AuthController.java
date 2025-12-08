@@ -4,13 +4,14 @@ import com.mymemori.Repository.UserRepository;
 import com.mymemori.dto.AuthMessage;
 import com.mymemori.dto.LoginRequest;
 import com.mymemori.dto.UserRequestDTO;
+import com.mymemori.exception.EmailAlreadyExistsException;
+import com.mymemori.exception.InvalidCredentialsException;
 import com.mymemori.models.Users;
 import com.mymemori.security.JwtService;
 import jakarta.validation.Valid;
-import org.apache.logging.log4j.message.Message;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
+@Slf4j
 public class AuthController {
 
     @Autowired
@@ -33,24 +35,27 @@ public class AuthController {
 
     @PostMapping("/sign-up")
     public ResponseEntity<AuthMessage> register(@Valid @RequestBody UserRequestDTO request) {
-        System.out.println("Controller entered!");
-        System.out.println("Request data: " + request.getEmail());
-        Users user = new Users();
+        log.info("User registration attempt for email: {}", request.getEmail());
 
+        // Check if email already exists
+        if (userRepo.findByEmail(request.getEmail()) != null) {
+            throw new EmailAlreadyExistsException("Email already registered");
+        }
+
+        Users user = new Users();
         user.setEmail(request.getEmail());
         user.setFullName(request.getFullName());
         user.setPassword(passEncoder.encode(request.getPassword()));
-        System.out.println("Done Passing info to model");
+
         // save user
         Users savedUser = userRepo.save(user);
-        System.out.println("Saved user: " + savedUser);
+        log.info("User registered successfully: userId={}, email={}", savedUser.getId(), savedUser.getEmail());
 
         // generate JWT
         String token = jwtService.generateToken(savedUser);
 
         // Map to AuthMessage
         AuthMessage message = new AuthMessage();
-
         message.setEmail(savedUser.getEmail());
         message.setToken(token);
         message.setFullName(savedUser.getFullName());
@@ -62,25 +67,21 @@ public class AuthController {
     // sign in
     @PostMapping("/sign-in")
     public ResponseEntity<AuthMessage> Login(@Valid @RequestBody LoginRequest request) {
+        log.info("User login attempt for email: {}", request.getEmail());
 
         // check if user Exist in the db
         Users user = userRepo.findByEmail(request.getEmail());
 
-        if (user == null) {
-            throw new RuntimeException("User not found!");
-        }
-
-        String reqPass = request.getPassword();
-        if (!passEncoder.matches(reqPass, user.getPassword())) {
-            throw new RuntimeException("Incorrect password"); // TO FIX: Should return error message instead
+        if (user == null || !passEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new InvalidCredentialsException("Invalid credentials");
         }
 
         // generate token
         String token = jwtService.generateToken(user);
+        log.info("User logged in successfully: userId={}", user.getId());
 
         // Map to AuthMessage
         AuthMessage message = new AuthMessage();
-
         message.setEmail(user.getEmail());
         message.setToken(token);
         message.setFullName(user.getFullName());

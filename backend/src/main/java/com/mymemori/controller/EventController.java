@@ -10,9 +10,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
-@RequestMapping("api/event")
+@RequestMapping("/api/event")
 public class EventController {
 
     @Autowired
@@ -32,6 +33,14 @@ public class EventController {
         return ResponseEntity.ok(events);
     }
 
+    // get Event by id
+    @GetMapping("/id/{id}")
+    public ResponseEntity<EventResponse> getEventById(@PathVariable UUID id) {
+        EventResponse event = eventService.getEventById(id);
+        return ResponseEntity.ok(event);
+    }
+
+    // get Event by slug
     @GetMapping("/{slug}")
     public ResponseEntity<EventResponse> findEventBySlug(@PathVariable String slug) {
         EventResponse response = eventService.findByEventSlug(slug);

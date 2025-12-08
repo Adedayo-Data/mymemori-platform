@@ -14,5 +14,7 @@ public class PhotoResponseDTO {
     private UUID sessionId;
     private UUID userId;
     private String imageUrl;
+    private Integer reactionCount;
+    private Boolean isLikedByCurrentUser;
 
 }

@@ -23,11 +23,11 @@ public class ReactionController {
     @PostMapping("/react")
     public ResponseEntity<ReactionResponse> react(
             @Valid @RequestBody ReactionRequestDTO req,
-            @RequestHeader("sessionId") UUID sessionId){
+            @RequestHeader(value = "X-Session-Id", required = false) UUID sessionId) {
 
         ReactionResponse response = reactionService.saveReactions(req, sessionId);
 
-        if (response == null){
+        if (response == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
 
@@ -37,7 +37,7 @@ public class ReactionController {
     @DeleteMapping("/remove")
     public ResponseEntity<Void> deleteReaction(
             @Valid @RequestBody ReactionDeleteReq req,
-            @RequestHeader("sessionId") UUID sessionId){
+            @RequestHeader(value = "X-Session-Id", required = false) UUID sessionId) {
 
         reactionService.deleteReactions(req, sessionId);
         return ResponseEntity.status(HttpStatus.ACCEPTED).build();

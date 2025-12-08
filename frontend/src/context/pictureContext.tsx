@@ -39,7 +39,7 @@ interface PictureContextType {
   getAllPhoto: () => Promise<UploadedPhoto[]>;
 }
 
-const PictureContext = createContext<PictureContextType | null>(null);
+const PictureContext = createContext < PictureContextType | null > (null);
 
 export const PictureProvider = ({
   children,
@@ -47,8 +47,8 @@ export const PictureProvider = ({
   children: React.ReactNode;
 }) => {
   const [loading, setLoading] = useState(false);
-  const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([]);
-  const [defaultImages, setDefaultImages] = useState<UploadedPhoto[]>([]);
+  const [uploadedPhotos, setUploadedPhotos] = useState < UploadedPhoto[] > ([]);
+  const [defaultImages, setDefaultImages] = useState < UploadedPhoto[] > ([]);
 
   const addUploadedPhoto = useCallback((photo: UploadedPhoto) => {
     setUploadedPhotos((prev) => [...prev, photo]);
@@ -79,19 +79,23 @@ export const PictureProvider = ({
 
         // Save to backend
         try {
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          };
+
+          // Add session ID to header
+          if (sessionId) {
+            headers['X-Session-Id'] = sessionId;
+          }
+
           await apiClient.post(
             '/api/public/save-image',
             {
-              sessionId,
               eventSlug,
               imageUrl: [imageUrl],
             },
-            {
-              headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-              },
-            }
+            { headers }
           );
         } catch (saveError: any) {
           console.error('Failed to save image to backend:', saveError);
@@ -133,13 +137,14 @@ export const PictureProvider = ({
         headers["X-Session-Id"] = sessionId;
       }
 
-      const response = await apiClient.get("/api/public/images", {
-        params: { eventSlug },
-        headers,
-      });
+      const response = await apiClient.post("/api/public/images",
+        { eventSlug },
+        { headers }
+      );
 
       if (response.data) {
         setDefaultImages(response.data);
+        console.log("Fetched default images with like status:", response.data);
       }
       return response.data;
     } catch (error: unknown) {
@@ -156,19 +161,20 @@ export const PictureProvider = ({
       // If unauthorized, clear invalid session and retry once (only for guest users)
       if (axiosError.response?.status === 401) {
         const hasAuthToken = !!localStorage.getItem("authToken");
-        
+
         if (!hasAuthToken) {
           // Only retry with new session for guest users
           try {
             clearSession();
             const newSessionId = await getOrCreateSession(eventSlug);
-            const retryResponse = await apiClient.get("/api/public/images", {
-              params: { eventSlug },
-              headers: { "X-Session-Id": newSessionId },
-            });
+            const retryResponse = await apiClient.post("/api/public/images",
+              { eventSlug },
+              { headers: { "X-Session-Id": newSessionId } }
+            );
 
             if (retryResponse.data) {
               setDefaultImages(retryResponse.data);
+              console.log("Retry: Fetched default images with like status:", retryResponse.data);
               return retryResponse.data;
             }
           } catch (retryError) {
@@ -195,13 +201,13 @@ export const PictureProvider = ({
   }, []);
 
   const getAllPhoto = async () => {
-   try {
-    const response = await apiClient.get("/api/public/my-photos");
-    console.log("Event fetch response:", response.data);
-    return response.data;
-   } catch (error) {
-    console.error("Failed to fetch default images:", error);
-   }
+    try {
+      const response = await apiClient.get("/api/public/my-photos");
+      console.log("Event fetch response:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch default images:", error);
+    }
   }
 
   // Memoize the merged photos array to prevent unnecessary re-renders
@@ -211,7 +217,7 @@ export const PictureProvider = ({
   );
 
   // Memoize the context value to prevent unnecessary re-renders
-  const value = useMemo<PictureContextType>(
+  const value = useMemo < PictureContextType > (
     () => ({
       uploadEventImage,
       uploadGalleryImage,

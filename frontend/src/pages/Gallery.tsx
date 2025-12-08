@@ -19,6 +19,7 @@ import { downloadImage } from "../utils/downloadUtils";
 import { uploadQueueManager } from "../utils/uploadQueueManager";
 import type { UploadTask } from "../utils/uploadQueueManager";
 import apiClient from "../api/apiClient";
+import { addReaction } from "../api/reactionApi";
 
 interface Photo {
   photoId: string;
@@ -32,21 +33,21 @@ interface Photo {
 
 const Gallery = () => {
   // State management
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [selectedFilter, setSelectedFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<string>("recent");
-  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
-  const [likedPhotos, setLikedPhotos] = useState<Set<string>>(new Set());
-  const [showUploadModal, setShowUploadModal] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [eventData, setEventData] = useState<{ title: string; date: string }>({
+  const [viewMode, setViewMode] = useState < "grid" | "list" > ("grid");
+  const [selectedFilter, setSelectedFilter] = useState < string > ("all");
+  const [sortBy, setSortBy] = useState < string > ("recent");
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState < number | null > (null);
+  const [likedPhotos, setLikedPhotos] = useState < Set < string >> (new Set());
+  const [showUploadModal, setShowUploadModal] = useState < boolean > (false);
+  const [isLoading, setIsLoading] = useState < boolean > (true);
+  const [eventData, setEventData] = useState < { title: string; date: string } > ({
     title: "Gallery",
     date: "",
   });
 
   // Refs
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef < HTMLInputElement > (null);
+  const cameraInputRef = useRef < HTMLInputElement > (null);
 
   // Hooks
   const navigate = useNavigate();
@@ -62,7 +63,7 @@ const Gallery = () => {
   } = usePicture();
 
   // Categories for filtering
-  const categories = ["all", "uploaded", ];
+  const categories = ["all", "uploaded",];
 
   // Track if we've already loaded data to prevent multiple loads
   const hasLoadedRef = useRef(false);
@@ -162,6 +163,23 @@ const Gallery = () => {
     }
   }, [contextPhotos, isLoading]);
 
+  // Initialize liked photos from contextPhotos (when they load or change)
+  useEffect(() => {
+    if (contextPhotos.length > 0) {
+      const likedPhotoIds = new Set < string > ();
+      contextPhotos.forEach((photo: any) => {
+        if (photo.isLikedByCurrentUser) {
+          likedPhotoIds.add(photo.photoId);
+        }
+      });
+
+      if (likedPhotoIds.size > 0) {
+        setLikedPhotos(likedPhotoIds);
+        console.log("Initialized liked photos from context:", Array.from(likedPhotoIds));
+      }
+    }
+  }, [contextPhotos]);
+
   // Handle file selection - Add to background upload queue
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -252,16 +270,54 @@ const Gallery = () => {
   };
 
   // Handle photo like
-  const handleLike = (photoId: string) => {
-    setLikedPhotos((prev) => {
-      const newLiked = new Set(prev);
-      if (newLiked.has(photoId)) {
-        newLiked.delete(photoId);
-      } else {
-        newLiked.add(photoId);
+  const handleLike = async (photoId: string) => {
+    try {
+      // Get session context
+      const { isAuthenticated, sessionId: currentSessionId } = await getSessionContext(
+        searchParams,
+        location.state
+      );
+
+      const isCurrentlyLiked = likedPhotos.has(photoId);
+
+      // Optimistic update
+      setLikedPhotos((prev) => {
+        const newLiked = new Set(prev);
+        if (isCurrentlyLiked) {
+          newLiked.delete(photoId);
+        } else {
+          newLiked.add(photoId);
+        }
+        return newLiked;
+      });
+
+      // Call API - backend handles toggle (like/unlike)
+      await addReaction(photoId, !isAuthenticated ? currentSessionId : undefined);
+
+      // Refresh gallery to get updated reaction counts
+      const slug = searchParams.get("event") || location.state?.slug;
+      if (slug) {
+        await fetchDefaultImages(slug);
       }
-      return newLiked;
-    });
+    } catch (error: any) {
+      console.error("Failed to update reaction:", error);
+
+      // Revert optimistic update on error
+      setLikedPhotos((prev) => {
+        const newLiked = new Set(prev);
+        if (newLiked.has(photoId)) {
+          newLiked.delete(photoId);
+        } else {
+          newLiked.add(photoId);
+        }
+        return newLiked;
+      });
+
+      // Only show error for non-toggle errors
+      if (!error.response?.data?.message?.includes("already reacted")) {
+        toast.error("Failed to update reaction");
+      }
+    }
   };
 
   // Handle photo download
@@ -276,24 +332,28 @@ const Gallery = () => {
   const handleUploadComplete = async (task: UploadTask) => {
     try {
       const { eventSlug, sessionId, isAuthenticated } = task.metadata;
-      
+
       if (!task.imageUrl) return;
 
       // Save to backend using the correct endpoint
       try {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        };
+
+        // Add session ID to header for guest users
+        if (!isAuthenticated && sessionId) {
+          headers['X-Session-Id'] = sessionId;
+        }
+
         await apiClient.post(
           '/api/public/save-image',
           {
-            sessionId: isAuthenticated ? undefined : sessionId,
             eventSlug,
             imageUrl: [task.imageUrl], // Backend expects an array
           },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              Accept: 'application/json',
-            },
-          }
+          { headers }
         );
 
         // Add to local gallery
@@ -308,6 +368,11 @@ const Gallery = () => {
         };
 
         addUploadedPhoto(newPhoto);
+
+        // FOMO Strategy: Refresh gallery to show all photos after first upload
+        // This will fetch all photos from backend since user has now uploaded
+        await fetchDefaultImages(eventSlug);
+
       } catch (saveError: any) {
         console.error('Failed to save image to backend:', saveError);
         if (saveError.response) {
@@ -396,10 +461,10 @@ const Gallery = () => {
                 onLike={handleLike}
                 onDownload={handleDownload}
               />
-              
+
               {/* Loading indicator and observer target */}
               {hasMore && (
-                <div 
+                <div
                   ref={observerRef}
                   className="flex justify-center items-center py-8"
                 >
@@ -422,7 +487,7 @@ const Gallery = () => {
               </h3>
               <p className="text-gray-500 max-w-md mb-8 text-lg">
                 Be the first to capture the moment! Upload a photo to start the gallery.
-              </p>       
+              </p>
             </div>
           )}
         </main>

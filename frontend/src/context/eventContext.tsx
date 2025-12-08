@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback } from "react";
 import apiClient from "../api/apiClient";
+import toast from "react-hot-toast";
 import { handleApiError } from "../utils/errorUtils";
 
 interface EventData {
@@ -11,34 +12,30 @@ interface EventData {
 }
 
 interface EventResponse {
-  eventName: string;
-  eventDate: string;
-  location: string;
-  description: string;
   eventSlug: string;
-  imageUrl: string;
   [key: string]: string;
 }
 
 interface EventContextType {
   createEvent: (data: EventData) => Promise<EventResponse>;
-  getAllEvent:() => Promise<EventResponse[]>;
+  getAllEvent: () => Promise<EventResponse[]>;
   getEventBySlug: (slug: string) => Promise<EventResponse>;
   loading: boolean;
   error: string | null;
 }
 
-const EventContext = createContext<EventContextType | null>(null);
+const EventContext = createContext < EventContextType | null > (null);
 
 export const EventProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState < string | null > (null);
 
   const createEvent = async (data: EventData): Promise<EventResponse> => {
     setLoading(true);
     setError(null);
     try {
       const response = await apiClient.post("/api/event/create", data);
+      toast.success("Event created successfully!");
       console.log("Event creation response:", response.data);
       return response.data as EventResponse;
     } catch (err: unknown) {
@@ -53,33 +50,13 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const getAllEvent = async () => {
-    console.log('fetching events')
+  const getAllEvent = useCallback(async (): Promise<EventResponse[]> => {
     setLoading(true);
     setError(null);
     try {
       const response = await apiClient.get("/api/event");
-      console.log("Event fetch response:", response.data);
+      console.log("Fetched events:", response.data);
       return response.data as EventResponse[];
-    } catch (err: unknown) {
-      const errorMessage = handleApiError(
-        err,
-        "Failed to fetch events. Please try again.",
-        { showToast: false, setError }
-      );
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getEventById = async(id:string) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const response = await apiClient.get(`/api/event/id/${id}`)
-      console.log("Event fetch response:", response.data);
-      return response.data as EventResponse;
     } catch (err: unknown) {
       const errorMessage = handleApiError(
         err,
@@ -90,14 +67,14 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   const getEventBySlug = useCallback(
     async (eventSlug: string): Promise<EventResponse> => {
       setLoading(true);
       setError(null);
       try {
-        const response = await apiClient.get(`/api/event/${eventSlug}`);
+        const response = await apiClient.get(`/api/public/event/${eventSlug}`);
         console.log("Event fetch response:", response.data);
         return response.data as EventResponse;
       } catch (err: unknown) {
