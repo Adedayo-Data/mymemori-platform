@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 interface UseDoubleTapOptions {
   onSingleTap?: () => void;
@@ -12,6 +12,7 @@ export const useDoubleTap = ({
   delay = 300,
 }: UseDoubleTapOptions) => {
   const [lastTap, setLastTap] = useState<number>(0);
+  const timeoutRef = useRef<number | null>(null);
 
   const handleTap = useCallback(() => {
     const now = Date.now();
@@ -19,6 +20,12 @@ export const useDoubleTap = ({
 
     if (timeSinceLastTap < delay && timeSinceLastTap > 0) {
       // Double tap detected
+      // CRITICAL: Clear the pending single-tap timeout to prevent it from firing
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      
       if (onDoubleTap) {
         onDoubleTap();
       }
@@ -27,13 +34,19 @@ export const useDoubleTap = ({
       // Potential single tap
       setLastTap(now);
       
+      // Clear any existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      
       // Wait to see if there's a second tap
-      setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         if (Date.now() - now >= delay) {
           if (onSingleTap) {
             onSingleTap();
           }
         }
+        timeoutRef.current = null;
       }, delay);
     }
   }, [lastTap, delay, onSingleTap, onDoubleTap]);

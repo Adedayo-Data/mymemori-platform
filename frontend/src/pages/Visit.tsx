@@ -8,6 +8,137 @@ import { retryWithBackoff } from "../utils/retryUtils";
 import { getOrCreateSession } from "../utils/sessionUtils";
 import { formatEventDate } from "../utils/dateUtils";
 
+// Countdown Timer Component
+const CountdownTimer = ({ eventDate }: { eventDate: string }) => {
+  const [timeLeft, setTimeLeft] = useState<{
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+    isPast: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const eventDateTime = new Date(eventDate).getTime();
+      const now = new Date().getTime();
+      const difference = eventDateTime - now;
+
+      if (difference > 0) {
+        return {
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((difference / 1000 / 60) % 60),
+          seconds: Math.floor((difference / 1000) % 60),
+          isPast: false,
+        };
+      } else {
+        return {
+          days: 0,
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          isPast: true,
+        };
+      }
+    };
+
+    setTimeLeft(calculateTimeLeft());
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [eventDate]);
+
+  if (!timeLeft) return null;
+
+  if (timeLeft.isPast) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center py-6"
+      >
+        <p className="text-pink-400 font-semibold text-lg">
+          🎉 The event has begun!
+        </p>
+      </motion.div>
+    );
+  }
+
+  if (timeLeft.days === 0 && timeLeft.hours === 0 && timeLeft.minutes === 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center py-6"
+      >
+        <p className="text-pink-400 font-semibold text-lg">
+          ✨ Event is starting today!
+        </p>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="text-center py-6 my-6"
+    >
+      <div className="flex items-center justify-center gap-6 flex-wrap">
+        {timeLeft.days > 0 && (
+          <div className="text-center">
+            <motion.div
+              key={timeLeft.days}
+              initial={{ scale: 1.2 }}
+              animate={{ scale: 1 }}
+              className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent"
+            >
+              {timeLeft.days}
+            </motion.div>
+            <div className="text-xs text-white/60 uppercase tracking-wide mt-1">
+              {timeLeft.days === 1 ? "Day" : "Days"}
+            </div>
+          </div>
+        )}
+        {(timeLeft.days > 0 || timeLeft.hours > 0) && (
+          <div className="text-center">
+            <motion.div
+              key={timeLeft.hours}
+              initial={{ scale: 1.2 }}
+              animate={{ scale: 1 }}
+              className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent"
+            >
+              {timeLeft.hours}
+            </motion.div>
+            <div className="text-xs text-white/60 uppercase tracking-wide mt-1">
+              {timeLeft.hours === 1 ? "Hour" : "Hours"}
+            </div>
+          </div>
+        )}
+        <div className="text-center">
+          <motion.div
+            key={timeLeft.minutes}
+            initial={{ scale: 1.2 }}
+            animate={{ scale: 1 }}
+            className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent"
+          >
+            {timeLeft.minutes}
+          </motion.div>
+          <div className="text-xs text-white/60 uppercase tracking-wide mt-1">
+            {timeLeft.minutes === 1 ? "Minute" : "Minutes"}
+          </div>
+        </div>
+      </div>
+      <p className="text-white/70 text-sm mt-4 font-medium">
+        Until the celebration begins!
+      </p>
+    </motion.div>
+  );
+};
+
 // Skeleton Loader Component
 const SkeletonLoader = () => (
   <div className="min-h-screen w-full bg-gray-950 relative overflow-hidden">
@@ -274,97 +405,85 @@ const Visit = () => {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden hover:shadow-pink-500/20 transition-all duration-500"
           >
+            {/* Hero Image Section */}
+            {eventData?.imageUrl && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: isImageLoaded ? 1 : 0 }}
+                transition={{ duration: 0.8 }}
+                className="flex items-center justify-center pt-10"
+              >
+                <img
+                  src={eventData.imageUrl}
+                  alt={eventData.eventName}
+                  className="w-40 h-40 object-cover rounded-full"
+                  onLoad={handleImageLoad}
+                  onError={() => {
+                    console.error("Failed to load event image");
+                    setIsImageLoaded(true);
+                  }}
+                />
+              </motion.div>
+            )}
+
             <div className="px-6 sm:px-10 py-8 sm:py-14">
-              {/* Title with animation */}
+              {/* Title with elegant serif font */}
               <motion.h1 
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-3 text-center leading-tight"
+                className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-4 text-center leading-tight tracking-tight"
+                style={{ fontFamily: "'Playfair Display', serif" }}
               >
                 {eventData?.eventName || "Your Event"}
               </motion.h1>
 
-              {/* Subtitle */}
-              <motion.p 
+              {/* Consolidated Metadata Row */}
+              <motion.div 
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.5 }}
-                className="text-white/80 text-center mb-8 text-lg"
+                className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-white/80 mb-2"
               >
-                Create lasting memories together
-              </motion.p>
-
-              {/* Event Info Cards with stagger animation */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-10">
-                {/* Date Card */}
                 {eventData?.eventDate && (
-                  <motion.div
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 0.6 }}
-                    whileHover={{ scale: 1.05, y: -5 }}
-                    className="group relative overflow-hidden bg-white/15 backdrop-blur-md rounded-2xl p-5 border border-white/20 hover:bg-white/25 transition-all duration-300 cursor-pointer"
-                  >
-                    <div className="absolute inset-0 bg-linear-to-br from-blue-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <div className="relative flex items-start gap-4">
-                      <motion.div 
-                        whileHover={{ rotate: 360 }}
-                        transition={{ duration: 0.6 }}
-                        className="p-3 bg-blue-500/30 rounded-xl"
-                      >
-                        <Calendar className="w-6 h-6 text-blue-200" />
-                      </motion.div>
-                      <div className="flex-1 text-left">
-                        <p className="text-xs text-blue-200 font-semibold uppercase tracking-wide mb-1">
-                          Date
-                        </p>
-                        <p className="text-base font-bold text-white">
-                          {formatEventDate(eventData.eventDate)}
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-blue-300" />
+                    <span className="text-sm sm:text-base">
+                      {formatEventDate(eventData.eventDate)}
+                    </span>
+                  </div>
                 )}
-
-                {/* Location Card */}
+                {eventData?.eventDate && eventData?.location && (
+                  <span className="text-white/40">•</span>
+                )}
                 {eventData?.location && (
-                  <motion.div
-                    initial={{ x: 20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 0.7 }}
-                    whileHover={{ scale: 1.05, y: -5 }}
-                    className="group relative overflow-hidden bg-white/15 backdrop-blur-md rounded-2xl p-5 border border-white/20 hover:bg-white/25 transition-all duration-300 cursor-pointer"
-                  >
-                    <div className="absolute inset-0 bg-linear-to-br from-purple-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <div className="relative flex items-start gap-4">
-                      <motion.div 
-                        whileHover={{ rotate: 360 }}
-                        transition={{ duration: 0.6 }}
-                        className="p-3 bg-purple-500/30 rounded-xl"
-                      >
-                        <MapPin className="w-6 h-6 text-purple-200" />
-                      </motion.div>
-                      <div className="flex-1 text-left">
-                        <p className="text-xs text-purple-200 font-semibold uppercase tracking-wide mb-1">
-                          Location
-                        </p>
-                        <p className="text-base font-bold text-white">
-                          {eventData.location}
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-purple-300" />
+                    <span className="text-sm sm:text-base">
+                      {eventData.location}
+                    </span>
+                  </div>
                 )}
-              </div>
+              </motion.div>
+
+              {/* Countdown Timer */}
+              {eventData?.eventDate && (
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 0.6 }}
+                >
+                  <CountdownTimer eventDate={eventData.eventDate} />
+                </motion.div>
+              )}
 
               {/* Description */}
               {eventData?.description && (
                 <motion.p 
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.5, delay: 0.8 }}
-                  className="text-white/90 text-base sm:text-lg leading-relaxed text-center py-4 -mt-5"
+                  transition={{ duration: 0.5, delay: 0.7 }}
+                  className="text-white/90 text-base sm:text-lg leading-relaxed text-center py-4"
                 >
                   {eventData.description}
                 </motion.p>
@@ -374,13 +493,13 @@ const Visit = () => {
               <motion.button
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.9 }}
+                transition={{ duration: 0.5, delay: 0.8 }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleSharePhotos}
-                className="group relative w-full sm:w-auto mx-auto flex items-center justify-center gap-3 px-10 py-4 bg-linear-to-r from-pink-500 via-rose-500 to-purple-600 hover:from-pink-600 hover:via-rose-600 hover:to-purple-700 text-white rounded-2xl font-bold text-lg shadow-2xl shadow-pink-500/50 hover:shadow-pink-500/70 transition-all duration-300 overflow-hidden"
+                className="group relative w-full sm:w-auto mx-auto flex items-center justify-center gap-3 px-10 py-4 bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 hover:from-pink-600 hover:via-rose-600 hover:to-purple-700 text-white rounded-2xl font-bold text-lg shadow-2xl shadow-pink-500/50 hover:shadow-pink-500/70 transition-all duration-300 overflow-hidden mt-6"
               >
-                <div className="absolute inset-0 bg-linear-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                 <Upload className="w-6 h-6 relative z-10 group-hover:rotate-12 transition-transform" />
                 <span className="relative z-10">Share Your Photos</span>
               </motion.button>
@@ -389,7 +508,7 @@ const Visit = () => {
               <motion.p 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 1 }}
+                transition={{ duration: 0.5, delay: 0.9 }}
                 className="text-white/60 text-sm text-center mt-6"
               >
                 All photos are private and only visible to event attendees
@@ -401,12 +520,12 @@ const Visit = () => {
           <motion.div 
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 1.1 }}
+            transition={{ duration: 0.5, delay: 1 }}
             className="text-center mt-8 space-y-2"
           >
             <p className="text-white/80 text-sm flex items-center justify-center gap-2">
               Powered by
-              <span className="font-bold bg-linear-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
+              <span className="font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
                 MyMemori
               </span>
             </p>

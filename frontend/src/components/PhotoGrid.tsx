@@ -23,6 +23,7 @@ interface PhotoGridProps {
   onPhotoClick: (photoId: string) => void;  // Changed from number
   onLike: (photoId: string) => void;  // Changed from number
   onDownload: (photoId: string) => void;  // Changed from number
+  isAuthenticated?: boolean; // NEW: to control download permissions
 }
 
 const PhotoGrid = ({
@@ -32,6 +33,7 @@ const PhotoGrid = ({
   onPhotoClick,
   onLike,
   onDownload,
+  isAuthenticated = true, // Default to true for backward compatibility
 }: PhotoGridProps) => {
   const [showHeartAnimation, setShowHeartAnimation] = useState < string | null > (null);
 
@@ -76,6 +78,7 @@ const PhotoGrid = ({
             onLike={onLike}
             onDoubleTapLike={handleDoubleTapLike}
             onDownload={onDownload}
+            isAuthenticated={isAuthenticated}
           />
         ))}
       </Masonry>
@@ -153,6 +156,7 @@ interface PhotoCardProps {
   onLike: (photoId: string) => void;
   onDoubleTapLike: (photoId: string) => void;
   onDownload: (photoId: string) => void;
+  isAuthenticated?: boolean;
 }
 
 const PhotoCard = ({
@@ -164,6 +168,7 @@ const PhotoCard = ({
   onLike,
   onDoubleTapLike,
   onDownload,
+  isAuthenticated = true,
 }: PhotoCardProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -172,6 +177,18 @@ const PhotoCard = ({
     onSingleTap: () => onPhotoClick(photo.photoId),
     delay: 300,
   });
+
+  const handleDownloadClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      // Show tooltip or toast for guest users
+      if (navigator.vibrate) {
+        navigator.vibrate(100);
+      }
+      return;
+    }
+    onDownload(photo.photoId);
+  };
 
   return (
     <motion.div
@@ -204,7 +221,7 @@ const PhotoCard = ({
         </div>
       )}
 
-      {/* Hover overlay */}
+      {/* Hover overlay for desktop */}
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300"></div>
 
       {/* Double-tap heart animation */}
@@ -222,8 +239,9 @@ const PhotoCard = ({
         )}
       </AnimatePresence>
 
-      {/* Action buttons on hover */}
-      <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+      {/* ALWAYS VISIBLE on MOBILE: Bottom action badges (hidden on desktop) */}
+      <div className="absolute bottom-0 left-0 right-0 p-3 flex items-end justify-between z-10 md:hidden">
+        {/* Like button with counter - ALWAYS VISIBLE */}
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
@@ -231,41 +249,87 @@ const PhotoCard = ({
             e.stopPropagation();
             onLike(photo.photoId);
           }}
-          className="relative p-3 bg-white rounded-full hover:bg-pink-50 transition-colors shadow-lg"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-black/60 backdrop-blur-sm rounded-full hover:bg-black/80 transition-colors shadow-lg group/like"
           title="Like"
         >
           <Heart
-            className={`w-5 h-5 transition-colors ${isLiked ? "fill-pink-600 text-pink-600" : "text-gray-700"
-              }`}
+            className={`w-4 h-4 transition-all ${
+              isLiked 
+                ? "fill-pink-500 text-pink-500 scale-110" 
+                : "text-white group-hover/like:text-pink-400"
+            }`}
           />
-          {/* Reaction count badge */}
           {photo.reactionCount !== undefined && photo.reactionCount > 0 && (
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="absolute -top-1 -right-1 bg-pink-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md"
-            >
+            <span className="text-white text-xs font-semibold">
               {photo.reactionCount > 99 ? '99+' : photo.reactionCount}
-            </motion.span>
+            </span>
           )}
         </motion.button>
 
+        {/* Download button - ALWAYS VISIBLE with permission state */}
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onDownload(photo.photoId);
-          }}
-          className="p-3 bg-white rounded-full hover:bg-green-50 transition-colors shadow-lg"
-          title="Download"
+          onClick={handleDownloadClick}
+          className={`relative p-2 rounded-full shadow-lg transition-all ${
+            isAuthenticated
+              ? "bg-black/60 backdrop-blur-sm hover:bg-black/80"
+              : "bg-gray-600/70 backdrop-blur-sm cursor-not-allowed"
+          }`}
+          title={isAuthenticated ? "Download" : "Sign up to download"}
         >
-          <Download className="w-5 h-5 text-gray-700" />
+          <Download 
+            className={`w-4 h-4 ${
+              isAuthenticated ? "text-white" : "text-gray-300"
+            }`} 
+          />
+          {!isAuthenticated && (
+            <div className="absolute -top-1 -right-1 bg-pink-600 rounded-full p-0.5">
+              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+          )}
         </motion.button>
       </div>
 
-      {/* Photo info on hover */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+      {/* Desktop-only: Hover action buttons (centered) */}
+      <div className="hidden md:flex absolute inset-0 items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 pointer-events-none">
+        <div className="pointer-events-auto flex items-center gap-3">
+          <motion.button
+            whileHover={{ scale: 1.15 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onLike(photo.photoId);
+            }}
+            className="p-3 bg-white rounded-full hover:bg-pink-50 transition-colors shadow-xl"
+            title="Like"
+          >
+            <Heart
+              className={`w-5 h-5 transition-colors ${isLiked ? "fill-pink-600 text-pink-600" : "text-gray-700"
+                }`}
+            />
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: isAuthenticated ? 1.15 : 1 }}
+            whileTap={{ scale: isAuthenticated ? 0.9 : 1 }}
+            onClick={handleDownloadClick}
+            className={`p-3 rounded-full transition-colors shadow-xl ${
+              isAuthenticated
+                ? "bg-white hover:bg-green-50 cursor-pointer"
+                : "bg-gray-200 cursor-not-allowed"
+            }`}
+            title={isAuthenticated ? "Download" : "Sign up to download"}
+          >
+            <Download className={`w-5 h-5 ${isAuthenticated ? "text-gray-700" : "text-gray-400"}`} />
+          </motion.button>
+        </div>
+      </div>
+
+      {/* Photo info on desktop hover */}
+      <div className="hidden md:block absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
         <p className="text-white text-sm font-medium">{photo.uploader}</p>
         <p className="text-white/70 text-xs">{photo.uploadedAt}</p>
       </div>
