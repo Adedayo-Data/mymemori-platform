@@ -6,8 +6,11 @@ import com.mymemori.Repository.ReactionRepository;
 import com.mymemori.dto.PhotoRequestDTO;
 import com.mymemori.dto.PhotoResponseDTO;
 import com.mymemori.dto.ViewGalleryRequest;
+import com.mymemori.exception.PhotoNotFoundException;
+import com.mymemori.exception.UserNotFoundException;
 import com.mymemori.models.Event;
 import com.mymemori.models.Photo;
+import com.mymemori.models.Reactions;
 import com.mymemori.models.Users;
 import com.mymemori.util.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
@@ -156,6 +159,42 @@ public class PhotoService {
         return response;
     }
 
+    // User Liked pictures
+    /*
+    * We are fetching photos by their reaction model.
+    * STEPS:
+    * - Find all the reactions by a session or auth user
+    * - iterate through all the reaction object and fetch their photo from their ID
+    * -
+    *
+    * */
+    public List<PhotoResponseDTO> userLikedImages(UUID sessionId){
+        Users user = authUser.fetchAuthenticatedUser();
+        log.info("fetching all liked images by user: {} or session id: {}", user, sessionId);
+
+        List<PhotoResponseDTO> response = new ArrayList<>();
+        if (user != null){
+            List<Reactions> allReactions = reactionRepo.findAllByUserId(user.getId());
+            List<Photo> likedPhotos = allLikedPhotos(allReactions);
+
+            for (Photo p : likedPhotos){
+                PhotoResponseDTO photo = mapToDTO(p);
+                response.add(photo);
+            }
+        }else if (sessionId != null){
+            List<Reactions> allReactions = reactionRepo.findAllBySessionId(sessionId);
+            List<Photo> likedPhotos = allLikedPhotos(allReactions);
+
+            for (Photo p : likedPhotos){
+                PhotoResponseDTO photo = mapToDTO(p);
+                response.add(photo);
+            }
+        }else {
+            throw new IllegalArgumentException();
+        }
+        return response;
+    }
+
     public PhotoResponseDTO mapToDTO(Photo photo) {
         PhotoResponseDTO response = new PhotoResponseDTO();
         response.setPhotoId(photo.getId());
@@ -197,6 +236,20 @@ public class PhotoService {
         response.setDescription(event.getDescription());
         response.setEventSlug(event.getEventSlug());
         response.setImageUrl(event.getImageUrl());
+
+        return response;
+    }
+
+    public List<Photo> allLikedPhotos(List<Reactions> allReactions){
+
+        List<Photo> response = new ArrayList<>();
+
+        for (Reactions r : allReactions){
+            Photo photo = photoRepo.findById(r.getPhotoId())
+                    .orElseThrow(() -> new PhotoNotFoundException("Photo not found"));
+
+            response.add(photo);
+        }
 
         return response;
     }

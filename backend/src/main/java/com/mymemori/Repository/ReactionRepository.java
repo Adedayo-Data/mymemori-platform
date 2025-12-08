@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -26,6 +27,10 @@ public interface ReactionRepository extends JpaRepository<Reactions, UUID> {
     java.util.Optional<Reactions> findByPhotoIdAndUserId(UUID photoId, UUID userId);
 
     java.util.Optional<Reactions> findByPhotoIdAndSessionId(UUID photoId, UUID sessionId);
+
+    List<Reactions> findAllByUserId(UUID userId);
+
+    List<Reactions> findAllBySessionId(UUID sessionId);
 
     @Modifying
     @Transactional

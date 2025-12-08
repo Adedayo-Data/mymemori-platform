@@ -2,9 +2,11 @@ package com.mymemori.services;
 
 import com.mymemori.Repository.PhotoRepository;
 import com.mymemori.Repository.ReactionRepository;
+import com.mymemori.dto.PhotoResponseDTO;
 import com.mymemori.dto.ReactionDeleteReq;
 import com.mymemori.dto.ReactionRequestDTO;
 import com.mymemori.dto.ReactionResponse;
+import com.mymemori.exception.UserNotFoundException;
 import com.mymemori.models.Photo;
 import com.mymemori.models.Reactions;
 import com.mymemori.models.Users;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 

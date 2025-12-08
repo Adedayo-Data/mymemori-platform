@@ -1,8 +1,7 @@
 import { toast } from "react-hot-toast";
 
-const CLOUDINARY_UPLOAD_URL =
-  "https://api.cloudinary.com/v1_1/drzcrx4he/image/upload";
-const UPLOAD_PRESET = "mymemori-uploads";
+const CLOUDINARY_UPLOAD_URL = import.meta.env.VITE_CLOUDINARY_UPLOAD_URL;
+const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
 interface CloudinaryResponse {
   secure_url: string;
