@@ -64,7 +64,7 @@ public class SecurityConfig {
             CorsConfiguration cfg = new CorsConfiguration();
 
             cfg.setAllowedOrigins(List.of("http://localhost:5173", "https://mymemori-platform.vercel.app",
-                    "https://mymemori.vercel.app"));
+                    "https://mymemori.vercel.app", "https://mymemori.site"));
             cfg.setAllowedHeaders(Collections.singletonList("*"));
             cfg.setAllowedMethods(Collections.singletonList("*"));
             cfg.setAllowCredentials(true);
