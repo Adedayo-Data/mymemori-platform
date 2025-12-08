@@ -44,6 +44,7 @@ const Gallery = () => {
     title: "Gallery",
     date: "",
   });
+  const [isAuthenticated, setIsAuthenticated] = useState < boolean > (false);
 
   // Refs
   const fileInputRef = useRef < HTMLInputElement > (null);
@@ -86,12 +87,14 @@ const Gallery = () => {
           return;
         }
 
-        // Get session context
         const sessionContext = await getSessionContext(
           searchParams,
           location.state
         );
         const { isAuthenticated, sessionId } = sessionContext;
+        
+        // Update isAuthenticated state
+        setIsAuthenticated(isAuthenticated);
 
         // Fetch event details
         try {
@@ -460,6 +463,7 @@ const Gallery = () => {
                 }}
                 onLike={handleLike}
                 onDownload={handleDownload}
+                isAuthenticated={isAuthenticated}
               />
 
               {/* Loading indicator and observer target */}
