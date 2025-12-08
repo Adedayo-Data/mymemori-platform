@@ -13,6 +13,7 @@ export interface Photo {
   uploader: string;
   uploadedAt: string;
   imageUrl?: string;
+  reactionCount?: number;
 }
 
 interface PhotoGridProps {
@@ -32,7 +33,7 @@ const PhotoGrid = ({
   onLike,
   onDownload,
 }: PhotoGridProps) => {
-  const [showHeartAnimation, setShowHeartAnimation] = useState<string | null>(null);
+  const [showHeartAnimation, setShowHeartAnimation] = useState < string | null > (null);
 
   // Masonry breakpoints
   const breakpointColumns = {
@@ -46,12 +47,12 @@ const PhotoGrid = ({
   const handleDoubleTapLike = (photoId: string) => {
     onLike(photoId);
     setShowHeartAnimation(photoId);
-    
+
     // Haptic feedback on mobile
     if (navigator.vibrate) {
       navigator.vibrate(50);
     }
-    
+
     setTimeout(() => setShowHeartAnimation(null), 1000);
   };
 
@@ -119,11 +120,10 @@ const PhotoGrid = ({
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <Heart
-                className={`w-5 h-5 ${
-                  likedPhotos.has(photo.photoId)
-                    ? "fill-pink-600 text-pink-600"
-                    : "text-gray-400"
-                }`}
+                className={`w-5 h-5 ${likedPhotos.has(photo.photoId)
+                  ? "fill-pink-600 text-pink-600"
+                  : "text-gray-400"
+                  }`}
               />
             </button>
 
@@ -193,9 +193,8 @@ const PhotoCard = ({
         <img
           src={photo.imageUrl}
           alt={`Photo by ${photo.uploader}`}
-          className={`w-full h-auto object-cover transition-opacity duration-300 ${
-            imageLoaded ? 'opacity-100' : 'opacity-0'
-          }`}
+          className={`w-full h-auto object-cover transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
           loading="lazy"
           onLoad={() => setImageLoaded(true)}
         />
@@ -232,14 +231,23 @@ const PhotoCard = ({
             e.stopPropagation();
             onLike(photo.photoId);
           }}
-          className="p-3 bg-white rounded-full hover:bg-pink-50 transition-colors shadow-lg"
+          className="relative p-3 bg-white rounded-full hover:bg-pink-50 transition-colors shadow-lg"
           title="Like"
         >
           <Heart
-            className={`w-5 h-5 transition-colors ${
-              isLiked ? "fill-pink-600 text-pink-600" : "text-gray-700"
-            }`}
+            className={`w-5 h-5 transition-colors ${isLiked ? "fill-pink-600 text-pink-600" : "text-gray-700"
+              }`}
           />
+          {/* Reaction count badge */}
+          {photo.reactionCount !== undefined && photo.reactionCount > 0 && (
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="absolute -top-1 -right-1 bg-pink-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md"
+            >
+              {photo.reactionCount > 99 ? '99+' : photo.reactionCount}
+            </motion.span>
+          )}
         </motion.button>
 
         <motion.button
