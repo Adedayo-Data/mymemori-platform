@@ -1,35 +1,68 @@
-import { useMemo } from "react";
+import { useState, useEffect } from "react";
 
 import { Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useEvent } from "../context/eventContext";
+
+interface EventCard {
+  id: string;
+  title: string;
+  date: string;
+  location: string;
+  slug: string;
+  color: string;
+}
 
 const EventList = () => {
   const navigate = useNavigate();
+  const { getAllEvent } = useEvent();
+  const [eventsCreated, setEventsCreated] = useState < EventCard[] > ([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock events data - in real app, this would come from context/API
-  const eventsCreated = useMemo(
-    () => [
-      {
-        id: 1,
-        title: "Olivia & Liam's Wedding",
-        date: "Oct 18, 2024",
-        location: "Grand Ballroom, NYC",
-        slug: "olivia-liam",
-        color: "from-rose-200 to-pink-300",
-      },
-      {
-        id: 2,
-        title: "The Chen Engagement Party",
-        date: "Aug 15, 2024",
-        location: "Sunset Gardens",
-        slug: "chen-engagement",
-        color: "from-emerald-200 to-teal-300",
-      },
-    ],
-    []
-  );
+  // Color gradients for visual variety
+  const colorGradients = [
+    "from-rose-200 to-pink-300",
+    "from-emerald-200 to-teal-300",
+    "from-blue-200 to-indigo-300",
+    "from-purple-200 to-violet-300",
+    "from-amber-200 to-orange-300",
+    "from-cyan-200 to-sky-300",
+  ];
 
-  const handleSelectEvent = (event: any) => {
+  // Fetch events from backend
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setIsLoading(true);
+      try {
+        const events = await getAllEvent();
+
+        // Transform backend response to match UI format
+        const transformedEvents: EventCard[] = events.map((event, index) => ({
+          id: event.eventSlug,
+          title: event.eventName,
+          date: new Date(event.eventDate).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          }),
+          location: event.location,
+          slug: event.eventSlug,
+          color: colorGradients[index % colorGradients.length],
+        }));
+
+        setEventsCreated(transformedEvents);
+      } catch (error) {
+        console.error("Error fetching events:", error);
+        setEventsCreated([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, [getAllEvent]);
+
+  const handleSelectEvent = (event: EventCard) => {
     navigate("/share-details", {
       state: {
         eventData: event,
@@ -55,7 +88,12 @@ const EventList = () => {
 
         {/* Event Selection Section */}
         <div>
-          {eventsCreated.length === 0 ? (
+          {isLoading ? (
+            /* Loading State */
+            <div className="flex items-center justify-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
+            </div>
+          ) : eventsCreated.length === 0 ? (
             /* Empty State */
             <div className="bg-white rounded-2xl border-2 border-dashed border-gray-300 p-12 text-center">
               <div className="mx-auto w-16 h-16 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mb-4">
