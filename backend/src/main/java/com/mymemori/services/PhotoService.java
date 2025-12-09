@@ -250,7 +250,6 @@ public class PhotoService {
 
             response.add(photo);
         }
-
         return response;
     }
 

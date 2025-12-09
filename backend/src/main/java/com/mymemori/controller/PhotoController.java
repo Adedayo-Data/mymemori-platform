@@ -65,6 +65,14 @@ public class PhotoController {
         return ResponseEntity.ok(response);
     }
 
+    // Get liked photos for authenticated user or session
+    @GetMapping("/liked-photos")
+    public ResponseEntity<List<PhotoResponseDTO>> getLikedPhotos(
+            @RequestHeader(value = "X-Session-Id", required = false) UUID sessionId) {
+        List<PhotoResponseDTO> response = photoService.userLikedImages(sessionId);
+        return ResponseEntity.ok(response);
+    }
+
     // Get event details by slug (public endpoint for gallery access)
     @GetMapping("/event/{slug}")
     public ResponseEntity<com.mymemori.dto.EventResponse> getEventBySlug(@PathVariable String slug) {

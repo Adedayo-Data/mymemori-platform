@@ -38,21 +38,23 @@ interface Photo {
 const NewHome = () => {
   const navigate = useNavigate();
   const { getAllEvent } = useEvent();
-  const { getAllPhoto } = usePicture();
+  const { getAllPhoto, getLikedPhotos } = usePicture();
   const location = useLocation();
-  const [mainTab, setMainTab] = useState<"events" | "pictures">("events");
-  const [eventsSubTab, setEventsSubTab] = useState<"created" | "attended">(
+  const [mainTab, setMainTab] = useState < "events" | "pictures" > ("events");
+  const [eventsSubTab, setEventsSubTab] = useState < "created" | "attended" > (
     "created"
   );
-  const [picturesSubTab, setPicturesSubTab] = useState<"yours" | "liked">(
+  const [picturesSubTab, setPicturesSubTab] = useState < "yours" | "liked" > (
     "yours"
   );
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [createdEvents, setCreatedEvents] = useState<Event[]>([]);
-  const [attendedEvents, setAttendedEvents] = useState<Event[]>([]);
+  const [createdEvents, setCreatedEvents] = useState < Event[] > ([]);
+  const [attendedEvents, setAttendedEvents] = useState < Event[] > ([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
-  const [userPhotos, setUserPhotos] = useState<Photo[]>([]);
+  const [userPhotos, setUserPhotos] = useState < Photo[] > ([]);
   const [isLoadingPhotos, setIsLoadingPhotos] = useState(true);
+  const [likedPhotos, setLikedPhotos] = useState < Photo[] > ([]);
+  const [isLoadingLikedPhotos, setIsLoadingLikedPhotos] = useState(true);
 
   // Check if we should open profile panel based on route
   useEffect(() => {
@@ -98,10 +100,22 @@ const NewHome = () => {
       } finally {
         setIsLoadingPhotos(false);
       }
+
+      // Fetch liked photos
+      setIsLoadingLikedPhotos(true);
+      try {
+        const liked = await getLikedPhotos();
+        setLikedPhotos(liked || []);
+      } catch (error) {
+        console.error("Error fetching liked photos:", error);
+        setLikedPhotos([]);
+      } finally {
+        setIsLoadingLikedPhotos(false);
+      }
     };
 
     fetchData();
-  }, [getAllEvent, getAllPhoto]);
+  }, [getAllEvent, getAllPhoto, getLikedPhotos]);
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
       {/* Header */}
@@ -117,11 +131,10 @@ const NewHome = () => {
             <div className="flex">
               <button
                 onClick={() => setMainTab("events")}
-                className={`relative py-2 px-4 font-medium text-sm transition-all rounded-lg ${
-                  mainTab === "events"
-                    ? "text-pink-600 bg-pink-50"
-                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                }`}
+                className={`relative py-2 px-4 font-medium text-sm transition-all rounded-lg ${mainTab === "events"
+                  ? "text-pink-600 bg-pink-50"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                  }`}
               >
                 <div className="flex items-center gap-2">
                   <Calendar className="w-5 h-5" />
@@ -131,11 +144,10 @@ const NewHome = () => {
 
               <button
                 onClick={() => setMainTab("pictures")}
-                className={`relative py-2 px-4 font-medium text-sm transition-all rounded-lg ${
-                  mainTab === "pictures"
-                    ? "text-pink-600 bg-pink-50"
-                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                }`}
+                className={`relative py-2 px-4 font-medium text-sm transition-all rounded-lg ${mainTab === "pictures"
+                  ? "text-pink-600 bg-pink-50"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                  }`}
               >
                 <div className="flex items-center gap-2">
                   <ImageIcon className="w-5 h-5" />
@@ -162,11 +174,10 @@ const NewHome = () => {
               <div className="flex gap-4 mb-6 border-b border-gray-200">
                 <button
                   onClick={() => setEventsSubTab("created")}
-                  className={`relative pb-3 px-1 font-medium text-sm transition-colors ${
-                    eventsSubTab === "created"
-                      ? "text-pink-600"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
+                  className={`relative pb-3 px-1 font-medium text-sm transition-colors ${eventsSubTab === "created"
+                    ? "text-pink-600"
+                    : "text-gray-500 hover:text-gray-700"
+                    }`}
                 >
                   Created({createdEvents.length})
                   {eventsSubTab === "created" && (
@@ -179,11 +190,10 @@ const NewHome = () => {
 
                 <button
                   onClick={() => setEventsSubTab("attended")}
-                  className={`relative pb-3 px-1 font-medium text-sm transition-colors ${
-                    eventsSubTab === "attended"
-                      ? "text-pink-600"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
+                  className={`relative pb-3 px-1 font-medium text-sm transition-colors ${eventsSubTab === "attended"
+                    ? "text-pink-600"
+                    : "text-gray-500 hover:text-gray-700"
+                    }`}
                 >
                   Attended({attendedEvents.length})
                   {eventsSubTab === "attended" && (
@@ -241,11 +251,10 @@ const NewHome = () => {
               <div className="flex gap-4 mb-6 border-b border-gray-200">
                 <button
                   onClick={() => setPicturesSubTab("yours")}
-                  className={`relative pb-3 px-1 font-medium text-sm transition-colors ${
-                    picturesSubTab === "yours"
-                      ? "text-pink-600"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
+                  className={`relative pb-3 px-1 font-medium text-sm transition-colors ${picturesSubTab === "yours"
+                    ? "text-pink-600"
+                    : "text-gray-500 hover:text-gray-700"
+                    }`}
                 >
                   Your Pictures({userPhotos.length})
                   {picturesSubTab === "yours" && (
@@ -258,13 +267,12 @@ const NewHome = () => {
 
                 <button
                   onClick={() => setPicturesSubTab("liked")}
-                  className={`relative pb-3 px-1 font-medium text-sm transition-colors ${
-                    picturesSubTab === "liked"
-                      ? "text-pink-600"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
+                  className={`relative pb-3 px-1 font-medium text-sm transition-colors ${picturesSubTab === "liked"
+                    ? "text-pink-600"
+                    : "text-gray-500 hover:text-gray-700"
+                    }`}
                 >
-                  Liked Pictures(0)
+                  Liked Pictures({likedPhotos.length})
                   {picturesSubTab === "liked" && (
                     <motion.div
                       layoutId="picturesSubTab"
@@ -294,6 +302,18 @@ const NewHome = () => {
                     description="Pictures you've uploaded to events will appear here."
                   />
                 )
+              ) : isLoadingLikedPhotos ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600">
+                    {" "}
+                  </div>
+                </div>
+              ) : likedPhotos.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {likedPhotos.map((picture) => (
+                    <PictureCard key={picture.photoId} picture={picture} />
+                  ))}
+                </div>
               ) : (
                 <EmptyState
                   icon={ImageIcon}

@@ -37,9 +37,10 @@ interface PictureContextType {
   fetchDefaultImages: (eventSlug: string) => Promise<void>;
   defaultImages: UploadedPhoto[];
   getAllPhoto: () => Promise<UploadedPhoto[]>;
+  getLikedPhotos: () => Promise<UploadedPhoto[]>;
 }
 
-const PictureContext = createContext < PictureContextType | null > (null);
+const PictureContext = createContext<PictureContextType | null>(null);
 
 export const PictureProvider = ({
   children,
@@ -47,8 +48,8 @@ export const PictureProvider = ({
   children: React.ReactNode;
 }) => {
   const [loading, setLoading] = useState(false);
-  const [uploadedPhotos, setUploadedPhotos] = useState < UploadedPhoto[] > ([]);
-  const [defaultImages, setDefaultImages] = useState < UploadedPhoto[] > ([]);
+  const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([]);
+  const [defaultImages, setDefaultImages] = useState<UploadedPhoto[]>([]);
 
   const addUploadedPhoto = useCallback((photo: UploadedPhoto) => {
     setUploadedPhotos((prev) => [...prev, photo]);
@@ -210,6 +211,17 @@ export const PictureProvider = ({
     }
   }
 
+  const getLikedPhotos = async () => {
+    try {
+      const response = await apiClient.get("/api/public/liked-photos");
+      console.log("Liked photos fetch response:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch liked photos:", error);
+      return [];
+    }
+  }
+
   // Memoize the merged photos array to prevent unnecessary re-renders
   const mergedPhotos = useMemo(
     () => [...defaultImages, ...uploadedPhotos],
@@ -217,7 +229,7 @@ export const PictureProvider = ({
   );
 
   // Memoize the context value to prevent unnecessary re-renders
-  const value = useMemo < PictureContextType > (
+  const value = useMemo<PictureContextType>(
     () => ({
       uploadEventImage,
       uploadGalleryImage,
@@ -226,7 +238,8 @@ export const PictureProvider = ({
       loading,
       fetchDefaultImages,
       defaultImages,
-      getAllPhoto
+      getAllPhoto,
+      getLikedPhotos
     }),
     [
       uploadEventImage,
@@ -236,7 +249,8 @@ export const PictureProvider = ({
       loading,
       fetchDefaultImages,
       defaultImages,
-      getAllPhoto
+      getAllPhoto,
+      getLikedPhotos
     ]
   );
 

@@ -11,6 +11,7 @@ import EnhancedPhotoModal from "../components/EnhancedPhotoModal";
 import UploadModal from "../components/UploadModal";
 import PhotoSkeleton from "../components/PhotoSkeleton";
 import FloatingUploadIndicator from "../components/FloatingUploadIndicator";
+import SignupPromptModal from "../components/SignupPromptModal";
 import { useEvent } from "../context/eventContext";
 import { usePicture } from "../context/pictureContext";
 import { useAuth } from "../context/authContext";
@@ -39,6 +40,7 @@ const Gallery = () => {
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState < number | null > (null);
   const [likedPhotos, setLikedPhotos] = useState < Set < string >> (new Set());
   const [showUploadModal, setShowUploadModal] = useState < boolean > (false);
+  const [showSignupPrompt, setShowSignupPrompt] = useState < boolean > (false);
   const [isLoading, setIsLoading] = useState < boolean > (true);
   const [eventData, setEventData] = useState < { title: string; date: string } > ({
     title: "Gallery",
@@ -92,7 +94,7 @@ const Gallery = () => {
           location.state
         );
         const { isAuthenticated, sessionId } = sessionContext;
-        
+
         // Update isAuthenticated state
         setIsAuthenticated(isAuthenticated);
 
@@ -325,6 +327,14 @@ const Gallery = () => {
 
   // Handle photo download
   const handleDownload = (photoId: string) => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      // Session user trying to download - show signup prompt
+      setShowSignupPrompt(true);
+      return;
+    }
+
+    // Authenticated user - proceed with download
     const photo = contextPhotos.find((p) => p.photoId === photoId);
     if (photo) {
       downloadImage(photo.imageUrl, `photo-${photoId}.jpg`);
@@ -562,6 +572,13 @@ const Gallery = () => {
           onNavigate={(index) => setSelectedPhotoIndex(index)}
         />
       )}
+
+      {/* Signup Prompt Modal */}
+      <SignupPromptModal
+        isOpen={showSignupPrompt}
+        onClose={() => setShowSignupPrompt(false)}
+        returnTo={window.location.pathname + window.location.search}
+      />
 
 
 

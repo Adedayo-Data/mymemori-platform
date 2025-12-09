@@ -33,12 +33,12 @@ interface AuthContextType {
   ) => Promise<SessionContext>;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext < AuthContextType | null > (null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState < User | null > (null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState < string | null > (null);
   const isAuthenticated = !!user;
 
   useEffect(() => {
@@ -109,14 +109,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await apiClient.post("/api/auth/sign-up", data);
+      // Get current session ID if it exists (for session conversion)
+      const sessionId = localStorage.getItem("sessionId");
+
+      // Include sessionId in signup request if available
+      const signupData = {
+        ...data,
+        sessionId: sessionId || undefined,
+      };
+
+      const response = await apiClient.post("/api/auth/sign-up", signupData);
       const { token, email, fullName } = response.data;
       const userData = { email, fullName };
+
+      // Store auth data
       localStorage.setItem("authToken", token);
       localStorage.setItem("userData", JSON.stringify(userData));
+
+      // CRITICAL: Clear session storage after successful signup
+      // Authenticated users should be tracked via JWT only
+      clearSession();
+
       setUser(userData);
       console.log("Signup response:", response.data);
       console.log("userData:", userData);
+      console.log("Session cleared - user now authenticated via JWT");
     } catch (err: unknown) {
       const errorMessage = handleApiError(
         err,
