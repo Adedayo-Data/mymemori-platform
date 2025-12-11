@@ -1,4 +1,4 @@
-import {  Download } from "lucide-react";
+import { Download } from "lucide-react";
 
 interface GalleryHeaderProps {
   eventTitle: string;
@@ -26,21 +26,22 @@ const GalleryHeader = ({
         </div>
       </div>
 
-      <button
+      {/* Commented out Download All button */}
+      {/* <button
         onClick={onDownloadAll}
         className="hidden sm:flex items-center gap-2 px-3 py-2 text-gray-600 border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors font-medium text-sm flex-shrink-0"
       >
         <Download className="w-4 h-4" />
         <span>Download All</span>
-      </button>
+      </button> */}
 
-      {/* Mobile Download Icon Only */}
-      <button
+      {/* Mobile Download Icon Only - Commented out */}
+      {/* <button
         onClick={onDownloadAll}
         className="sm:hidden p-2 text-gray-600 border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors flex-shrink-0"
       >
         <Download className="w-5 h-5" />
-      </button>
+      </button> */}
     </div>
   );
 };
