@@ -89,8 +89,10 @@ const Auth = () => {
         toast.success("Welcome back!");
       }
 
-      // Redirect to returnTo URL if provided, otherwise go to home
-      const redirectUrl = returnTo || "/";
+      // Redirect logic: 
+      // - If returnTo is provided and NOT the landing page, use it
+      // - Otherwise, redirect to /home (authenticated users should see /home, not /)
+      const redirectUrl = returnTo && returnTo !== "/" ? returnTo : "/home";
       navigate(redirectUrl);
     } catch (error) {
       console.error(error);
