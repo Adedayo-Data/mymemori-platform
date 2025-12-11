@@ -180,13 +180,7 @@ const PhotoCard = ({
 
   const handleDownloadClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isAuthenticated) {
-      // Show tooltip or toast for guest users
-      if (navigator.vibrate) {
-        navigator.vibrate(100);
-      }
-      return;
-    }
+    // Always call onDownload - Gallery will handle showing modal for guests
     onDownload(photo.photoId);
   };
 
@@ -253,11 +247,10 @@ const PhotoCard = ({
           title="Like"
         >
           <Heart
-            className={`w-4 h-4 transition-all ${
-              isLiked 
-                ? "fill-pink-500 text-pink-500 scale-110" 
-                : "text-white group-hover/like:text-pink-400"
-            }`}
+            className={`w-4 h-4 transition-all ${isLiked
+              ? "fill-pink-500 text-pink-500 scale-110"
+              : "text-white group-hover/like:text-pink-400"
+              }`}
           />
           {photo.reactionCount !== undefined && photo.reactionCount > 0 && (
             <span className="text-white text-xs font-semibold">
@@ -271,17 +264,15 @@ const PhotoCard = ({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={handleDownloadClick}
-          className={`relative p-2 rounded-full shadow-lg transition-all ${
-            isAuthenticated
-              ? "bg-black/60 backdrop-blur-sm hover:bg-black/80"
-              : "bg-gray-600/70 backdrop-blur-sm cursor-not-allowed"
-          }`}
+          className={`relative p-2 rounded-full shadow-lg transition-all ${isAuthenticated
+            ? "bg-black/60 backdrop-blur-sm hover:bg-black/80"
+            : "bg-gray-600/70 backdrop-blur-sm cursor-not-allowed"
+            }`}
           title={isAuthenticated ? "Download" : "Sign up to download"}
         >
-          <Download 
-            className={`w-4 h-4 ${
-              isAuthenticated ? "text-white" : "text-gray-300"
-            }`} 
+          <Download
+            className={`w-4 h-4 ${isAuthenticated ? "text-white" : "text-gray-300"
+              }`}
           />
           {!isAuthenticated && (
             <div className="absolute -top-1 -right-1 bg-pink-600 rounded-full p-0.5">
@@ -313,17 +304,13 @@ const PhotoCard = ({
           </motion.button>
 
           <motion.button
-            whileHover={{ scale: isAuthenticated ? 1.15 : 1 }}
-            whileTap={{ scale: isAuthenticated ? 0.9 : 1 }}
+            whileHover={{ scale: 1.15 }}
+            whileTap={{ scale: 0.9 }}
             onClick={handleDownloadClick}
-            className={`p-3 rounded-full transition-colors shadow-xl ${
-              isAuthenticated
-                ? "bg-white hover:bg-green-50 cursor-pointer"
-                : "bg-gray-200 cursor-not-allowed"
-            }`}
+            className="p-3 bg-white rounded-full hover:bg-green-50 transition-colors shadow-xl cursor-pointer"
             title={isAuthenticated ? "Download" : "Sign up to download"}
           >
-            <Download className={`w-5 h-5 ${isAuthenticated ? "text-gray-700" : "text-gray-400"}`} />
+            <Download className="w-5 h-5 text-gray-700" />
           </motion.button>
         </div>
       </div>
