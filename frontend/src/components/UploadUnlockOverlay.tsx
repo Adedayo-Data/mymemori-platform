@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Upload, Lock, Sparkles } from "lucide-react";
 
 interface UploadUnlockOverlayProps {

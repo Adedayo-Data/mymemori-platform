@@ -1,17 +1,17 @@
-import { Download } from "lucide-react";
+// import { Download } from "lucide-react"; // Commented out with feature
 
 interface GalleryHeaderProps {
   eventTitle: string;
   eventDate: string;
   photoCount: number;
-  onDownloadAll: () => void;
+  // onDownloadAll: () => void; // Commented out with feature
 }
 
 const GalleryHeader = ({
   eventTitle,
   eventDate,
   photoCount,
-  onDownloadAll,
+  // onDownloadAll, // Commented out with feature
 }: GalleryHeaderProps) => {
   return (
     <div className="flex items-center justify-between gap-3 mb-4">

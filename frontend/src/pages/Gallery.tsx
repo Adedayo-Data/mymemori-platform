@@ -297,20 +297,6 @@ const Gallery = () => {
     }
   };
 
-  // Handle successful upload from the queue
-  const handleUploadSuccess = async (uploadedPhotoId: string) => {
-    try {
-      // User just uploaded - unlock all photos!
-      setHasUploaded(true);
-      toast.success("🎉 All memories unlocked!");
-
-      // Close the upload modal
-      setShowUploadModal(false);
-    } catch (error) {
-      console.error("Error handling upload success:", error);
-    }
-  };
-
   // Handle photo like
   const handleLike = async (photoId: string) => {
     try {
@@ -456,7 +442,7 @@ const Gallery = () => {
 
 
   // Infinite scroll for performance
-  const { displayedItems, hasMore, isLoadingMore, observerRef } = useInfiniteScroll({
+  const { displayedItems } = useInfiniteScroll({
     items: sortedPhotos,
     batchSize: 20,
   });

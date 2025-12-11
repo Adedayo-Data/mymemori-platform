@@ -34,7 +34,7 @@ interface PictureContextType {
   uploadedPhotos: UploadedPhoto[];
   addUploadedPhoto: (photo: UploadedPhoto) => void;
   loading: boolean;
-  fetchDefaultImages: (eventSlug: string) => Promise<void>;
+  fetchDefaultImages: (eventSlug: string, existingSessionId?: string) => Promise<void>;
   defaultImages: UploadedPhoto[];
   getAllPhoto: () => Promise<UploadedPhoto[]>;
   getLikedPhotos: () => Promise<UploadedPhoto[]>;
