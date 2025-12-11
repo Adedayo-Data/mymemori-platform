@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import {
   validateSignupForm,
@@ -16,7 +16,13 @@ import { Mail, Lock, User, Eye, EyeOff, Loader2, ArrowRight } from "lucide-react
 import toast from "react-hot-toast";
 
 const Auth = () => {
-  const [activeTab, setActiveTab] = useState<"signup" | "login">("signup");
+  const [searchParams] = useSearchParams();
+  const mode = searchParams.get("mode");
+  const returnTo = searchParams.get("returnTo");
+
+  const [activeTab, setActiveTab] = useState < "signup" | "login" > (
+    mode === "signup" ? "signup" : "login"
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
@@ -24,15 +30,22 @@ const Auth = () => {
     password: "",
     confirmPassword: "",
   });
-  const [errors, setErrors] = useState<ValidationErrors>({
+  const [errors, setErrors] = useState < ValidationErrors > ({
     fullName: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
-  
+
   const navigate = useNavigate();
   const { loading, signup, signin } = useAuth();
+
+  // Update active tab when mode changes
+  useEffect(() => {
+    if (mode === "signup" || mode === "login") {
+      setActiveTab(mode);
+    }
+  }, [mode]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -75,7 +88,10 @@ const Auth = () => {
         });
         toast.success("Welcome back!");
       }
-      navigate("/home");
+
+      // Redirect to returnTo URL if provided, otherwise go to home
+      const redirectUrl = returnTo || "/";
+      navigate(redirectUrl);
     } catch (error) {
       console.error(error);
       // Error is handled by the context/toast
@@ -99,7 +115,7 @@ const Auth = () => {
       <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-yellow-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
       <div className="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -107,13 +123,13 @@ const Auth = () => {
       >
         {/* Header */}
         <div className="text-center mb-8">
-          <motion.h1 
+          <motion.h1
             layoutId="title"
             className="text-4xl font-black bg-linear-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent mb-2 tracking-tight"
           >
             MyMemori
           </motion.h1>
-          <motion.p 
+          <motion.p
             key={activeTab}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -131,11 +147,10 @@ const Auth = () => {
             <button
               key={tab}
               onClick={() => toggleTab(tab)}
-              className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition-all relative ${
-                activeTab === tab
-                  ? "text-pink-600 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
+              className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition-all relative ${activeTab === tab
+                ? "text-pink-600 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+                }`}
             >
               {activeTab === tab && (
                 <motion.div
@@ -175,9 +190,8 @@ const Auth = () => {
                       value={formData.fullName}
                       onChange={handleInputChange}
                       placeholder="John Doe"
-                      className={`w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/20 transition-all bg-gray-50/50 focus:bg-white ${
-                        errors.fullName ? "border-rose-300 focus:border-rose-500" : "border-gray-200 focus:border-pink-500"
-                      }`}
+                      className={`w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/20 transition-all bg-gray-50/50 focus:bg-white ${errors.fullName ? "border-rose-300 focus:border-rose-500" : "border-gray-200 focus:border-pink-500"
+                        }`}
                     />
                   </div>
                   {errors.fullName && (
@@ -200,9 +214,8 @@ const Auth = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="you@example.com"
-                    className={`w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/20 transition-all bg-gray-50/50 focus:bg-white ${
-                      errors.email ? "border-rose-300 focus:border-rose-500" : "border-gray-200 focus:border-pink-500"
-                    }`}
+                    className={`w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/20 transition-all bg-gray-50/50 focus:bg-white ${errors.email ? "border-rose-300 focus:border-rose-500" : "border-gray-200 focus:border-pink-500"
+                      }`}
                   />
                 </div>
                 {errors.email && (
@@ -224,9 +237,8 @@ const Auth = () => {
                     value={formData.password}
                     onChange={handleInputChange}
                     placeholder="••••••••"
-                    className={`w-full pl-12 pr-12 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/20 transition-all bg-gray-50/50 focus:bg-white ${
-                      errors.password ? "border-rose-300 focus:border-rose-500" : "border-gray-200 focus:border-pink-500"
-                    }`}
+                    className={`w-full pl-12 pr-12 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/20 transition-all bg-gray-50/50 focus:bg-white ${errors.password ? "border-rose-300 focus:border-rose-500" : "border-gray-200 focus:border-pink-500"
+                      }`}
                   />
                   <button
                     type="button"
@@ -256,9 +268,8 @@ const Auth = () => {
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
                       placeholder="••••••••"
-                      className={`w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/20 transition-all bg-gray-50/50 focus:bg-white ${
-                        errors.confirmPassword ? "border-rose-300 focus:border-rose-500" : "border-gray-200 focus:border-pink-500"
-                      }`}
+                      className={`w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/20 transition-all bg-gray-50/50 focus:bg-white ${errors.confirmPassword ? "border-rose-300 focus:border-rose-500" : "border-gray-200 focus:border-pink-500"
+                        }`}
                     />
                   </div>
                   {errors.confirmPassword && (

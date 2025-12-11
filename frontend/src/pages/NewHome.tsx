@@ -124,7 +124,7 @@ const NewHome = () => {
           <div className="flex items-center justify-between">
             {/* Title */}
             <h1 className="text-xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-              MyMemories
+              MyMemori
             </h1>
 
             {/* Main Tabs - Inline with title */}

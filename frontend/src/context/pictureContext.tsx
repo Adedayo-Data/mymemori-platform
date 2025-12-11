@@ -40,7 +40,7 @@ interface PictureContextType {
   getLikedPhotos: () => Promise<UploadedPhoto[]>;
 }
 
-const PictureContext = createContext<PictureContextType | null>(null);
+const PictureContext = createContext < PictureContextType | null > (null);
 
 export const PictureProvider = ({
   children,
@@ -48,8 +48,8 @@ export const PictureProvider = ({
   children: React.ReactNode;
 }) => {
   const [loading, setLoading] = useState(false);
-  const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([]);
-  const [defaultImages, setDefaultImages] = useState<UploadedPhoto[]>([]);
+  const [uploadedPhotos, setUploadedPhotos] = useState < UploadedPhoto[] > ([]);
+  const [defaultImages, setDefaultImages] = useState < UploadedPhoto[] > ([]);
 
   const addUploadedPhoto = useCallback((photo: UploadedPhoto) => {
     setUploadedPhotos((prev) => [...prev, photo]);
@@ -115,15 +115,15 @@ export const PictureProvider = ({
     []
   );
 
-  const fetchDefaultImages = useCallback(async (eventSlug: string) => {
+  const fetchDefaultImages = useCallback(async (eventSlug: string, existingSessionId?: string) => {
     try {
       setLoading(true);
       // Check if user is authenticated - if so, don't create a session
       const hasAuthToken = !!localStorage.getItem("authToken");
-      let sessionId: string | undefined;
+      let sessionId: string | undefined = existingSessionId;
 
-      if (!hasAuthToken) {
-        // Only create session for guest users
+      if (!hasAuthToken && !sessionId) {
+        // Only create NEW session if we don't have one already
         sessionId = await getOrCreateSession(eventSlug);
       }
 
@@ -223,13 +223,17 @@ export const PictureProvider = ({
   }
 
   // Memoize the merged photos array to prevent unnecessary re-renders
-  const mergedPhotos = useMemo(
-    () => [...defaultImages, ...uploadedPhotos],
-    [defaultImages, uploadedPhotos]
-  );
+  // Deduplicate: Remove temp optimistic photos if backend has returned the real version
+  const mergedPhotos = useMemo(() => {
+    const backendImageUrls = new Set(defaultImages.map(p => p.imageUrl));
+    const dedupedUploadedPhotos = uploadedPhotos.filter(
+      p => !backendImageUrls.has(p.imageUrl)
+    );
+    return [...defaultImages, ...dedupedUploadedPhotos];
+  }, [defaultImages, uploadedPhotos]);
 
   // Memoize the context value to prevent unnecessary re-renders
-  const value = useMemo<PictureContextType>(
+  const value = useMemo < PictureContextType > (
     () => ({
       uploadEventImage,
       uploadGalleryImage,

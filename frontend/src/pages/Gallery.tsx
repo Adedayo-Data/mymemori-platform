@@ -12,6 +12,9 @@ import UploadModal from "../components/UploadModal";
 import PhotoSkeleton from "../components/PhotoSkeleton";
 import FloatingUploadIndicator from "../components/FloatingUploadIndicator";
 import SignupPromptModal from "../components/SignupPromptModal";
+import UploadUnlockOverlay from "../components/UploadUnlockOverlay";
+import UnlockSuccessModal from "../components/UnlockSuccessModal";
+// import StickyUploadBanner from "../components/StickyUploadBanner"; // Removed sticky banner
 import { useEvent } from "../context/eventContext";
 import { usePicture } from "../context/pictureContext";
 import { useAuth } from "../context/authContext";
@@ -47,6 +50,10 @@ const Gallery = () => {
     date: "",
   });
   const [isAuthenticated, setIsAuthenticated] = useState < boolean > (false);
+  const [currentEventSlug, setCurrentEventSlug] = useState < string | null > (null);
+  const [hasUploaded, setHasUploaded] = useState < boolean > (false);
+  const [showSuccessModal, setShowSuccessModal] = useState < boolean > (false);
+  // const [showStickyBanner, setShowStickyBanner] = useState<boolean>(false); // Removed sticky banner
 
   // Refs
   const fileInputRef = useRef < HTMLInputElement > (null);
@@ -89,6 +96,15 @@ const Gallery = () => {
           return;
         }
 
+        // Store the slug for later use (e.g., in returnTo URL)
+        setCurrentEventSlug(slug);
+
+        // Clean up URL - remove the event query parameter to keep URL clean
+        // The slug is now stored in state, so we don't need it in the URL
+        if (searchParams.get("event")) {
+          navigate("/gallery", { replace: true, state: { slug } });
+        }
+
         const sessionContext = await getSessionContext(
           searchParams,
           location.state
@@ -110,31 +126,39 @@ const Gallery = () => {
           toast.error("Failed to load event details");
         }
 
-        // Fetch photos based on auth state
+        // Fetch photos
+        await fetchDefaultImages(slug, sessionId);
+
+        // Check if user has uploaded
         try {
-          if (isAuthenticated) {
-            // For authenticated users, fetch their photos
-            await fetchDefaultImages(slug);
-          } else if (sessionId) {
-            // For guests, fetch photos for this session
-            await fetchDefaultImages(slug);
-          } else {
-            console.log("No valid session, skipping photo fetch");
+          const headers: Record<string, string> = {};
+
+          // Add session ID for guest users so backend can check their upload status
+          if (!isAuthenticated && sessionId) {
+            headers['X-Session-Id'] = sessionId;
           }
+
+          const uploadCheckResponse = await apiClient.get("/api/public/upload-status", {
+            params: { eventSlug: slug },
+            headers,
+          });
+          setHasUploaded(uploadCheckResponse.data.hasUploaded || false);
         } catch (error) {
-          console.error("Failed to load photos:", error);
-          toast.error("Failed to load photos");
+          console.error("Failed to check upload status:", error);
+          // Default to false if check fails
+          setHasUploaded(false);
         }
-      } catch (error) {
-        console.error("Failed to initialize gallery:", error);
-        // Error is already handled in getSessionContext
-      } finally {
+
         setIsLoading(false);
-        hasLoadedRef.current = true;
+      } catch (error) {
+        console.error("Error loading gallery data:", error);
+        toast.error("Failed to load gallery. Please try again.");
+        setIsLoading(false);
       }
     };
 
     loadData();
+    hasLoadedRef.current = true;
 
     // Cleanup function
     return () => {
@@ -180,7 +204,6 @@ const Gallery = () => {
 
       if (likedPhotoIds.size > 0) {
         setLikedPhotos(likedPhotoIds);
-        console.log("Initialized liked photos from context:", Array.from(likedPhotoIds));
       }
     }
   }, [contextPhotos]);
@@ -271,6 +294,20 @@ const Gallery = () => {
     } finally {
       // Reset the input to allow capturing another photo
       if (e.target) e.target.value = "";
+    }
+  };
+
+  // Handle successful upload from the queue
+  const handleUploadSuccess = async (uploadedPhotoId: string) => {
+    try {
+      // User just uploaded - unlock all photos!
+      setHasUploaded(true);
+      toast.success("🎉 All memories unlocked!");
+
+      // Close the upload modal
+      setShowUploadModal(false);
+    } catch (error) {
+      console.error("Error handling upload success:", error);
     }
   };
 
@@ -369,9 +406,9 @@ const Gallery = () => {
           { headers }
         );
 
-        // Add to local gallery
+        // Add to local gallery optimistically (will be deduplicated when backend returns)
         const newPhoto: Photo = {
-          photoId: Date.now().toString(),
+          photoId: `temp-${Date.now()}`, // Temporary ID
           imageUrl: task.imageUrl,
           uploader: isAuthenticated ? "You" : "Guest",
           uploadedAt: "Just now",
@@ -384,7 +421,12 @@ const Gallery = () => {
 
         // FOMO Strategy: Refresh gallery to show all photos after first upload
         // This will fetch all photos from backend since user has now uploaded
-        await fetchDefaultImages(eventSlug);
+        // CRITICAL: Pass the SAME sessionId to ensure backend checks the correct session
+        await fetchDefaultImages(eventSlug, sessionId);
+
+        // Update state to unlock all photos and dismiss overlay
+        setHasUploaded(true);
+        setShowSuccessModal(true);
 
       } catch (saveError: any) {
         console.error('Failed to save image to backend:', saveError);
@@ -419,6 +461,20 @@ const Gallery = () => {
     batchSize: 20,
   });
 
+  // FOMO: Backend already limits to 10 photos if user hasn't uploaded
+  // We just need to show the unlock message when hasUploaded = false
+  const shouldShowUnlock = !hasUploaded && sortedPhotos.length >= 10;
+
+  // Removed sticky banner functionality
+  // useEffect(() => {
+  //   if (shouldShowUnlock && !showStickyBanner) {
+  //     const timer = setTimeout(() => {
+  //       setShowStickyBanner(true);
+  //     }, 30000);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [shouldShowUnlock, showStickyBanner]);
+
 
 
   return (
@@ -430,7 +486,7 @@ const Gallery = () => {
             eventTitle={eventData.title}
             eventDate={eventData.date}
             photoCount={sortedPhotos.length}
-            onDownloadAll={() => toast.success("Preparing download...")}
+          // onDownloadAll={() => toast.success("Preparing download...")} // Commented out download all
           />
 
           {/* Filters */}
@@ -461,14 +517,14 @@ const Gallery = () => {
         </main>
       ) : (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-          {displayedItems.length > 0 ? (
+          {sortedPhotos.length > 0 ? (
             <>
               <PhotoGrid
-                photos={displayedItems}
+                photos={sortedPhotos}
                 viewMode={viewMode}
                 likedPhotos={likedPhotos}
                 onPhotoClick={(photoId) => {
-                  const index = displayedItems.findIndex(p => p.photoId === photoId);
+                  const index = sortedPhotos.findIndex(p => p.photoId === photoId);
                   setSelectedPhotoIndex(index);
                 }}
                 onLike={handleLike}
@@ -476,18 +532,13 @@ const Gallery = () => {
                 isAuthenticated={isAuthenticated}
               />
 
-              {/* Loading indicator and observer target */}
-              {hasMore && (
-                <div
-                  ref={observerRef}
-                  className="flex justify-center items-center py-8"
-                >
-                  {isLoadingMore && (
-                    <div className="flex items-center gap-3">
-                      <Loader2 className="h-6 w-6 text-pink-600 animate-spin" />
-                      <p className="text-gray-600 text-sm">Loading more photos...</p>
-                    </div>
-                  )}
+              {/* Unlock message - shown when user hasn't uploaded */}
+              {shouldShowUnlock && (
+                <div className="mt-8">
+                  <UploadUnlockOverlay
+                    photoCount={0} // Backend doesn't tell us total count
+                    onUploadClick={() => setShowUploadModal(true)}
+                  />
                 </div>
               )}
             </>
@@ -576,8 +627,29 @@ const Gallery = () => {
       {/* Signup Prompt Modal */}
       <SignupPromptModal
         isOpen={showSignupPrompt}
-        onClose={() => setShowSignupPrompt(false)}
-        returnTo={window.location.pathname + window.location.search}
+        onClose={() => {
+          setShowSignupPrompt(false);
+        }}
+        returnTo={(() => {
+          // Use the stored event slug to construct the return URL
+          const returnUrl = currentEventSlug
+            ? `/gallery?event=${currentEventSlug}`
+            : "/gallery";
+          return returnUrl;
+        })()}
+      />
+
+      {/* Removed Sticky Upload Banner */}
+      {/* <StickyUploadBanner
+        isVisible={showStickyBanner && shouldShowUnlock}
+        onUploadClick={() => setShowUploadModal(true)}
+        onDismiss={() => setShowStickyBanner(false)}
+      /> */}
+
+      {/* Success Modal */}
+      <UnlockSuccessModal
+        isVisible={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
       />
 
 
