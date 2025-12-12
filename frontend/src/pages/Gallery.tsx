@@ -53,6 +53,7 @@ const Gallery = () => {
   const [currentEventSlug, setCurrentEventSlug] = useState < string | null > (null);
   const [hasUploaded, setHasUploaded] = useState < boolean > (false);
   const [showSuccessModal, setShowSuccessModal] = useState < boolean > (false);
+  const [hasShownUnlockModal, setHasShownUnlockModal] = useState < boolean > (false);
   // const [showStickyBanner, setShowStickyBanner] = useState<boolean>(false); // Removed sticky banner
 
   // Refs
@@ -411,8 +412,13 @@ const Gallery = () => {
         await fetchDefaultImages(eventSlug, sessionId);
 
         // Update state to unlock all photos and dismiss overlay
+        // Only show modal on FIRST upload that unlocks gallery (locked → unlocked transition)
+        // If user already uploaded (hasUploaded=true) or modal already shown, don't show again
+        if (!hasUploaded && !hasShownUnlockModal) {
+          setShowSuccessModal(true);
+          setHasShownUnlockModal(true);
+        }
         setHasUploaded(true);
-        setShowSuccessModal(true);
 
       } catch (saveError: any) {
         console.error('Failed to save image to backend:', saveError);
