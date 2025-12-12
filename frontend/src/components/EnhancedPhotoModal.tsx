@@ -2,6 +2,7 @@ import { Download, Heart, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGesture } from "@use-gesture/react";
 import { useState, useEffect } from "react";
+import { optimizeCloudinaryUrl } from "../utils/cloudinaryOptimizer";
 
 interface Photo {
   photoId: string;  // Changed from id: number
@@ -35,6 +36,11 @@ const EnhancedPhotoModal = ({
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const currentPhoto = photos[currentIndex];
+
+  // Generate optimized URL for modal view (larger size)
+  const optimizedModalUrl = currentPhoto.imageUrl
+    ? optimizeCloudinaryUrl(currentPhoto.imageUrl, { context: 'modal' })
+    : currentPhoto.imageUrl;
 
   // Reset zoom when photo changes
   useEffect(() => {
@@ -192,7 +198,7 @@ const EnhancedPhotoModal = ({
             <AnimatePresence mode="wait">
               <motion.img
                 key={currentPhoto.photoId}
-                src={currentPhoto.imageUrl}
+                src={optimizedModalUrl}
                 alt={`Photo by ${currentPhoto.uploader}`}
                 className="w-full h-150 object-contain rounded-lg select-none pb-20"
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -241,9 +247,8 @@ const EnhancedPhotoModal = ({
                 className="flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl transition-colors"
               >
                 <Heart
-                  className={`w-5 h-5 ${
-                    isLiked ? "fill-pink-500 text-pink-500" : "text-white"
-                  }`}
+                  className={`w-5 h-5 ${isLiked ? "fill-pink-500 text-pink-500" : "text-white"
+                    }`}
                 />
                 <span className="text-white text-sm font-medium">
                   {isLiked ? "Liked" : "Like"}

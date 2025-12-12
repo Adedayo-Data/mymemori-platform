@@ -3,6 +3,7 @@ import Masonry from "react-masonry-css";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { useDoubleTap } from "../hooks/useDoubleTap";
+import { optimizeCloudinaryUrl, getBlurPlaceholder } from "../utils/cloudinaryOptimizer";
 import "../styles/masonry.css";
 
 export interface Photo {
@@ -171,6 +172,7 @@ const PhotoCard = ({
   isAuthenticated = true,
 }: PhotoCardProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [blurLoaded, setBlurLoaded] = useState(false);
 
   const handleTap = useDoubleTap({
     onDoubleTap: () => onDoubleTapLike(photo.photoId),
@@ -183,6 +185,10 @@ const PhotoCard = ({
     // Always call onDownload - Gallery will handle showing modal for guests
     onDownload(photo.photoId);
   };
+
+  // Generate optimized URLs
+  const optimizedUrl = photo.imageUrl ? optimizeCloudinaryUrl(photo.imageUrl, { context: 'thumbnail' }) : '';
+  const blurUrl = photo.imageUrl ? getBlurPlaceholder(photo.imageUrl) : '';
 
   return (
     <motion.div
@@ -201,14 +207,29 @@ const PhotoCard = ({
     >
       {/* Photo Image */}
       {photo.imageUrl ? (
-        <img
-          src={photo.imageUrl}
-          alt={`Photo by ${photo.uploader}`}
-          className={`w-full h-auto object-cover transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'
-            }`}
-          loading="lazy"
-          onLoad={() => setImageLoaded(true)}
-        />
+        <>
+          {/* Blur placeholder - loads instantly */}
+          {blurUrl && (
+            <img
+              src={blurUrl}
+              alt=""
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${blurLoaded && !imageLoaded ? 'opacity-100' : 'opacity-0'
+                }`}
+              onLoad={() => setBlurLoaded(true)}
+              aria-hidden="true"
+            />
+          )}
+
+          {/* Full quality image - optimized */}
+          <img
+            src={optimizedUrl}
+            alt={`Photo by ${photo.uploader}`}
+            className={`relative w-full h-auto object-cover transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+            loading="lazy"
+            onLoad={() => setImageLoaded(true)}
+          />
+        </>
       ) : (
         <div className="w-full h-64 flex items-center justify-center">
           <span className="text-white/40 text-4xl font-bold">{photo.photoId}</span>
