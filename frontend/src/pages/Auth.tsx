@@ -50,9 +50,29 @@ const Auth = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error when user types
-    if (errors[name as keyof ValidationErrors]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
+
+    // Real-time validation for password field
+    if (name === 'password' && activeTab === 'signup') {
+      let passwordError = '';
+
+      if (!value) {
+        passwordError = 'Password is required';
+      } else if (value.length < 8) {
+        passwordError = 'Password must be at least 8 characters';
+      } else if (!/(?=.*[a-z])/.test(value)) {
+        passwordError = 'Password must contain at least one lowercase letter';
+      } else if (!/(?=.*[A-Z])/.test(value)) {
+        passwordError = 'Password must contain at least one uppercase letter';
+      } else if (!/(?=.*\d)/.test(value)) {
+        passwordError = 'Password must contain at least one number';
+      }
+
+      setErrors((prev) => ({ ...prev, password: passwordError }));
+    } else {
+      // Clear error when user types in other fields
+      if (errors[name as keyof ValidationErrors]) {
+        setErrors((prev) => ({ ...prev, [name]: '' }));
+      }
     }
   };
 
@@ -316,22 +336,22 @@ const Auth = () => {
         </form>
 
         {/* Divider */}
-        <div className="flex items-center gap-3 my-8">
+        {/* <div className="flex items-center gap-3 my-8">
           <div className="flex-1 h-px bg-gray-200"></div>
           <span className="text-xs text-gray-400 font-semibold uppercase tracking-wide">
             or continue with
           </span>
           <div className="flex-1 h-px bg-gray-200"></div>
-        </div>
+        </div> */}
 
-        {/* Google Sign In */}
-        <button
+        {/* Google Sign In - Commented out until OAuth is implemented */}
+        {/* <button
           onClick={handleGoogleSignIn}
           className="w-full flex items-center justify-center gap-3 py-3 border border-gray-200 rounded-xl hover:border-pink-200 hover:bg-pink-50/50 transition-all font-bold text-gray-700 group bg-white"
         >
           <img src="/assets/google.svg" alt="Google" className="w-5 h-5 group-hover:scale-110 transition-transform" />
           <span>Google</span>
-        </button>
+        </button> */}
       </motion.div>
     </div>
   );
