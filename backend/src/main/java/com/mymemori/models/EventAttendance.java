@@ -13,10 +13,11 @@ public class EventAttendance {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
-    private UUID userId;
+    private UUID userId; // Nullable - for authenticated users
+    private UUID sessionId; // Nullable - for session users
     private UUID eventId;
 
-//    @Enumerated(EnumType.STRING)
+    // @Enumerated(EnumType.STRING)
     private AttendanceRole attendanceRole;
     private Instant joinedAt;
 

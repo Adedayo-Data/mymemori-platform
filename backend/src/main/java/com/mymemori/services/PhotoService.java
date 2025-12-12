@@ -102,6 +102,15 @@ public class PhotoService {
 
         log.info("Fetching photos for event: slug={}, eventId={}", request.getEventSlug(), event.getId());
 
+        // Mark attendance for gallery visit (both authenticated and session users)
+        if (user != null) {
+            attendanceService.markAttendance(event.getId(), user.getId());
+            log.info("Marked user {} as attendee for visiting event {}", user.getId(), event.getId());
+        } else if (sessionId != null) {
+            attendanceService.markSessionAttendance(event.getId(), sessionId);
+            log.info("Marked session {} as attendee for visiting event {}", sessionId, event.getId());
+        }
+
         // Check if user/session has uploaded photos for this event
         boolean hasUploaded = false;
         if (user != null) {
@@ -161,35 +170,35 @@ public class PhotoService {
 
     // User Liked pictures
     /*
-    * We are fetching photos by their reaction model.
-    * STEPS:
-    * - Find all the reactions by a session or auth user
-    * - iterate through all the reaction object and fetch their photo from their ID
-    * -
-    *
-    * */
-    public List<PhotoResponseDTO> userLikedImages(UUID sessionId){
+     * We are fetching photos by their reaction model.
+     * STEPS:
+     * - Find all the reactions by a session or auth user
+     * - iterate through all the reaction object and fetch their photo from their ID
+     * -
+     *
+     */
+    public List<PhotoResponseDTO> userLikedImages(UUID sessionId) {
         Users user = authUser.fetchAuthenticatedUser();
         log.info("fetching all liked images by user: {} or session id: {}", user, sessionId);
 
         List<PhotoResponseDTO> response = new ArrayList<>();
-        if (user != null){
+        if (user != null) {
             List<Reactions> allReactions = reactionRepo.findAllByUserId(user.getId());
             List<Photo> likedPhotos = allLikedPhotos(allReactions);
 
-            for (Photo p : likedPhotos){
+            for (Photo p : likedPhotos) {
                 PhotoResponseDTO photo = mapToDTO(p);
                 response.add(photo);
             }
-        }else if (sessionId != null){
+        } else if (sessionId != null) {
             List<Reactions> allReactions = reactionRepo.findAllBySessionId(sessionId);
             List<Photo> likedPhotos = allLikedPhotos(allReactions);
 
-            for (Photo p : likedPhotos){
+            for (Photo p : likedPhotos) {
                 PhotoResponseDTO photo = mapToDTO(p);
                 response.add(photo);
             }
-        }else {
+        } else {
             throw new IllegalArgumentException();
         }
         return response;
@@ -240,11 +249,11 @@ public class PhotoService {
         return response;
     }
 
-    public List<Photo> allLikedPhotos(List<Reactions> allReactions){
+    public List<Photo> allLikedPhotos(List<Reactions> allReactions) {
 
         List<Photo> response = new ArrayList<>();
 
-        for (Reactions r : allReactions){
+        for (Reactions r : allReactions) {
             Photo photo = photoRepo.findById(r.getPhotoId())
                     .orElseThrow(() -> new PhotoNotFoundException("Photo not found"));
 

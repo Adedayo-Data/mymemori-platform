@@ -67,4 +67,71 @@ public class EventAttendanceService {
     public long getAttendanceCount(UUID eventId) {
         return attendanceRepo.countByEventId(eventId);
     }
+
+    /**
+     * Mark session user as attendee of an event
+     * Used for tracking session users before they sign up
+     */
+    @Transactional
+    public void markSessionAttendance(UUID eventId, UUID sessionId) {
+        if (sessionId == null || eventId == null) {
+            log.warn("Cannot mark session attendance: sessionId or eventId is null");
+            return;
+        }
+
+        // Check if already attended
+        if (attendanceRepo.existsByEventIdAndSessionId(eventId, sessionId)) {
+            log.debug("Session {} already marked as attendee for event {}", sessionId, eventId);
+            return;
+        }
+
+        // Create attendance record
+        EventAttendance attendance = new EventAttendance();
+        attendance.setEventId(eventId);
+        attendance.setSessionId(sessionId);
+        attendance.setUserId(null); // No user yet
+        attendance.setJoinedAt(Instant.now());
+        attendance.setAttendanceRole(AttendanceRole.ATTENDEE);
+
+        attendanceRepo.save(attendance);
+        log.info("Marked session {} as attendee for event {}", sessionId, eventId);
+    }
+
+    /**
+     * Migrate session attendance to user attendance when session user signs up
+     * Handles duplicates: if user already attended event, deletes session record
+     */
+    @Transactional
+    public void migrateSessionAttendance(UUID sessionId, UUID userId) {
+        if (sessionId == null || userId == null) {
+            log.warn("Cannot migrate attendance: sessionId or userId is null");
+            return;
+        }
+
+        // Find all session attendance records
+        List<EventAttendance> sessionAttendances = attendanceRepo.findBySessionId(sessionId);
+
+        if (sessionAttendances.isEmpty()) {
+            log.debug("No session attendance to migrate for session {}", sessionId);
+            return;
+        }
+
+        for (EventAttendance attendance : sessionAttendances) {
+            // Check if user already has attendance for this event
+            if (attendanceRepo.existsByEventIdAndUserId(attendance.getEventId(), userId)) {
+                // User already attended (maybe uploaded before), delete session record
+                attendanceRepo.delete(attendance);
+                log.debug("Deleted duplicate session attendance for event {}", attendance.getEventId());
+            } else {
+                // Migrate: update sessionId record to userId
+                attendance.setUserId(userId);
+                attendance.setSessionId(null);
+                attendanceRepo.save(attendance);
+                log.info("Migrated session attendance to user {} for event {}", userId, attendance.getEventId());
+            }
+        }
+
+        log.info("Completed migration of {} session attendance records for user {}",
+                sessionAttendances.size(), userId);
+    }
 }

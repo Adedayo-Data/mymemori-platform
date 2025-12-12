@@ -19,6 +19,7 @@ public class SessionConversionService {
 
     private final PhotoRepository photoRepo;
     private final ReactionRepository reactionRepo;
+    private final EventAttendanceService attendanceService;
 
     /**
      * Convert all session data (photos and reactions) to authenticated user data
@@ -41,6 +42,9 @@ public class SessionConversionService {
 
         // Convert reactions
         int reactionsConverted = convertReactions(sessionId, userId);
+
+        // Convert attendance
+        convertAttendance(sessionId, userId);
 
         log.info("Session conversion completed: sessionId={}, userId={}, photosConverted={}, reactionsConverted={}",
                 sessionId, userId, photosConverted, reactionsConverted);
@@ -88,5 +92,14 @@ public class SessionConversionService {
         }
 
         return sessionReactions.size();
+    }
+
+    /**
+     * Transfer all event attendance from session to user
+     */
+    private void convertAttendance(UUID sessionId, UUID userId) {
+        // Delegate to EventAttendanceService which handles duplicates intelligently
+        attendanceService.migrateSessionAttendance(sessionId, userId);
+        log.info("Attendance migration completed for sessionId={}, userId={}", sessionId, userId);
     }
 }

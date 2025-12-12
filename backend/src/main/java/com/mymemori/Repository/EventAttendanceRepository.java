@@ -26,4 +26,11 @@ public interface EventAttendanceRepository extends JpaRepository<EventAttendance
 
     // Count attendees for an event
     long countByEventId(UUID eventId);
+
+    // Session-based attendance methods
+    boolean existsByEventIdAndSessionId(UUID eventId, UUID sessionId);
+
+    Optional<EventAttendance> findByEventIdAndSessionId(UUID eventId, UUID sessionId);
+
+    List<EventAttendance> findBySessionId(UUID sessionId);
 }
