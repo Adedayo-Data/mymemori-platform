@@ -361,7 +361,7 @@ const Gallery = () => {
     // Authenticated user - proceed with download
     const photo = contextPhotos.find((p) => p.photoId === photoId);
     if (photo) {
-      downloadImage(photo.imageUrl, `photo-${photoId}.jpg`);
+      downloadImage(photo.imageUrl, `MyMemori-Photo-${photoId}.jpg`);
     }
   };
 
