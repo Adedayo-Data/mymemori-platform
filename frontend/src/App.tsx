@@ -8,7 +8,7 @@ import { ProtectedRoute } from "./hooks/ProtectedRoute";
 import Layout from "./components/Layout";
 
 // Lazy load all page components
-const Home = lazy(() => import("./pages/Home"));
+const Landing = lazy(() => import("./pages/Landing"));
 const Home2 = lazy(() => import("./pages/NewHome"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Booking = lazy(() => import("./pages/Booking"));
@@ -34,7 +34,7 @@ const App = () => {
             >
               <Routes>
                 <Route element={<Layout />}>
-                  <Route path="/" element={<Home />} />
+                  <Route path="/" element={<Landing />} />
                   <Route path="/home" element={<Home2 />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/book" element={<Booking />} />

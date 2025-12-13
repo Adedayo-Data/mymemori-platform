@@ -38,7 +38,19 @@ const Auth = () => {
   });
 
   const navigate = useNavigate();
-  const { loading, signup, signin } = useAuth();
+  const { loading, signup, signin, isAuthenticated, isLoading } = useAuth();
+
+  // Redirect authenticated users away from auth page
+  useEffect(() => {
+    // Wait for auth check to complete
+    if (isLoading) return;
+
+    // If user is already authenticated, redirect them
+    if (isAuthenticated) {
+      const redirectUrl = returnTo && returnTo !== "/" ? returnTo : "/home";
+      navigate(redirectUrl, { replace: true });
+    }
+  }, [isAuthenticated, isLoading, returnTo, navigate]);
 
   // Update active tab when mode changes
   useEffect(() => {
