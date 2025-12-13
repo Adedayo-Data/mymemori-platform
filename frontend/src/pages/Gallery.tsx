@@ -606,9 +606,9 @@ const Gallery = () => {
       {/* Enhanced Photo Modal */}
       {selectedPhotoIndex !== null && (
         <EnhancedPhotoModal
-          photos={displayedItems}
+          photos={sortedPhotos}
           currentIndex={selectedPhotoIndex}
-          isLiked={likedPhotos.has(displayedItems[selectedPhotoIndex].photoId)}
+          isLiked={likedPhotos.has(sortedPhotos[selectedPhotoIndex].photoId)}
           onClose={() => setSelectedPhotoIndex(null)}
           onLike={(photoId) => handleLike(photoId)}
           onDownload={(photoId) => handleDownload(photoId)}
