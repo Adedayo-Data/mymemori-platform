@@ -1,9 +1,6 @@
 package com.mymemori.models;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -20,6 +17,10 @@ public class Users {
     private String email;
     private String fullName;
     private String password;
+
+    // Add user role based on payment
+    @Enumerated(EnumType.STRING)
+    private UserRole Role;
 
     @CreationTimestamp
     private Instant created_At;
