@@ -43,6 +43,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/health").permitAll()
+                        .requestMatchers("/api/plan").permitAll()
 
                         // Protected endpoints - authentication required
                         .requestMatchers("/api/event/**").authenticated()
