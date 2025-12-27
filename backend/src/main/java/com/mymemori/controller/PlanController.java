@@ -1,6 +1,7 @@
 package com.mymemori.controller;
 
 import com.mymemori.dto.PlanDto;
+import com.mymemori.dto.PlanDtoResponse;
 import com.mymemori.models.Users;
 import com.mymemori.services.PlanService;
 import com.mymemori.util.AuthenticatedUser;
@@ -26,12 +27,12 @@ public class PlanController {
     // create plan
     @PostMapping("/create")
     @PreAuthorize("SUPER_DJI_USER")
-    public ResponseEntity<PlanDto> createPlan(@RequestBody PlanDto request){
+    public ResponseEntity<PlanDtoResponse> createPlan(@RequestBody PlanDto request){
         Users user = authUser.fetchAuthenticatedUser();
         log.info("user {}, {} creating new plan.", user.getEmail(), user.getFullName());
         log.info("Creating new plan option");
 
-        PlanDto response = planService.createPlan(request);
+        PlanDtoResponse response = planService.createPlan(request);
         log.info("Plan created!");
         log.info("Plan info: {}, {}", response.getPlan(), response.getBenefits());
 
@@ -41,19 +42,19 @@ public class PlanController {
     // Get Plan By id
     @GetMapping("/{id}")
     @PreAuthorize("SUPER_DJI_USER")
-    public ResponseEntity<PlanDto> getPlanById(@PathVariable UUID id){
+    public ResponseEntity<PlanDtoResponse> getPlanById(@PathVariable UUID id){
         log.info("Fetched planId: {}", id);
 
-        PlanDto response = planService.getPlanById(id);
+        PlanDtoResponse response = planService.getPlanById(id);
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     // Get all plan
     @GetMapping
-    public ResponseEntity<List<PlanDto>> getAllPlans(){
+    public ResponseEntity<List<PlanDtoResponse>> getAllPlans(){
         log.info("Fetching all plan options");
-        List<PlanDto> response = planService.getAllPlans();
+        List<PlanDtoResponse> response = planService.getAllPlans();
         log.info("All plans fetched. Count = {}", response.size());
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
@@ -61,13 +62,13 @@ public class PlanController {
 
     @PutMapping("/update/{id}")
     @PreAuthorize("SUPER_DJI_USER")
-    public ResponseEntity<PlanDto> updatePlan(
+    public ResponseEntity<PlanDtoResponse> updatePlan(
             @PathVariable UUID id,
             @RequestBody PlanDto request){
         Users user = authUser.fetchAuthenticatedUser();
         log.info("User: {}, {} attempting to update plan object", user.getEmail(), user.getFullName());
 
-        PlanDto response = planService.updatePlan(id, request);
+        PlanDtoResponse response = planService.updatePlan(id, request);
 
         log.info("Plan updated Successfully!");
 
