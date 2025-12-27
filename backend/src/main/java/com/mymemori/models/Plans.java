@@ -5,12 +5,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +30,12 @@ public class Plans {
 
     @NotEmpty
     private String plan;
+
+    @NotNull
+    private BigDecimal amount_NGN;
+
+    @NotNull
+    private BigDecimal amount_USD;
 
     @NotEmpty
     private List<String> benefits;

@@ -2,10 +2,10 @@ package com.mymemori.services;
 
 import com.mymemori.Repository.PlansRepository;
 import com.mymemori.dto.PlanDto;
+import com.mymemori.dto.PlanDtoResponse;
 import com.mymemori.exception.PlanNotFoundException;
 import com.mymemori.models.Plans;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -20,23 +20,24 @@ public class PlanService {
     public final PlansRepository planRepo;
 
     // create plan
-    public PlanDto createPlan(PlanDto request){
+    public PlanDtoResponse createPlan(PlanDto request){
         Plans plan = new Plans();
         plan.setPlan(request.getPlan());
         plan.setBenefits(request.getBenefits());
         plan.setUpdatedAt(Instant.now());
 
         Plans savedPlan = planRepo.save(plan);
-        return request;
+
+        return new PlanDtoResponse(savedPlan.getId(), savedPlan.getPlan(), savedPlan.getBenefits());
     }
 
     // Get All plans
-    public List<PlanDto> getAllPlans(){
+    public List<PlanDtoResponse> getAllPlans(){
         List<Plans> plansList = planRepo.findAll();
 
-        List<PlanDto> response = new ArrayList<>();
+        List<PlanDtoResponse> response = new ArrayList<>();
         for (Plans p : plansList){
-            PlanDto dto = new PlanDto(p.getPlan(), p.getBenefits());
+            PlanDtoResponse dto = new PlanDtoResponse(p.getId(), p.getPlan(), p.getBenefits());
             response.add(dto);
         }
 
@@ -44,15 +45,15 @@ public class PlanService {
     }
 
     // get Plan by Id
-    public PlanDto getPlanById(UUID planId){
+    public PlanDtoResponse getPlanById(UUID planId){
         Plans plan = planRepo.findById(planId)
                 .orElseThrow(() -> new PlanNotFoundException("Plan not found!"));
 
-        return new PlanDto(plan.getPlan(), plan.getBenefits());
+        return new PlanDtoResponse(plan.getId(), plan.getPlan(), plan.getBenefits());
     }
 
     // update plan
-    public PlanDto updatePlan(UUID planId, PlanDto request){
+    public PlanDtoResponse updatePlan(UUID planId, PlanDto request){
 
         Plans plan = planRepo.findById(planId)
                 .orElseThrow(() -> new PlanNotFoundException("Plan not found!"));
@@ -67,7 +68,7 @@ public class PlanService {
         plan.setUpdatedAt(Instant.now());
         Plans savedPlan = planRepo.save(plan);
 
-        return new PlanDto(savedPlan.getPlan(), savedPlan.getBenefits());
+        return new PlanDtoResponse(savedPlan.getId(), savedPlan.getPlan(), savedPlan.getBenefits());
     }
 
     // Delete plan
