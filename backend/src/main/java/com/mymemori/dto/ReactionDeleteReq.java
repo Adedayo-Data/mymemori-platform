@@ -12,4 +12,5 @@ public class ReactionDeleteReq {
     private UUID photoId;
 //    private UUID userId;
 //    private UUID sessionId;
+
 }
