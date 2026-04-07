@@ -33,11 +33,15 @@ jwt:
 
 fw:
   api:
-    secret: ${fw-api-secret}
+    secret: ${fw.api.secret}
+
+flw:
+  webhook:
+    secret: ${flw.webhook.secretHash}
 
 ps:
   api:
-    secret: ${ps-api-secret}
+    secret: ${ps.api.secret}
 
 logging:
   level:

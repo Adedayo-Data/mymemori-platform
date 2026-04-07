@@ -44,6 +44,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/health").permitAll()
                         .requestMatchers("/api/plan").permitAll()
+                        .requestMatchers("/api/payment/flw/webhooks").permitAll()
+                        .requestMatchers("/api/payment/ps/webhooks").permitAll()
 
                         // Protected endpoints - authentication required
                         .requestMatchers("/api/event/**").authenticated()
