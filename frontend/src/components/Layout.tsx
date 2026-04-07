@@ -10,7 +10,8 @@ const Layout = () => {
   // Routes where Navigation (top bar) should be hidden even if authenticated
   const shouldHideNavigation = () => {
     const path = location.pathname;
-    if (path === "/" || path === "/auth" || path === "/verify" || path === "/gallery") return true;
+    const hideOnPaths = ["/", "/auth", "/verify", "/gallery", "/recruiters", "/waitlist"];
+    if (hideOnPaths.includes(path)) return true;
     if (path.startsWith("/visit/")) return true;
     return false;
   };
@@ -18,7 +19,8 @@ const Layout = () => {
   // Routes where BottomNav should be hidden
   const shouldHideBottomNav = () => {
     const path = location.pathname;
-    if (path === "/" || path === "/auth" || path === "/verify") return true;
+    const hideOnPaths = ["/", "/auth", "/verify", "/recruiters", "/waitlist"];
+    if (hideOnPaths.includes(path)) return true;
     if (path.startsWith("/visit/")) return true;
     return false;
   };

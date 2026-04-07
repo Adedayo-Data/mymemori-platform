@@ -9,6 +9,8 @@ import Layout from "./components/Layout";
 
 // Lazy load all page components
 const Landing = lazy(() => import("./pages/Landing"));
+const Recruiters = lazy(() => import("./pages/Recruiters"));
+const Waitlist = lazy(() => import("./pages/Waitlist"));
 const Home2 = lazy(() => import("./pages/NewHome"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Booking = lazy(() => import("./pages/Booking"));
@@ -34,7 +36,9 @@ const App = () => {
             >
               <Routes>
                 <Route element={<Layout />}>
-                  <Route path="/" element={<Landing />} />
+                  <Route path="/" element={<Waitlist />} />
+                  <Route path="/recruiters" element={<Recruiters />} />
+                  <Route path="/waitlist" element={<Waitlist />} />
                   <Route path="/home" element={<Home2 />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/book" element={<Booking />} />
