@@ -7,15 +7,11 @@ import com.mymemori.dto.PaymentRequest;
 import com.mymemori.dto.PaymentResponse;
 import com.mymemori.dto.PaymentResponseResolver;
 import com.mymemori.dto.PaystackPaymentRequest;
-import com.mymemori.exception.PaymentTypeNotFound;
-import com.mymemori.exception.PlanNotFoundException;
-import com.mymemori.exception.TransactionNotFound;
-import com.mymemori.exception.UserNotFoundException;
+import com.mymemori.exception.*;
 import com.mymemori.models.*;
 import com.mymemori.util.AuthenticatedUser;
 import com.mymemori.util.ReferenceGenerator;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,9 +25,9 @@ import java.util.Optional;
 
 @Service
 @AllArgsConstructor
-@NoArgsConstructor(force = true)
 @Slf4j
 public class PaystackProcessor implements PaymentProcessor {
+
 
     private final AuthenticatedUser authUser;
     private final PlansRepository planRepo;
@@ -39,7 +35,7 @@ public class PaystackProcessor implements PaymentProcessor {
     private final RestTemplate restTemplate;
     private final TransactionRepository transactionRepo;
 
-    @Value("${api-secret-ps}")
+    @Value("${ps.api.secret}")
     private final String psApiKey;
 
     @Override
@@ -50,8 +46,8 @@ public class PaystackProcessor implements PaymentProcessor {
             throw new UserNotFoundException("Authenticated User not found to process payment");
         }
 
-        BigDecimal amount = BigDecimal.ZERO;
-        String reference = "";
+        BigDecimal amount;
+        String reference;
         Plans plan = null;
         Product product = null;
 
@@ -106,8 +102,9 @@ public class PaystackProcessor implements PaymentProcessor {
                 PaymentResponse.class
         );
 
-        if (apiResponse.getStatusCode() == HttpStatusCode.valueOf(400)){
-            return null;
+        if(!apiResponse.getStatusCode().is2xxSuccessful()){
+            log.error("Payment provider encoured errors. Status code: {}, body: {}", apiResponse.getStatusCode(), apiResponse.getBody());
+            throw new PaymentInitializationException("An error occured while initiating paystack Payment");
         }
 
         // build Transaction object
@@ -134,18 +131,24 @@ public class PaystackProcessor implements PaymentProcessor {
 
 
     // verify transaction
-    public Map<String, String> verifyTransaction(String reference){
+    public void verifyTransaction(String reference){
 
-        String url = "https://api.paystack.co/transaction/verify/" +reference;
+        Transaction transaction = transactionRepo.findTransactionByProviderReference(reference)
+                .orElseThrow(() -> new TransactionNotFound("Transaction not Found!"));
+
+        if(transaction.getPaymentStatus() == PaymentStatus.SUCCESS){
+            log.info("Idempotency worked");
+            return;
+        }
+
+        String url = "https://api.paystack.co/transaction" +reference;
 
         HttpHeaders header = new HttpHeaders();
-        header.set("Authorization", "Bearer " +psApiKey);
         header.setContentType(MediaType.APPLICATION_JSON);
+        header.set("Authorization", "Bearer " +psApiKey);
 
-        // create void entity as there is no body
         HttpEntity<Void> entity = new HttpEntity<>(header);
 
-        assert restTemplate != null;
         ResponseEntity<PaymentResponse> response = restTemplate.exchange(
                 url,
                 HttpMethod.GET,
@@ -153,21 +156,28 @@ public class PaystackProcessor implements PaymentProcessor {
                 PaymentResponse.class
         );
 
-        // Parse response to get status
-        String status =(String) response.getBody().getData().get("status");
-
-        if(!status.equalsIgnoreCase("success")){
-            return null;
+        if (response.getBody() == null){
+            log.warn("Paystack returned empty data");
+            return;
         }
+        PaymentResponse paymentResponse = response.getBody();
 
-        // if status is success
-        Transaction transaction = transactionRepo.findTransactionByProviderReference(reference)
-                .orElseThrow(() -> new TransactionNotFound("Transaction not Found!"));
+        Map<String, Object> data = paymentResponse.getData();
+
+        // Validate Amount
+        BigDecimal incomingAmount = new BigDecimal(data.get("amount").toString());
+        if (incomingAmount.compareTo(transaction.getAmount())!= 0
+                || !data.get("currency").equals(transaction.getCurrency())
+                || !data.get("status").equals("success")){
+            log.warn("Fraud detected on Paystack Processor! Amount Expected: {}, Amount received: {}, Currency Expected: {}, Currency received: {}",
+                    transaction.getAmount(), incomingAmount, transaction.getCurrency(), data.get("currency"));
+
+            return;
+        }
 
         transaction.setPaymentStatus(PaymentStatus.SUCCESS);
         transactionRepo.save(transaction);
-        log.info("Transaction saved successfully");
-        return Map.of("Message", "Transaction Successful");
+        log.info("Transaction saved successfully. Status: {}", transaction.getPaymentStatus());
     }
 
     // ================================= HELPER METHODS ======================

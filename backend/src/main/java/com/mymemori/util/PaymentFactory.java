@@ -1,17 +1,21 @@
 package com.mymemori.util;
 
-import com.mymemori.dto.PaymentResponse;
 import com.mymemori.exception.LocationNotFoundException;
-import com.mymemori.models.Transaction;
 import com.mymemori.services.FlutterwaveProcessor;
 import com.mymemori.services.PaymentProcessor;
 import com.mymemori.services.PaystackProcessor;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
+@AllArgsConstructor
 public class PaymentFactory {
+
+    private final PaystackProcessor paystackProcessor;
+    private final FlutterwaveProcessor flutterwaveProcessor;
+
 
     public PaymentProcessor fetchPaymentProcessor(String country){
         log.info("Fetching payment processor");
@@ -24,11 +28,11 @@ public class PaymentFactory {
 
         if ("NG".equals(country)){
             log.info("Nigeria Selected!");
-            return new PaystackProcessor();
+            return paystackProcessor;
         }
 
         log.info("Other part of the world selected");
-        return new FlutterwaveProcessor();
+        return flutterwaveProcessor;
     }
 
 //    public Transaction buildTransaction(PaymentResponse response){

@@ -15,11 +15,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.servlet.function.ServerRequest;
 
 import java.math.BigDecimal;
 import java.util.Map;
-import java.util.Optional;
 
 import static com.mymemori.services.PaystackProcessor.getPaymentResponseResolver;
 
@@ -43,7 +41,7 @@ public class FlutterwaveProcessor implements PaymentProcessor {
     private final RestTemplate restTemplate;
     private final TransactionRepository transactionRepo;
 
-    @Value("${api-secret-fw}")
+    @Value("${fw.api.secret}")
     private final String fwApiKey;
 
     @Override
@@ -55,8 +53,8 @@ public class FlutterwaveProcessor implements PaymentProcessor {
             throw new UserNotFoundException("No Authenticated user found!");
         }
 
-        BigDecimal amount = BigDecimal.ZERO;
-        String reference = null;
+        BigDecimal amount;
+        String reference;
         Plans plan = null;
         Product product = null;
 
@@ -89,15 +87,15 @@ public class FlutterwaveProcessor implements PaymentProcessor {
             throw new PaymentTypeNotFound(String.format("Payment type {%s} not used in this project", request.getType()));
         }
 
-        // create request object
+        // Building request to be passed to payment gateway
         FlutterPaymentRequest paymentRequest = FlutterPaymentRequest.builder()
                 .amount(amount)
                 .tx_ref(reference)
                 .currency("USD")
-                .redirect_url("https://mymemori.site")
+                .redirect_url("https://mymemori.site") // This should be success page
                 .customer(buildCustomer(user))
                 .customization(customization())
-                .payment_options("card, ussd, banktransfer, account, internetbanking, mpesa, applepay, googlepay, ghanamobilemoney, opay")
+                .payment_options("card, banktransfer, account, internetbanking, mpesa, applepay, googlepay, ghanamobilemoney")
                 .build();
 
         // set headers
@@ -106,10 +104,12 @@ public class FlutterwaveProcessor implements PaymentProcessor {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("accept", "application/json");
 
+        // create entity
         HttpEntity<FlutterPaymentRequest> entity = new HttpEntity<>(paymentRequest, headers);
 
         String url = "https://api.flutterwave.com/v3/payments";
 
+        // Exchange entity for response
         ResponseEntity<PaymentResponse> response = restTemplate.exchange(
                 url,
                 HttpMethod.POST,
@@ -117,9 +117,10 @@ public class FlutterwaveProcessor implements PaymentProcessor {
                 PaymentResponse.class
         );
 
-        // check HttpStatus response
-        if (response.getStatusCode() == HttpStatusCode.valueOf(400)){
-            return null;
+        // check HttpStatus response if successful otherwise throw an exception ASAP
+        if(!response.getStatusCode().is2xxSuccessful()){
+            log.error("Payment Provider encoutered errors. Status code :{}, body: {}", response.getStatusCode(), response.getBody());
+            throw new PaymentInitializationException("An error occured while Initializing payment");
         }
 
         // build Transaction object
@@ -127,9 +128,9 @@ public class FlutterwaveProcessor implements PaymentProcessor {
                 .plan(plan)
                 .product(product)
                 .amount(amount)
-                .currency("NGN")
+                .currency("USD")
                 .user(user)
-                .paymentProvider(PaymentProvider.PAYSTACK)
+                .paymentProvider(PaymentProvider.FLUTTERWAVE)
                 .providerReference(reference)
                 .paymentStatus(PaymentStatus.PENDING)
                 .build();
@@ -148,36 +149,58 @@ public class FlutterwaveProcessor implements PaymentProcessor {
     }
 
     // verify transaction Manually
-    public Map<String, String> verifyTransaction(String reference){
+    public void verifyTransaction(String reference){
 
-        String url = "https://api.flutterwave.com/v3/transactions/verify_by_reference?tx_ref=" + reference;
+        Transaction transaction = transactionRepo.findTransactionByProviderReference(reference)
+                .orElseThrow(() -> new TransactionNotFound("Transaction not Found - Flutterwave"));
 
-        // define header
+        // Idempotency Check
+        if (transaction.getPaymentStatus().equals(PaymentStatus.SUCCESS)){
+            log.info("Idempotency check passed!");
+            return;
+        }
+
+        String url = "https://api.flutterwave.com/v3/transactions/verify_by_reference?tx_ref="+reference;
+
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer "+fwApiKey);
 
-        // define the entity
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        // rest Template
-        ResponseEntity<PaymentResponse> apiResponse = restTemplate.exchange(
+        ResponseEntity<PaymentResponse> response = restTemplate.exchange(
                 url,
                 HttpMethod.GET,
                 entity,
                 PaymentResponse.class
         );
 
-        if (apiResponse.getStatusCode() == HttpStatusCode.valueOf(400) ||
-                !apiResponse.getBody().getData().get("status").equals("successful")){
-
-            return null;
+        if(!response.getStatusCode().is2xxSuccessful()){
+            log.warn("Verify transaction request failed. Status code: {}", response.getStatusCode());
+            return;
         }
-        Transaction transaction = transactionRepo.findTransactionByProviderReference(reference)
-                .orElseThrow(() -> new TransactionNotFound("Transaction not found!"));
 
+        if(response.getBody() == null){
+            log.warn("Flutterwave returned null response");
+            return;
+        }
+
+        PaymentResponse paymentResponse = response.getBody();
+        Map<String, Object> data = paymentResponse.getData();
+
+        // Validate Amount and currency
+        BigDecimal incomingAmount = new BigDecimal(data.get("amount").toString());
+        String currency = (String) data.get("currency");
+        if (incomingAmount.compareTo(transaction.getAmount())!=0
+                || !currency.equals(transaction.getCurrency())
+                || !data.get("status").equals("successful")){
+            log.warn("Fraud detected on Flutterwave Processor! Amount Expected: {}, Amount received: {}, Currency Expected: {}, Currency received: {}",
+                    transaction.getAmount(), incomingAmount, transaction.getCurrency(), data.get("currency"));
+
+            return;
+        }
         transaction.setPaymentStatus(PaymentStatus.SUCCESS);
         transactionRepo.save(transaction);
-        return Map.of("Message", "Payment Successful");
+        log.info("Transaction saved successfully. Status: {}", transaction.getPaymentStatus());
     }
 
     // ============================= HELPER METHODS =================================
