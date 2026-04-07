@@ -3,8 +3,10 @@ package com.mymemori.controller;
 import com.mymemori.dto.PlanDto;
 import com.mymemori.dto.PlanDtoResponse;
 import com.mymemori.models.Users;
+import com.mymemori.services.LocationService;
 import com.mymemori.services.PlanService;
 import com.mymemori.util.AuthenticatedUser;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -23,10 +25,11 @@ public class PlanController {
 
     private final PlanService planService;
     private final AuthenticatedUser authUser;
+    private final LocationService locationService;
 
     // create plan
     @PostMapping("/create")
-    @PreAuthorize("SUPER_DJI_USER")
+    @PreAuthorize("hasAuthority('SUPER_DJI_USER')")
     public ResponseEntity<PlanDtoResponse> createPlan(@RequestBody PlanDto request){
         Users user = authUser.fetchAuthenticatedUser();
         log.info("user {}, {} creating new plan.", user.getEmail(), user.getFullName());
@@ -41,7 +44,7 @@ public class PlanController {
 
     // Get Plan By id
     @GetMapping("/{id}")
-    @PreAuthorize("SUPER_DJI_USER")
+    @PreAuthorize("hasAuthority('SUPER_DJI_USER')")
     public ResponseEntity<PlanDtoResponse> getPlanById(@PathVariable UUID id){
         log.info("Fetched planId: {}", id);
 
@@ -52,16 +55,31 @@ public class PlanController {
 
     // Get all plan
     @GetMapping
-    public ResponseEntity<List<PlanDtoResponse>> getAllPlans(){
+    public ResponseEntity<List<PlanDtoResponse>> getAllPlans(HttpServletRequest request){
         log.info("Fetching all plan options");
-        List<PlanDtoResponse> response = planService.getAllPlans();
+
+        // IP -> Country Resolver
+        String ip = request.getHeader("X-Forwarded-For");
+        if(ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)){
+            ip = request.getRemoteAddr();
+        }else{
+            ip = ip.split(",")[0].trim();
+        }
+
+        if("0:0:0:0:0:0:0:1".equals(ip)){
+            ip = "127.0.0.1";
+        }
+
+        String country = locationService.getCountry(ip);
+
+        List<PlanDtoResponse> response = planService.getAllPlans(country);
         log.info("All plans fetched. Count = {}", response.size());
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @PutMapping("/update/{id}")
-    @PreAuthorize("SUPER_DJI_USER")
+    @PreAuthorize("hasAuthority('SUPER_DJI_USER')")
     public ResponseEntity<PlanDtoResponse> updatePlan(
             @PathVariable UUID id,
             @RequestBody PlanDto request){
@@ -77,7 +95,7 @@ public class PlanController {
 
     // delete plan
     @DeleteMapping("/{id}")
-    @PreAuthorize("SUPER_DJI_USER")
+    @PreAuthorize("hasAuthority('SUPER_DJI_USER')")
     public ResponseEntity<Void> deletePlan(@PathVariable UUID planId){
         Users user = authUser.fetchAuthenticatedUser();
         log.info("User: {}, {} attempting to DELETE plan object", user.getEmail(), user.getFullName());

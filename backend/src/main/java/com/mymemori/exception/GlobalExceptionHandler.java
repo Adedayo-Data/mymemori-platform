@@ -96,4 +96,10 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
+
+    @ExceptionHandler(PaymentInitializationException.class)
+    public ResponseEntity<ErrorResponse> handlePaymentInitializationError(PaymentInitializationException pie){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(502, pie.getMessage(), Instant.now()));
+    }
 }
