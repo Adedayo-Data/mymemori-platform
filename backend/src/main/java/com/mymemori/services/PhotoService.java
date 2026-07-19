@@ -262,7 +262,7 @@ public class PhotoService {
         return response;
     }
 
-    public void deletePhoto(Long id) {
+    public void deletePhoto(UUID id) {
         photoRepo.deleteById(id);
     }
 

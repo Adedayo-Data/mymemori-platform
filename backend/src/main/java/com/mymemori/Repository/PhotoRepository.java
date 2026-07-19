@@ -32,6 +32,6 @@ public interface PhotoRepository extends JpaRepository<Photo, UUID> {
     @Query("SELECT COUNT(p) > 0 FROM Photo p WHERE p.eventId = :eventId AND p.uploadedBySessionId = :sessionId")
     boolean hasSessionUploadedForEvent(UUID eventId, UUID sessionId);
 
-    void deleteById(Long id);
+    void deleteById(UUID id);
 
 }

@@ -4,7 +4,6 @@ import com.mymemori.models.Users;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -18,12 +17,14 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    @Autowired
-    JwtConstant constant;
+    private final JwtConstant constant;
+    private final SecretKey signingKey;
 
-    private final SecretKey signingKey = Keys.hmacShaKeyFor(
-            constant.getJwtKey().getBytes(StandardCharsets.UTF_8)
-    );
+    public JwtService(JwtConstant constant) {
+        this.constant = constant;
+        this.signingKey = Keys.hmacShaKeyFor(
+                constant.getJwtKey().getBytes(StandardCharsets.UTF_8));
+    }
 
     public String generateToken(Users users) {
 

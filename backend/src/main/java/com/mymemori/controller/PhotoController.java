@@ -80,8 +80,9 @@ public class PhotoController {
         return ResponseEntity.ok(response);
     }
 
+    // Delete Photos
     @DeleteMapping("/photo/{id}")
-    public ResponseEntity<Void> deletePhoto(@PathVariable Long id) {
+    public ResponseEntity<Void> deletePhoto(@PathVariable UUID id) {
         photoService.deletePhoto(id);
         return ResponseEntity.ok().build();
     }
