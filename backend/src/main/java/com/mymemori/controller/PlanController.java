@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,7 +31,7 @@ public class PlanController {
     // create plan
     @PostMapping("/create")
     @PreAuthorize("hasAuthority('SUPER_DJI_USER')")
-    public ResponseEntity<PlanDtoResponse> createPlan(@RequestBody PlanDto request){
+    public ResponseEntity<PlanDtoResponse> createPlan(@RequestBody PlanDto request) {
         Users user = authUser.fetchAuthenticatedUser();
         log.info("user {}, {} creating new plan.", user.getEmail(), user.getFullName());
         log.info("Creating new plan option");
@@ -45,7 +46,7 @@ public class PlanController {
     // Get Plan By id
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('SUPER_DJI_USER')")
-    public ResponseEntity<PlanDtoResponse> getPlanById(@PathVariable UUID id){
+    public ResponseEntity<PlanDtoResponse> getPlanById(@PathVariable UUID id) {
         log.info("Fetched planId: {}", id);
 
         PlanDtoResponse response = planService.getPlanById(id);
@@ -55,18 +56,18 @@ public class PlanController {
 
     // Get all plan
     @GetMapping
-    public ResponseEntity<List<PlanDtoResponse>> getAllPlans(HttpServletRequest request){
+    public ResponseEntity<List<PlanDtoResponse>> getAllPlans(HttpServletRequest request) {
         log.info("Fetching all plan options");
 
         // IP -> Country Resolver
         String ip = request.getHeader("X-Forwarded-For");
-        if(ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)){
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
-        }else{
+        } else {
             ip = ip.split(",")[0].trim();
         }
 
-        if("0:0:0:0:0:0:0:1".equals(ip)){
+        if ("0:0:0:0:0:0:0:1".equals(ip)) {
             ip = "127.0.0.1";
         }
 
@@ -82,7 +83,8 @@ public class PlanController {
     @PreAuthorize("hasAuthority('SUPER_DJI_USER')")
     public ResponseEntity<PlanDtoResponse> updatePlan(
             @PathVariable UUID id,
-            @RequestBody PlanDto request){
+            @RequestBody PlanDto request) {
+        // HashMap map =
         Users user = authUser.fetchAuthenticatedUser();
         log.info("User: {}, {} attempting to update plan object", user.getEmail(), user.getFullName());
 
@@ -96,7 +98,7 @@ public class PlanController {
     // delete plan
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('SUPER_DJI_USER')")
-    public ResponseEntity<Void> deletePlan(@PathVariable UUID planId){
+    public ResponseEntity<Void> deletePlan(@PathVariable UUID planId) {
         Users user = authUser.fetchAuthenticatedUser();
         log.info("User: {}, {} attempting to DELETE plan object", user.getEmail(), user.getFullName());
 
