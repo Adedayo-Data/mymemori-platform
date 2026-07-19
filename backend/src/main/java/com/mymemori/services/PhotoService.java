@@ -262,4 +262,8 @@ public class PhotoService {
         return response;
     }
 
+    public void deletePhoto(Long id) {
+        photoRepo.deleteById(id);
+    }
+
 }

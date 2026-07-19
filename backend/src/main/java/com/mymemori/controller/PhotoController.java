@@ -79,4 +79,10 @@ public class PhotoController {
         com.mymemori.dto.EventResponse response = photoService.getEventBySlug(slug);
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/photo/{id}")
+    public ResponseEntity<Void> deletePhoto(@PathVariable Long id) {
+        photoService.deletePhoto(id);
+        return ResponseEntity.ok().build();
+    }
 }
