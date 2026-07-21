@@ -18,19 +18,27 @@ import java.util.HexFormat;
 import java.util.Map;
 
 @Service
-@AllArgsConstructor
 @Slf4j
 public class WebhookService {
 
     private final ObjectMapper objectMapper;
     private final FlutterwaveProcessor flutterwaveProcessor;
     private final PaystackProcessor paystackProcessor;
-
-    @Value("${flw.webhook.secret}")
     private final String secretHash;
-
-    @Value("${ps.api.secret}")
     private final String psApiKey;
+
+    public WebhookService(
+            ObjectMapper objectMapper,
+            FlutterwaveProcessor flutterwaveProcessor,
+            PaystackProcessor paystackProcessor,
+            @Value("${flw.webhook.secret}") String secretHash,
+            @Value("${ps.api.secret}") String psApiKey) {
+        this.objectMapper = objectMapper;
+        this.flutterwaveProcessor = flutterwaveProcessor;
+        this.paystackProcessor = paystackProcessor;
+        this.secretHash = secretHash;
+        this.psApiKey = psApiKey;
+    }
 
     public Boolean isValidFlwSignature(String rawData, String signature) {
 

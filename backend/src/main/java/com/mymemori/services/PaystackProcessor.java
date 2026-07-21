@@ -11,7 +11,7 @@ import com.mymemori.exception.*;
 import com.mymemori.models.*;
 import com.mymemori.util.AuthenticatedUser;
 import com.mymemori.util.ReferenceGenerator;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,10 +24,8 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
-@AllArgsConstructor
 @Slf4j
 public class PaystackProcessor implements PaymentProcessor {
-
 
     private final AuthenticatedUser authUser;
     private final PlansRepository planRepo;
@@ -38,11 +36,26 @@ public class PaystackProcessor implements PaymentProcessor {
     @Value("${ps.api.secret}")
     private final String psApiKey;
 
+    public PaystackProcessor(
+            AuthenticatedUser authUser,
+            PlansRepository planRepo,
+            ProductRepository productRepo,
+            RestTemplate restTemplate,
+            TransactionRepository transactionRepo,
+            @Value("${ps.api.secret}") String psApiKey) {
+        this.authUser = authUser;
+        this.planRepo = planRepo;
+        this.productRepo = productRepo;
+        this.restTemplate = restTemplate;
+        this.transactionRepo = transactionRepo;
+        this.psApiKey = psApiKey;
+    }
+
     @Override
     public PaymentResponseResolver initializePayment(PaymentRequest request) {
         Users user = authUser.fetchAuthenticatedUser();
 
-        if (user == null){
+        if (user == null) {
             throw new UserNotFoundException("Authenticated User not found to process payment");
         }
 
@@ -51,7 +64,7 @@ public class PaystackProcessor implements PaymentProcessor {
         Plans plan = null;
         Product product = null;
 
-        if (request.getType().equals(PaymentType.PLAN)){
+        if (request.getType().equals(PaymentType.PLAN)) {
             plan = planRepo.findById(request.getId())
                     .orElseThrow(() -> new PlanNotFoundException("Plan not found to process paystack payment"));
 
@@ -70,15 +83,14 @@ public class PaystackProcessor implements PaymentProcessor {
             String timestamp = String.valueOf(System.currentTimeMillis() / 1000);
             String random = ReferenceGenerator.generateRandomString(5);
             reference = String.format("MM-PRD-T%s-%s", timestamp, random);
-        }else {
+        } else {
             throw new PaymentTypeNotFound(
-                    String.format("PaymentType %s not found for paystack payment", request.getType())
-            );
+                    String.format("PaymentType %s not found for paystack payment", request.getType()));
         }
 
         // build header
         HttpHeaders header = new HttpHeaders();
-        header.set("Authorization", "Bearer " +psApiKey);
+        header.set("Authorization", "Bearer " + psApiKey);
         header.setContentType(MediaType.APPLICATION_JSON);
         header.set("accept", "application/json");
 
@@ -90,7 +102,6 @@ public class PaystackProcessor implements PaymentProcessor {
                 .callback_url("https://mymemori.site")
                 .build();
 
-
         HttpEntity<PaystackPaymentRequest> entity = new HttpEntity<>(paystackPayReqquest, header);
 
         String url = "https://api.paystack.co/transaction/initialize";
@@ -99,11 +110,11 @@ public class PaystackProcessor implements PaymentProcessor {
                 url,
                 HttpMethod.POST,
                 entity,
-                PaymentResponse.class
-        );
+                PaymentResponse.class);
 
-        if(!apiResponse.getStatusCode().is2xxSuccessful()){
-            log.error("Payment provider encoured errors. Status code: {}, body: {}", apiResponse.getStatusCode(), apiResponse.getBody());
+        if (!apiResponse.getStatusCode().is2xxSuccessful()) {
+            log.error("Payment provider encoured errors. Status code: {}, body: {}", apiResponse.getStatusCode(),
+                    apiResponse.getBody());
             throw new PaymentInitializationException("An error occured while initiating paystack Payment");
         }
 
@@ -129,23 +140,22 @@ public class PaystackProcessor implements PaymentProcessor {
         return "Paystack";
     }
 
-
     // verify transaction
-    public void verifyTransaction(String reference){
+    public void verifyTransaction(String reference) {
 
         Transaction transaction = transactionRepo.findTransactionByProviderReference(reference)
                 .orElseThrow(() -> new TransactionNotFound("Transaction not Found!"));
 
-        if(transaction.getPaymentStatus() == PaymentStatus.SUCCESS){
+        if (transaction.getPaymentStatus() == PaymentStatus.SUCCESS) {
             log.info("Idempotency worked");
             return;
         }
 
-        String url = "https://api.paystack.co/transaction" +reference;
+        String url = "https://api.paystack.co/transaction" + reference;
 
         HttpHeaders header = new HttpHeaders();
         header.setContentType(MediaType.APPLICATION_JSON);
-        header.set("Authorization", "Bearer " +psApiKey);
+        header.set("Authorization", "Bearer " + psApiKey);
 
         HttpEntity<Void> entity = new HttpEntity<>(header);
 
@@ -153,10 +163,9 @@ public class PaystackProcessor implements PaymentProcessor {
                 url,
                 HttpMethod.GET,
                 entity,
-                PaymentResponse.class
-        );
+                PaymentResponse.class);
 
-        if (response.getBody() == null){
+        if (response.getBody() == null) {
             log.warn("Paystack returned empty data");
             return;
         }
@@ -166,10 +175,11 @@ public class PaystackProcessor implements PaymentProcessor {
 
         // Validate Amount
         BigDecimal incomingAmount = new BigDecimal(data.get("amount").toString());
-        if (incomingAmount.compareTo(transaction.getAmount())!= 0
+        if (incomingAmount.compareTo(transaction.getAmount()) != 0
                 || !data.get("currency").equals(transaction.getCurrency())
-                || !data.get("status").equals("success")){
-            log.warn("Fraud detected on Paystack Processor! Amount Expected: {}, Amount received: {}, Currency Expected: {}, Currency received: {}",
+                || !data.get("status").equals("success")) {
+            log.warn(
+                    "Fraud detected on Paystack Processor! Amount Expected: {}, Amount received: {}, Currency Expected: {}, Currency received: {}",
                     transaction.getAmount(), incomingAmount, transaction.getCurrency(), data.get("currency"));
 
             return;
@@ -181,7 +191,7 @@ public class PaystackProcessor implements PaymentProcessor {
     }
 
     // ================================= HELPER METHODS ======================
-    public PaymentResponseResolver paymentResponseResolver(PaymentResponse response){
+    public PaymentResponseResolver paymentResponseResolver(PaymentResponse response) {
         return getPaymentResponseResolver(response);
     }
 

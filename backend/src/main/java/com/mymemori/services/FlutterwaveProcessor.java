@@ -23,8 +23,6 @@ import static com.mymemori.services.PaystackProcessor.getPaymentResponseResolver
 
 @Service
 @Slf4j
-@AllArgsConstructor
-@NoArgsConstructor(force = true)
 public class FlutterwaveProcessor implements PaymentProcessor {
 
     /*
@@ -40,9 +38,22 @@ public class FlutterwaveProcessor implements PaymentProcessor {
     private final AuthenticatedUser authUser;
     private final RestTemplate restTemplate;
     private final TransactionRepository transactionRepo;
-
-    @Value("${fw.api.secret}")
     private final String fwApiKey;
+
+    public FlutterwaveProcessor(
+            PlansRepository plansRepo,
+            ProductRepository productRepo,
+            AuthenticatedUser authUser,
+            RestTemplate restTemplate,
+            TransactionRepository transactionRepo,
+            @Value("${fw.api.secret}") String fwApiKey) {
+        this.plansRepo = plansRepo;
+        this.productRepo = productRepo;
+        this.authUser = authUser;
+        this.restTemplate = restTemplate;
+        this.transactionRepo = transactionRepo;
+        this.fwApiKey = fwApiKey;
+    }
 
     @Override
     public PaymentResponseResolver initializePayment(PaymentRequest request){
