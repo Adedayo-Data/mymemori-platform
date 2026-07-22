@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.UUID;
 
@@ -82,8 +83,11 @@ public class PhotoController {
 
     // Delete Photos
     @DeleteMapping("/photo/{id}")
-    public ResponseEntity<Void> deletePhoto(@PathVariable UUID id) {
-        photoService.deletePhoto(id);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<Void> deletePhoto(
+            @PathVariable UUID id,
+            @RequestHeader(value = "X-Session-Id", required = false) UUID sessionId) throws AccessDeniedException {
+
+        photoService.deletePhoto(id, sessionId);
+        return ResponseEntity.noContent().build();
     }
 }

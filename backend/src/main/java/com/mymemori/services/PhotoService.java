@@ -3,23 +3,25 @@ package com.mymemori.services;
 import com.mymemori.Repository.EventRepository;
 import com.mymemori.Repository.PhotoRepository;
 import com.mymemori.Repository.ReactionRepository;
+import com.mymemori.dto.EventResponse;
 import com.mymemori.dto.PhotoRequestDTO;
 import com.mymemori.dto.PhotoResponseDTO;
 import com.mymemori.dto.ViewGalleryRequest;
+import com.mymemori.exception.EventNotFoundException;
 import com.mymemori.exception.PhotoNotFoundException;
 import com.mymemori.exception.UserNotFoundException;
-import com.mymemori.models.Event;
-import com.mymemori.models.Photo;
-import com.mymemori.models.Reactions;
-import com.mymemori.models.Users;
+import com.mymemori.models.*;
 import com.mymemori.util.AuthenticatedUser;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.nio.file.AccessDeniedException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -32,6 +34,8 @@ public class PhotoService {
     private final EventRepository eventRepo;
     private final ReactionRepository reactionRepo;
     private final EventAttendanceService attendanceService;
+//    private final Event event;
+
 
     // save Photos
     public List<PhotoResponseDTO> savePhoto(PhotoRequestDTO request, UUID sessionId) {
@@ -58,7 +62,7 @@ public class PhotoService {
 
             if (user == null) {
                 photo.setUploadedByUserId(null);
-                photo.setUploadedBySessionId((UUID) sessionId);
+                photo.setUploadedBySessionId(sessionId);
             } else {
                 photo.setUploadedByUserId(user.getId());
                 photo.setUploadedBySessionId(null);
@@ -232,13 +236,13 @@ public class PhotoService {
     }
 
     // Get event by slug (for public access)
-    public com.mymemori.dto.EventResponse getEventBySlug(String slug) {
+    public EventResponse getEventBySlug(String slug) {
         Event event = eventRepo.findByEventSlug(slug);
         if (event == null) {
             throw new IllegalArgumentException("Event not found with slug: " + slug);
         }
 
-        com.mymemori.dto.EventResponse response = new com.mymemori.dto.EventResponse();
+        EventResponse response = new EventResponse();
         response.setEventName(event.getEventName());
         response.setEventDate(event.getEventDate());
         response.setLocation(event.getLocation());
@@ -262,8 +266,35 @@ public class PhotoService {
         return response;
     }
 
-    public void deletePhoto(UUID id) {
-        photoRepo.deleteById(id);
+    @Transactional
+    public void deletePhoto(UUID id, UUID sessionId) throws AccessDeniedException {
+
+        Photo photo = photoRepo.findById(id)
+                .orElseThrow(() -> new PhotoNotFoundException("Id not matching. No Photo deleted!"));
+
+        Users user = authUser.fetchAuthenticatedUser();
+
+        if(user == null && sessionId == null){
+            throw new UserNotFoundException("No User found. Delete operation cannot be carried out");
+        }
+
+        // Get event object for the photo
+        Event event = eventRepo.findById(photo.getEventId())
+                .orElseThrow(() -> new EventNotFoundException("Event not found. Delete Ops not possible"));
+
+        UUID currentUserId = (user != null) ? user.getId() : null;
+        UUID hostId = event.getHostId();
+
+        boolean ishost = currentUserId != null && Objects.equals(currentUserId, hostId);
+        boolean isUploaderUser = currentUserId != null && Objects.equals(currentUserId, photo.getUploadedByUserId());
+        boolean isUploaderSession = currentUserId != null && Objects.equals(sessionId, photo.getUploadedBySessionId());
+
+        if (ishost || isUploaderUser || isUploaderSession){
+            photoRepo.deleteById(id);
+        }else{
+            throw new AccessDeniedException("Access denied for this operation. Delete Operation Halted");
+        }
+
     }
 
 }
