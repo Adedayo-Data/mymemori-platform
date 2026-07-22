@@ -13,6 +13,7 @@ public class PhotoResponseDTO {
     private UUID eventId;
     private UUID sessionId;
     private UUID userId;
+    private boolean canDelete;
     private String imageUrl;
     private Integer reactionCount;
     private Boolean isLikedByCurrentUser;

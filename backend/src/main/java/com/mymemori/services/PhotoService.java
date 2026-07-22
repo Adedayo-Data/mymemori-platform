@@ -59,6 +59,7 @@ public class PhotoService {
             photo.setImageUrl(s);
             photo.setUploadedAt(Instant.now());
             photo.setReactionCount(0);
+            photo.setCanDelete(true);
 
             if (user == null) {
                 photo.setUploadedByUserId(null);
@@ -69,7 +70,9 @@ public class PhotoService {
             }
 
             Photo savedPhoto = photoRepo.save(photo);
-            response.add(mapToDTO(savedPhoto));
+            PhotoResponseDTO dto = mapToDTO(savedPhoto);
+            dto.setCanDelete(calculateCanDelete(savedPhoto, user, sessionId));
+            response.add(dto);
         }
 
         // Auto-mark attendance: User attended event by uploading photo
@@ -141,6 +144,8 @@ public class PhotoService {
             PhotoResponseDTO photoResponse = mapToDTO(p);
             // Set like status for current user/session
             setLikeStatus(photoResponse, user != null ? user.getId() : null, sessionId);
+
+            photoResponse.setCanDelete(calculateCanDelete(p, user, sessionId));
             response.add(photoResponse);
         }
 
@@ -158,7 +163,7 @@ public class PhotoService {
             // Authenticated user - get their photos
             photos = photoRepo.findByUploadedByUserId(user.getId());
         } else if (sessionId != null) {
-            // Session user - get photos by session ID
+            // Session user - get photos by session IDk
             photos = photoRepo.findByUploadedBySessionId(sessionId);
         } else {
             throw new IllegalArgumentException("User must be authenticated with JWT or provide a valid session ID");
@@ -166,7 +171,9 @@ public class PhotoService {
 
         List<PhotoResponseDTO> response = new ArrayList<>();
         for (Photo photo : photos) {
-            response.add(mapToDTO(photo));
+            PhotoResponseDTO photoResponse = mapToDTO(photo);
+            photoResponse.setCanDelete(calculateCanDelete(photo, user, sessionId));
+            response.add(photoResponse);
         }
 
         return response;
@@ -192,6 +199,7 @@ public class PhotoService {
 
             for (Photo p : likedPhotos) {
                 PhotoResponseDTO photo = mapToDTO(p);
+                photo.setCanDelete(calculateCanDelete(p, user, sessionId));
                 response.add(photo);
             }
         } else if (sessionId != null) {
@@ -200,6 +208,7 @@ public class PhotoService {
 
             for (Photo p : likedPhotos) {
                 PhotoResponseDTO photo = mapToDTO(p);
+                photo.setCanDelete(calculateCanDelete(p, user, sessionId));
                 response.add(photo);
             }
         } else {
@@ -209,6 +218,7 @@ public class PhotoService {
     }
 
     public PhotoResponseDTO mapToDTO(Photo photo) {
+
         PhotoResponseDTO response = new PhotoResponseDTO();
         response.setPhotoId(photo.getId());
         response.setEventId(photo.getEventId());
@@ -220,7 +230,6 @@ public class PhotoService {
         // Note: isLikedByCurrentUser will be set separately when fetching photos
         // because we need the current user/session context
         response.setIsLikedByCurrentUser(false);
-
         return response;
     }
 
@@ -295,6 +304,23 @@ public class PhotoService {
             throw new AccessDeniedException("Access denied for this operation. Delete Operation Halted");
         }
 
+    }
+
+    public boolean calculateCanDelete(Photo photo, Users user, UUID sessionId) {
+        if(user == null && sessionId == null){
+            return false;
+        }
+
+        Event event = eventRepo.findById(photo.getEventId()).orElse(null);
+        UUID hostId = (event != null) ? event.getHostId() : null;
+
+        UUID currentUserId = (user != null) ? user.getId() : null;
+
+        boolean isHost = currentUserId != null && Objects.equals(currentUserId, hostId);
+        boolean isUploaderUser = currentUserId != null && Objects.equals(currentUserId, photo.getUploadedByUserId());
+        boolean isUploaderSession = sessionId != null && Objects.equals(sessionId, photo.getUploadedBySessionId());
+
+        return isHost || isUploaderUser || isUploaderSession;
     }
 
 }

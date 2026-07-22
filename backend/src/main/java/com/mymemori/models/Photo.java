@@ -21,6 +21,7 @@ public class Photo {
     private String imageUrl;
     private UUID uploadedBySessionId;
     private UUID uploadedByUserId;
+    private Boolean canDelete = false;
 
     private Instant uploadedAt;
     private Integer reactionCount;
