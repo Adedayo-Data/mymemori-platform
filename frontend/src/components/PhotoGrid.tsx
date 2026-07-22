@@ -1,4 +1,4 @@
-import { Download, Heart } from "lucide-react";
+import { Download, Heart, Trash2 } from "lucide-react";
 import Masonry from "react-masonry-css";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
@@ -24,6 +24,7 @@ interface PhotoGridProps {
   onPhotoClick: (photoId: string) => void;  // Changed from number
   onLike: (photoId: string) => void;  // Changed from number
   onDownload: (photoId: string) => void;  // Changed from number
+  onDelete?: (photoId: string) => void; // Optional: only for authenticated users
   isAuthenticated?: boolean; // NEW: to control download permissions
 }
 
@@ -34,6 +35,7 @@ const PhotoGrid = ({
   onPhotoClick,
   onLike,
   onDownload,
+  onDelete,
   isAuthenticated = true, // Default to true for backward compatibility
 }: PhotoGridProps) => {
   const [showHeartAnimation, setShowHeartAnimation] = useState < string | null > (null);
@@ -79,6 +81,7 @@ const PhotoGrid = ({
             onLike={onLike}
             onDoubleTapLike={handleDoubleTapLike}
             onDownload={onDownload}
+            onDelete={onDelete}
             isAuthenticated={isAuthenticated}
           />
         ))}
@@ -140,6 +143,19 @@ const PhotoGrid = ({
             >
               <Download className="w-5 h-5 text-gray-400" />
             </button>
+
+            {isAuthenticated && onDelete && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(photo.photoId);
+                }}
+                className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                title="Delete photo"
+              >
+                <Trash2 className="w-5 h-5 text-red-400 hover:text-red-600" />
+              </button>
+            )}
           </div>
         </div>
       ))}
@@ -157,6 +173,7 @@ interface PhotoCardProps {
   onLike: (photoId: string) => void;
   onDoubleTapLike: (photoId: string) => void;
   onDownload: (photoId: string) => void;
+  onDelete?: (photoId: string) => void;
   isAuthenticated?: boolean;
 }
 
@@ -169,6 +186,7 @@ const PhotoCard = ({
   onLike,
   onDoubleTapLike,
   onDownload,
+  onDelete,
   isAuthenticated = true,
 }: PhotoCardProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -280,29 +298,48 @@ const PhotoCard = ({
           )}
         </motion.button>
 
-        {/* Download button - ALWAYS VISIBLE with permission state */}
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={handleDownloadClick}
-          className={`relative p-2 rounded-full shadow-lg transition-all ${isAuthenticated
-            ? "bg-black/60 backdrop-blur-sm hover:bg-black/80"
-            : "bg-gray-600/70 backdrop-blur-sm cursor-not-allowed"
-            }`}
-          title={isAuthenticated ? "Download" : "Sign up to download"}
-        >
-          <Download
-            className={`w-4 h-4 ${isAuthenticated ? "text-white" : "text-gray-300"
+        {/* Right-side action buttons: Download + Delete */}
+        <div className="flex items-center gap-1.5">
+          {/* Download button */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={handleDownloadClick}
+            className={`relative p-2 rounded-full shadow-lg transition-all ${isAuthenticated
+              ? "bg-black/60 backdrop-blur-sm hover:bg-black/80"
+              : "bg-gray-600/70 backdrop-blur-sm cursor-not-allowed"
               }`}
-          />
-          {!isAuthenticated && (
-            <div className="absolute -top-1 -right-1 bg-pink-600 rounded-full p-0.5">
-              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-              </svg>
-            </div>
+            title={isAuthenticated ? "Download" : "Sign up to download"}
+          >
+            <Download
+              className={`w-4 h-4 ${isAuthenticated ? "text-white" : "text-gray-300"
+                }`}
+            />
+            {!isAuthenticated && (
+              <div className="absolute -top-1 -right-1 bg-pink-600 rounded-full p-0.5">
+                <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+            )}
+          </motion.button>
+
+          {/* Delete button - only for authenticated users */}
+          {isAuthenticated && onDelete && (
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(photo.photoId);
+              }}
+              className="p-2 bg-black/60 backdrop-blur-sm rounded-full shadow-lg hover:bg-red-600/80 transition-colors"
+              title="Delete photo"
+            >
+              <Trash2 className="w-4 h-4 text-white" />
+            </motion.button>
           )}
-        </motion.button>
+        </div>
       </div>
 
       {/* Desktop-only: Hover action buttons (centered) */}
@@ -333,6 +370,21 @@ const PhotoCard = ({
           >
             <Download className="w-5 h-5 text-gray-700" />
           </motion.button>
+
+          {isAuthenticated && onDelete && (
+            <motion.button
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(photo.photoId);
+              }}
+              className="p-3 bg-white rounded-full hover:bg-red-50 transition-colors shadow-xl cursor-pointer"
+              title="Delete photo"
+            >
+              <Trash2 className="w-5 h-5 text-red-500" />
+            </motion.button>
+          )}
         </div>
       </div>
 

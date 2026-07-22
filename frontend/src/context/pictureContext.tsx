@@ -38,6 +38,7 @@ interface PictureContextType {
   defaultImages: UploadedPhoto[];
   getAllPhoto: () => Promise<UploadedPhoto[]>;
   getLikedPhotos: () => Promise<UploadedPhoto[]>;
+  deletePhoto: (photoId: string) => Promise<void>;
 }
 
 const PictureContext = createContext < PictureContextType | null > (null);
@@ -222,6 +223,18 @@ export const PictureProvider = ({
     }
   }
 
+  const deletePhoto = useCallback(async (photoId: string): Promise<void> => {
+    try {
+      await apiClient.delete(`/api/public/photos/${photoId}`);
+      // Remove from local state immediately for optimistic UI
+      setDefaultImages((prev) => prev.filter((p) => p.photoId !== photoId));
+      setUploadedPhotos((prev) => prev.filter((p) => p.photoId !== photoId));
+    } catch (error) {
+      console.error("Failed to delete photo:", error);
+      throw error;
+    }
+  }, []);
+
   // Memoize the merged photos array to prevent unnecessary re-renders
   // Deduplicate: Remove temp optimistic photos if backend has returned the real version
   const mergedPhotos = useMemo(() => {
@@ -233,7 +246,7 @@ export const PictureProvider = ({
   }, [defaultImages, uploadedPhotos]);
 
   // Memoize the context value to prevent unnecessary re-renders
-  const value = useMemo < PictureContextType > (
+  const value = useMemo < PictureContextType >(
     () => ({
       uploadEventImage,
       uploadGalleryImage,
@@ -243,7 +256,8 @@ export const PictureProvider = ({
       fetchDefaultImages,
       defaultImages,
       getAllPhoto,
-      getLikedPhotos
+      getLikedPhotos,
+      deletePhoto,
     }),
     [
       uploadEventImage,
@@ -254,7 +268,8 @@ export const PictureProvider = ({
       fetchDefaultImages,
       defaultImages,
       getAllPhoto,
-      getLikedPhotos
+      getLikedPhotos,
+      deletePhoto,
     ]
   );
 
