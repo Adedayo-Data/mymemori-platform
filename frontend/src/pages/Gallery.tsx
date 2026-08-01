@@ -71,6 +71,7 @@ const Gallery = () => {
     addUploadedPhoto,
     fetchDefaultImages,
     loading: isUploading,
+    deletePhoto,
   } = usePicture();
 
   // Categories for filtering
@@ -349,6 +350,21 @@ const Gallery = () => {
     }
   };
 
+  // Handle photo delete
+  const handleDelete = async (photoId: string) => {
+    try {
+      await deletePhoto(photoId);
+      toast.success("Photo deleted");
+      // If the deleted photo is currently open in the modal, close it
+      if (selectedPhotoIndex !== null && sortedPhotos[selectedPhotoIndex]?.photoId === photoId) {
+        setSelectedPhotoIndex(null);
+      }
+    } catch (error) {
+      console.error("Failed to delete photo:", error);
+      toast.error("Failed to delete photo");
+    }
+  };
+
   // Handle photo download
   const handleDownload = (photoId: string) => {
     // Check if user is authenticated
@@ -521,6 +537,7 @@ const Gallery = () => {
                 }}
                 onLike={handleLike}
                 onDownload={handleDownload}
+                onDelete={isAuthenticated ? handleDelete : undefined}
                 isAuthenticated={isAuthenticated}
               />
 
