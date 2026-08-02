@@ -6,6 +6,7 @@ import com.mymemori.dto.LoginRequest;
 import com.mymemori.dto.UserRequestDTO;
 import com.mymemori.exception.EmailAlreadyExistsException;
 import com.mymemori.exception.InvalidCredentialsException;
+import com.mymemori.models.UserRole;
 import com.mymemori.models.Users;
 import com.mymemori.security.JwtService;
 import com.mymemori.services.SessionConversionService;
@@ -50,6 +51,7 @@ public class AuthController {
         user.setEmail(request.getEmail());
         user.setFullName(request.getFullName());
         user.setPassword(passEncoder.encode(request.getPassword()));
+        user.setRole(UserRole.REGULAR_USER);
 
         // Store original session ID if provided (for session conversion)
         if (request.getSessionId() != null) {
