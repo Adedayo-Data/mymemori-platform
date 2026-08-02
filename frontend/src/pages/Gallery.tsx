@@ -18,7 +18,7 @@ import UnlockSuccessModal from "../components/UnlockSuccessModal";
 import { useEvent } from "../context/eventContext";
 import { usePicture } from "../context/pictureContext";
 import { useAuth } from "../context/authContext";
-import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
+// import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { downloadImage } from "../utils/downloadUtils";
 import { uploadQueueManager } from "../utils/uploadQueueManager";
 import type { UploadTask } from "../utils/uploadQueueManager";
@@ -33,32 +33,33 @@ interface Photo {
   type: string;
   size: string;
   color: string;
+  canDelete?: boolean;
 }
 
 const Gallery = () => {
   // State management
-  const [viewMode, setViewMode] = useState < "grid" | "list" > ("grid");
-  const [selectedFilter, setSelectedFilter] = useState < string > ("all");
-  const [sortBy, setSortBy] = useState < string > ("recent");
-  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState < number | null > (null);
-  const [likedPhotos, setLikedPhotos] = useState < Set < string >> (new Set());
-  const [showUploadModal, setShowUploadModal] = useState < boolean > (false);
-  const [showSignupPrompt, setShowSignupPrompt] = useState < boolean > (false);
-  const [isLoading, setIsLoading] = useState < boolean > (true);
-  const [eventData, setEventData] = useState < { title: string; date: string } > ({
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [selectedFilter, setSelectedFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("recent");
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
+  const [likedPhotos, setLikedPhotos] = useState<Set<string>>(new Set());
+  const [showUploadModal, setShowUploadModal] = useState<boolean>(false);
+  const [showSignupPrompt, setShowSignupPrompt] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [eventData, setEventData] = useState<{ title: string; date: string }>({
     title: "Gallery",
     date: "",
   });
-  const [isAuthenticated, setIsAuthenticated] = useState < boolean > (false);
-  const [currentEventSlug, setCurrentEventSlug] = useState < string | null > (null);
-  const [hasUploaded, setHasUploaded] = useState < boolean > (false);
-  const [showSuccessModal, setShowSuccessModal] = useState < boolean > (false);
-  const [hasShownUnlockModal, setHasShownUnlockModal] = useState < boolean > (false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [currentEventSlug, setCurrentEventSlug] = useState<string | null>(null);
+  const [hasUploaded, setHasUploaded] = useState<boolean>(false);
+  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
+  const [hasShownUnlockModal, setHasShownUnlockModal] = useState<boolean>(false);
   // const [showStickyBanner, setShowStickyBanner] = useState<boolean>(false); // Removed sticky banner
 
   // Refs
-  const fileInputRef = useRef < HTMLInputElement > (null);
-  const cameraInputRef = useRef < HTMLInputElement > (null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // Hooks
   const navigate = useNavigate();
@@ -197,7 +198,7 @@ const Gallery = () => {
   // Initialize liked photos from contextPhotos (when they load or change)
   useEffect(() => {
     if (contextPhotos.length > 0) {
-      const likedPhotoIds = new Set < string > ();
+      const likedPhotoIds = new Set<string>();
       contextPhotos.forEach((photo: any) => {
         if (photo.isLikedByCurrentUser) {
           likedPhotoIds.add(photo.photoId);
@@ -464,10 +465,10 @@ const Gallery = () => {
 
 
   // Infinite scroll for performance
-  const { displayedItems } = useInfiniteScroll({
-    items: sortedPhotos,
-    batchSize: 20,
-  });
+  // const { displayedItems } = useInfiniteScroll({
+  //   items: sortedPhotos,
+  //   batchSize: 20,
+  // });
 
   // FOMO: Backend already limits to 10 photos if user hasn't uploaded
   // We just need to show the unlock message when hasUploaded = false

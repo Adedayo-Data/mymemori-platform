@@ -18,6 +18,7 @@ interface UploadedPhoto {
   type: string;
   size: string;
   color: string;
+  canDelete?: boolean;
 }
 
 interface PictureContextType {
@@ -225,7 +226,13 @@ export const PictureProvider = ({
 
   const deletePhoto = useCallback(async (photoId: string): Promise<void> => {
     try {
-      await apiClient.delete(`/api/public/photos/${photoId}`);
+      const sessionId = localStorage.getItem("sessionId");
+      const headers: Record<string, string> = {};
+      if (sessionId) {
+        headers["X-Session-Id"] = sessionId;
+      }
+
+      await apiClient.delete(`/api/public/photos/${photoId}`, { headers });
       // Remove from local state immediately for optimistic UI
       setDefaultImages((prev) => prev.filter((p) => p.photoId !== photoId));
       setUploadedPhotos((prev) => prev.filter((p) => p.photoId !== photoId));
