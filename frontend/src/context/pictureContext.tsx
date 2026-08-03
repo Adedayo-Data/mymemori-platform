@@ -42,7 +42,7 @@ interface PictureContextType {
   deletePhoto: (photoId: string) => Promise<void>;
 }
 
-const PictureContext = createContext < PictureContextType | null > (null);
+const PictureContext = createContext<PictureContextType | null>(null);
 
 export const PictureProvider = ({
   children,
@@ -50,8 +50,8 @@ export const PictureProvider = ({
   children: React.ReactNode;
 }) => {
   const [loading, setLoading] = useState(false);
-  const [uploadedPhotos, setUploadedPhotos] = useState < UploadedPhoto[] > ([]);
-  const [defaultImages, setDefaultImages] = useState < UploadedPhoto[] > ([]);
+  const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([]);
+  const [defaultImages, setDefaultImages] = useState<UploadedPhoto[]>([]);
 
   const addUploadedPhoto = useCallback((photo: UploadedPhoto) => {
     setUploadedPhotos((prev) => [...prev, photo]);
@@ -226,13 +226,7 @@ export const PictureProvider = ({
 
   const deletePhoto = useCallback(async (photoId: string): Promise<void> => {
     try {
-      const sessionId = localStorage.getItem("sessionId");
-      const headers: Record<string, string> = {};
-      if (sessionId) {
-        headers["X-Session-Id"] = sessionId;
-      }
-
-      await apiClient.delete(`/api/public/photos/${photoId}`, { headers });
+      await apiClient.delete(`/api/public/photo/${photoId}`);
       // Remove from local state immediately for optimistic UI
       setDefaultImages((prev) => prev.filter((p) => p.photoId !== photoId));
       setUploadedPhotos((prev) => prev.filter((p) => p.photoId !== photoId));
@@ -253,7 +247,7 @@ export const PictureProvider = ({
   }, [defaultImages, uploadedPhotos]);
 
   // Memoize the context value to prevent unnecessary re-renders
-  const value = useMemo < PictureContextType >(
+  const value = useMemo<PictureContextType>(
     () => ({
       uploadEventImage,
       uploadGalleryImage,

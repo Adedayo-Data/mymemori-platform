@@ -15,6 +15,11 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    const sessionId = localStorage.getItem("sessionId");
+    if (sessionId) {
+      config.headers["X-Session-Id"] = sessionId;
+    }
     
     return config;
   },
