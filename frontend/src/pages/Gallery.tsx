@@ -18,7 +18,7 @@ import UnlockSuccessModal from "../components/UnlockSuccessModal";
 import { useEvent } from "../context/eventContext";
 import { usePicture } from "../context/pictureContext";
 import { useAuth } from "../context/authContext";
-// import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
+import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { downloadImage } from "../utils/downloadUtils";
 import { uploadQueueManager } from "../utils/uploadQueueManager";
 import type { UploadTask } from "../utils/uploadQueueManager";
@@ -465,10 +465,10 @@ const Gallery = () => {
 
 
   // Infinite scroll for performance
-  // const { displayedItems } = useInfiniteScroll({
-  //   items: sortedPhotos,
-  //   batchSize: 20,
-  // });
+  const { displayedItems } = useInfiniteScroll({
+    items: sortedPhotos,
+    batchSize: 20,
+  });
 
   // FOMO: Backend already limits to 10 photos if user hasn't uploaded
   // We just need to show the unlock message when hasUploaded = false
@@ -529,7 +529,7 @@ const Gallery = () => {
           {sortedPhotos.length > 0 ? (
             <>
               <PhotoGrid
-                photos={sortedPhotos}
+                photos={displayedItems}
                 viewMode={viewMode}
                 likedPhotos={likedPhotos}
                 onPhotoClick={(photoId) => {

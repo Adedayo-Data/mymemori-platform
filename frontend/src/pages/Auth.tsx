@@ -132,10 +132,6 @@ const Auth = () => {
     }
   };
 
-  const handleGoogleSignIn = () => {
-    toast.success("Google Sign In coming soon!");
-  };
-
   const toggleTab = (tab: "signup" | "login") => {
     setActiveTab(tab);
     setErrors({ fullName: "", email: "", password: "", confirmPassword: "" });
