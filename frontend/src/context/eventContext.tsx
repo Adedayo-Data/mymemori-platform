@@ -20,6 +20,8 @@ interface EventContextType {
   createEvent: (data: EventData) => Promise<EventResponse>;
   getAllEvent: () => Promise<EventResponse[]>;
   getEventBySlug: (slug: string) => Promise<EventResponse>;
+  updateEvent: (id: string | number, data: Partial<EventData>) => Promise<EventResponse>;
+  deleteEvent: (id: string | number) => Promise<void>;
   loading: boolean;
   error: string | null;
 }
@@ -90,10 +92,50 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
     },
     []
   );
+
+  const updateEvent = async (id: string | number, data: Partial<EventData>): Promise<EventResponse> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await apiClient.put(`/api/event/${id}`, data);
+      toast.success("Event updated successfully!");
+      return response.data as EventResponse;
+    } catch (err: unknown) {
+      const errorMessage = handleApiError(
+        err,
+        "Failed to update event. Please try again.",
+        { showToast: true, setError }
+      );
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteEvent = async (id: string | number): Promise<void> => {
+    setLoading(true);
+    setError(null);
+    try {
+      await apiClient.delete(`/api/event/${id}`);
+      toast.success("Event deleted successfully!");
+    } catch (err: unknown) {
+      const errorMessage = handleApiError(
+        err,
+        "Failed to delete event. Please try again.",
+        { showToast: true, setError }
+      );
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value: EventContextType = {
     createEvent,
     getAllEvent,
     getEventBySlug,
+    updateEvent,
+    deleteEvent,
     loading,
     error,
   };

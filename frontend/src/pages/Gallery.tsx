@@ -18,7 +18,7 @@ import UnlockSuccessModal from "../components/UnlockSuccessModal";
 import { useEvent } from "../context/eventContext";
 import { usePicture } from "../context/pictureContext";
 import { useAuth } from "../context/authContext";
-// import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
+import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { downloadImage } from "../utils/downloadUtils";
 import { uploadQueueManager } from "../utils/uploadQueueManager";
 import type { UploadTask } from "../utils/uploadQueueManager";
@@ -370,12 +370,20 @@ const Gallery = () => {
   const handleDownload = (photoId: string) => {
     // Check if user is authenticated
     if (!isAuthenticated) {
-      // Session user trying to download - show signup prompt
-      setShowSignupPrompt(true);
-      return;
+      // Check local storage for guest download count
+      const guestDownloadCount = parseInt(localStorage.getItem('_mm_sess_trk_id_d') || '0', 10);
+      
+      if (guestDownloadCount >= 6) {
+        // Session user trying to download more than 6 times - show signup prompt
+        setShowSignupPrompt(true);
+        return;
+      } else {
+        // Increment guest download count
+        localStorage.setItem('_mm_sess_trk_id_d', (guestDownloadCount + 1).toString());
+      }
     }
 
-    // Authenticated user - proceed with download
+    // Authenticated user or guest under limit - proceed with download
     const photo = contextPhotos.find((p) => p.photoId === photoId);
     if (photo) {
       downloadImage(photo.imageUrl, `MyMemori-Photo-${photoId}.jpg`);
@@ -465,10 +473,10 @@ const Gallery = () => {
 
 
   // Infinite scroll for performance
-  // const { displayedItems } = useInfiniteScroll({
-  //   items: sortedPhotos,
-  //   batchSize: 20,
-  // });
+  const { displayedItems } = useInfiniteScroll({
+    items: sortedPhotos,
+    batchSize: 20,
+  });
 
   // FOMO: Backend already limits to 10 photos if user hasn't uploaded
   // We just need to show the unlock message when hasUploaded = false
@@ -529,7 +537,7 @@ const Gallery = () => {
           {sortedPhotos.length > 0 ? (
             <>
               <PhotoGrid
-                photos={sortedPhotos}
+                photos={displayedItems}
                 viewMode={viewMode}
                 likedPhotos={likedPhotos}
                 onPhotoClick={(photoId) => {
