@@ -2,6 +2,7 @@ package com.mymemori.Repository;
 
 import com.mymemori.models.Photo;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -37,4 +38,10 @@ public interface PhotoRepository extends JpaRepository<Photo, UUID> {
 
     void deleteById(UUID id);
 
+    // Cascade delete: remove all photos belonging to an event
+    @Modifying
+    @Query("DELETE FROM Photo p WHERE p.eventId = :eventId")
+    void deleteAllByEventId(UUID eventId);
+
 }
+
