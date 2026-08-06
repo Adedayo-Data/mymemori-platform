@@ -28,6 +28,7 @@ interface Event {
   eventSlug: string;
   imageUrl?: string;
   photoCount?: number;
+  id?: string | number;
   [key: string]: string | number | undefined;
 }
 
@@ -231,7 +232,13 @@ const NewHome = () => {
                 createdEvents.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {createdEvents.map((event) => (
-                      <EventCard key={event.eventSlug} event={event} isOwner={true} />
+                      <EventCard 
+                        key={event.eventSlug} 
+                        event={event} 
+                        isOwner={true} 
+                        onDelete={(id) => setCreatedEvents(prev => prev.filter(e => (e.id || e.eventSlug) !== id))}
+                        onUpdate={(id, newName) => setCreatedEvents(prev => prev.map(e => (e.id || e.eventSlug) === id ? { ...e, eventName: newName } : e))}
+                      />
                     ))}
                   </div>
                 ) : (
@@ -404,22 +411,45 @@ const EmptyState = ({
 interface EventCardProps {
   event: Event;
   isOwner?: boolean;
+  onUpdate?: (id: string | number, newName: string) => void;
+  onDelete?: (id: string | number) => void;
 }
 
-const EventCard = ({ event, isOwner = false }: EventCardProps) => {
+const EventCard = ({ event, isOwner = false, onUpdate, onDelete }: EventCardProps) => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const { updateEvent, deleteEvent } = useEvent();
+  
+  const eventId = event.id || event.eventSlug;
 
-  const handleDelete = () => {
-    console.log("Deleting event", event.eventSlug);
-    setShowDeleteConfirm(false);
+  const handleDelete = async () => {
+    if (!eventId) return;
+    try {
+      await deleteEvent(eventId);
+      setShowDeleteConfirm(false);
+      if (onDelete) onDelete(eventId);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const handleEdit = (newName: string) => {
-    console.log("Editing event name to", newName);
-    setShowEditModal(false);
+  const handleEdit = async (newName: string) => {
+    if (!eventId) return;
+    try {
+      await updateEvent(eventId, {
+        eventName: newName,
+        eventDate: event.eventDate,
+        location: event.location,
+        description: event.description,
+        imageUrl: event.imageUrl
+      });
+      setShowEditModal(false);
+      if (onUpdate) onUpdate(eventId, newName);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
