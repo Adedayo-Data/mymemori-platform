@@ -143,6 +143,7 @@ public class EventService {
     @Transactional
     public EventResponse updateEvent(UUID eventId, EventUpdateDTO request) throws AccessDeniedException {
         Users user = authUser.fetchAuthenticatedUser();
+        System.out.println("User object is: " + user.getEmail());
         if (user == null) {
             throw new UserNotFoundException("User not found. You must be authenticated to update an event.");
         }
