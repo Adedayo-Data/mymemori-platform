@@ -296,7 +296,7 @@ public class PhotoService {
 
         boolean ishost = currentUserId != null && Objects.equals(currentUserId, hostId);
         boolean isUploaderUser = currentUserId != null && Objects.equals(currentUserId, photo.getUploadedByUserId());
-        boolean isUploaderSession = currentUserId != null && Objects.equals(sessionId, photo.getUploadedBySessionId());
+        boolean isUploaderSession = sessionId != null && Objects.equals(sessionId, photo.getUploadedBySessionId());
 
         if (ishost || isUploaderUser || isUploaderSession){
             photoRepo.deleteById(id);

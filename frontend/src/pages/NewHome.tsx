@@ -8,8 +8,14 @@ import {
   MapPin,
   Camera,
   Plus,
+  Download,
+  Trash2,
+  MoreVertical,
+  Edit2,
 } from "lucide-react";
 import ProfilePanel from "../components/ProfilePanel";
+import ConfirmModal from "../components/ConfirmModal";
+import EditNameModal from "../components/EditNameModal";
 import { useEvent } from "../context/eventContext";
 import { usePicture } from "../context/pictureContext";
 import apiClient from "../api/apiClient";
@@ -22,6 +28,7 @@ interface Event {
   eventSlug: string;
   imageUrl?: string;
   photoCount?: number;
+  id?: string | number;
   [key: string]: string | number | undefined;
 }
 
@@ -38,22 +45,22 @@ interface Photo {
 const NewHome = () => {
   const navigate = useNavigate();
   const { getAllEvent } = useEvent();
-  const { getAllPhoto, getLikedPhotos } = usePicture();
+  const { getAllPhoto, getLikedPhotos, deletePhoto } = usePicture();
   const location = useLocation();
-  const [mainTab, setMainTab] = useState < "events" | "pictures" > ("events");
-  const [eventsSubTab, setEventsSubTab] = useState < "created" | "attended" > (
+  const [mainTab, setMainTab] = useState<"events" | "pictures">("events");
+  const [eventsSubTab, setEventsSubTab] = useState<"created" | "attended">(
     "created"
   );
-  const [picturesSubTab, setPicturesSubTab] = useState < "yours" | "liked" > (
+  const [picturesSubTab, setPicturesSubTab] = useState<"yours" | "liked">(
     "yours"
   );
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [createdEvents, setCreatedEvents] = useState < Event[] > ([]);
-  const [attendedEvents, setAttendedEvents] = useState < Event[] > ([]);
+  const [createdEvents, setCreatedEvents] = useState<Event[]>([]);
+  const [attendedEvents, setAttendedEvents] = useState<Event[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
-  const [userPhotos, setUserPhotos] = useState < Photo[] > ([]);
+  const [userPhotos, setUserPhotos] = useState<Photo[]>([]);
   const [isLoadingPhotos, setIsLoadingPhotos] = useState(true);
-  const [likedPhotos, setLikedPhotos] = useState < Photo[] > ([]);
+  const [likedPhotos, setLikedPhotos] = useState<Photo[]>([]);
   const [isLoadingLikedPhotos, setIsLoadingLikedPhotos] = useState(true);
 
   // Check if we should open profile panel based on route
@@ -116,6 +123,16 @@ const NewHome = () => {
 
     fetchData();
   }, [getAllEvent, getAllPhoto, getLikedPhotos]);
+
+  const handleDeletePhoto = async (photoId: string) => {
+    try {
+      await deletePhoto(photoId);
+      setUserPhotos((prev) => prev.filter((p) => p.photoId !== photoId));
+    } catch (error) {
+      console.error("Failed to delete photo:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
       {/* Header */}
@@ -215,7 +232,13 @@ const NewHome = () => {
                 createdEvents.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {createdEvents.map((event) => (
-                      <EventCard key={event.eventSlug} event={event} />
+                      <EventCard 
+                        key={event.eventSlug} 
+                        event={event} 
+                        isOwner={true} 
+                        onDelete={(id) => setCreatedEvents(prev => prev.filter(e => (e.id || e.eventSlug) !== id))}
+                        onUpdate={(id, newName) => setCreatedEvents(prev => prev.map(e => (e.id || e.eventSlug) === id ? { ...e, eventName: newName } : e))}
+                      />
                     ))}
                   </div>
                 ) : (
@@ -228,7 +251,7 @@ const NewHome = () => {
               ) : attendedEvents.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {attendedEvents.map((event) => (
-                    <EventCard key={event.eventSlug} event={event} />
+                    <EventCard key={event.eventSlug} event={event} isOwner={false} />
                   ))}
                 </div>
               ) : (
@@ -292,7 +315,7 @@ const NewHome = () => {
                 userPhotos.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {userPhotos.map((picture) => (
-                      <PictureCard key={picture.photoId} picture={picture} />
+                      <PictureCard key={picture.photoId} picture={picture} onDelete={handleDeletePhoto} />
                     ))}
                   </div>
                 ) : (
@@ -387,69 +410,260 @@ const EmptyState = ({
 // Event Card Component
 interface EventCardProps {
   event: Event;
+  isOwner?: boolean;
+  onUpdate?: (id: string | number, newName: string) => void;
+  onDelete?: (id: string | number) => void;
 }
 
-const EventCard = ({ event }: EventCardProps) => {
+const EventCard = ({ event, isOwner = false, onUpdate, onDelete }: EventCardProps) => {
   const navigate = useNavigate();
+  const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const { updateEvent, deleteEvent } = useEvent();
+  
+  const eventId = event.id || event.eventSlug;
+
+  const handleDelete = async () => {
+    if (!eventId) return;
+    try {
+      await deleteEvent(eventId);
+      setShowDeleteConfirm(false);
+      if (onDelete) onDelete(eventId);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleEdit = async (newName: string) => {
+    if (!eventId) return;
+    try {
+      await updateEvent(eventId, {
+        eventName: newName,
+        eventDate: event.eventDate,
+        location: event.location,
+        description: event.description,
+        imageUrl: event.imageUrl
+      });
+      setShowEditModal(false);
+      if (onUpdate) onUpdate(eventId, newName);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
-    <motion.div
-      whileHover={{ y: -4, scale: 1.02 }}
-      onClick={() => navigate(`/gallery?event=${event.eventSlug}`)}
-      className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer"
-    >
-      <div className="relative aspect-[4/3]">
-        <img
-          src={event.imageUrl}
-          alt={event.eventName}
-          className="w-full h-full object-cover"
-        />
-        {/* Photo count badge */}
-        {event.photoCount !== undefined && event.photoCount > 0 && (
-          <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white px-2 py-1 rounded-full flex items-center gap-1 text-xs font-semibold">
-            <ImageIcon className="w-3 h-3" />
-            <span>{event.photoCount}</span>
+    <>
+      <motion.div
+        whileHover={{ y: -4, scale: 1.02 }}
+        onClick={() => {
+          if (!showMenu) navigate(`/gallery?event=${event.eventSlug}`);
+        }}
+        className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer relative"
+      >
+        <div className="relative aspect-[4/3]">
+          <img
+            src={event.imageUrl}
+            alt={event.eventName}
+            className="w-full h-full object-cover"
+          />
+          
+          {/* Action Menu (Top Right) */}
+          {isOwner && (
+            <div className="absolute top-2 right-2 z-20">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(!showMenu);
+                }}
+                className="p-1.5 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full text-white transition-colors"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+
+              <AnimatePresence>
+                {showMenu && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-30"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMenu(false);
+                      }}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="absolute right-0 mt-1 w-36 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-40 py-1 origin-top-right"
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowMenu(false);
+                          setShowEditModal(true);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        Edit Name
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowMenu(false);
+                          setShowDeleteConfirm(true);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete Event
+                      </button>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {/* Photo count badge (Moved to bottom left so it doesn't overlap) */}
+          {event.photoCount !== undefined && event.photoCount > 0 && (
+            <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm text-white px-2 py-1 rounded-full flex items-center gap-1 text-xs font-semibold z-10">
+              <ImageIcon className="w-3 h-3" />
+              <span>{event.photoCount}</span>
+            </div>
+          )}
+        </div>
+        <div className="p-3">
+          <h3 className="font-semibold text-sm mb-1 truncate">
+            {event.eventName}
+          </h3>
+          <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+            <Calendar className="w-3 h-3" />
+            <span>
+              {event.eventDate
+                ? new Date(event.eventDate).toLocaleDateString()
+                : "TBD"}
+            </span>
           </div>
-        )}
-      </div>
-      <div className="p-3">
-        <h3 className="font-semibold text-sm mb-1 truncate">
-          {" "}
-          {event.eventName}{" "}
-        </h3>
-        <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-          <Calendar className="w-3 h-3" />
-          <span>
-            {event.eventDate
-              ? new Date(event.eventDate).toLocaleDateString()
-              : "TBD"}{" "}
-          </span>
+          <div className="flex items-center gap-1 text-xs text-gray-500">
+            <MapPin className="w-3 h-3" />
+            <span>{event.location}</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1 text-xs text-gray-500">
-          <MapPin className="w-3 h-3" />
-          <span>{event.location} </span>
-        </div>
-      </div>
-    </motion.div>
+      </motion.div>
+
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="Delete Event"
+        description={`Are you sure you want to delete "${event.eventName}"? This will permanently remove the event and all its photos.`}
+        confirmText="Delete Event"
+        isDestructive={true}
+      />
+
+      <EditNameModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSave={handleEdit}
+        initialName={event.eventName || ""}
+        title="Edit Event Name"
+      />
+    </>
   );
 };
 
 // Picture Card Component
-const PictureCard = ({ picture }: { picture: Photo }) => {
+const PictureCard = ({ picture, onDelete }: { picture: Photo, onDelete?: (id: string) => void }) => {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const response = await fetch(picture.imageUrl);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `photo-${picture.photoId}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Error downloading image:", error);
+      window.open(picture.imageUrl, '_blank');
+    }
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onDelete || isDeleting) return;
+    setShowConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!onDelete) return;
+    setIsDeleting(true);
+    try {
+      await onDelete(picture.photoId);
+    } finally {
+      setIsDeleting(false);
+      setShowConfirm(false);
+    }
+  };
+
   return (
-    <motion.div
-      whileHover={{ y: -4, scale: 1.02 }}
-      className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer group"
-    >
-      <div className="relative aspect-square">
-        <img
-          src={picture.imageUrl}
-          alt={`Photo by ${picture.uploader}`}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-      </div>
-    </motion.div>
+    <>
+      <motion.div
+        whileHover={{ y: -4, scale: 1.02 }}
+        className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer group relative"
+      >
+        <div className="relative aspect-square">
+          <img
+            src={picture.imageUrl}
+            alt={`Photo by ${picture.uploader}`}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 pointer-events-none" />
+
+          {/* Actions Overlay */}
+          <div className="absolute bottom-2 left-2 flex flex-row gap-25 z-10">
+            <button
+              onClick={handleDownload}
+              className="p-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full text-white transition-colors"
+              title="Download"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+
+            {onDelete && (
+              <button
+                onClick={handleDeleteClick}
+                disabled={isDeleting}
+                className="p-1.5 bg-red-500/80 hover:bg-red-600 backdrop-blur-sm rounded-full text-white transition-colors disabled:opacity-50"
+                title="Delete"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      </motion.div>
+
+      <ConfirmModal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={confirmDelete}
+        title="Delete Picture"
+        description="Are you sure you want to delete this picture? This action cannot be undone."
+        confirmText="Delete"
+        isDestructive={true}
+        isLoading={isDeleting}
+      />
+    </>
   );
 };
 

@@ -33,32 +33,33 @@ interface Photo {
   type: string;
   size: string;
   color: string;
+  canDelete?: boolean;
 }
 
 const Gallery = () => {
   // State management
-  const [viewMode, setViewMode] = useState < "grid" | "list" > ("grid");
-  const [selectedFilter, setSelectedFilter] = useState < string > ("all");
-  const [sortBy, setSortBy] = useState < string > ("recent");
-  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState < number | null > (null);
-  const [likedPhotos, setLikedPhotos] = useState < Set < string >> (new Set());
-  const [showUploadModal, setShowUploadModal] = useState < boolean > (false);
-  const [showSignupPrompt, setShowSignupPrompt] = useState < boolean > (false);
-  const [isLoading, setIsLoading] = useState < boolean > (true);
-  const [eventData, setEventData] = useState < { title: string; date: string } > ({
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [selectedFilter, setSelectedFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("recent");
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
+  const [likedPhotos, setLikedPhotos] = useState<Set<string>>(new Set());
+  const [showUploadModal, setShowUploadModal] = useState<boolean>(false);
+  const [showSignupPrompt, setShowSignupPrompt] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [eventData, setEventData] = useState<{ title: string; date: string }>({
     title: "Gallery",
     date: "",
   });
-  const [isAuthenticated, setIsAuthenticated] = useState < boolean > (false);
-  const [currentEventSlug, setCurrentEventSlug] = useState < string | null > (null);
-  const [hasUploaded, setHasUploaded] = useState < boolean > (false);
-  const [showSuccessModal, setShowSuccessModal] = useState < boolean > (false);
-  const [hasShownUnlockModal, setHasShownUnlockModal] = useState < boolean > (false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [currentEventSlug, setCurrentEventSlug] = useState<string | null>(null);
+  const [hasUploaded, setHasUploaded] = useState<boolean>(false);
+  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
+  const [hasShownUnlockModal, setHasShownUnlockModal] = useState<boolean>(false);
   // const [showStickyBanner, setShowStickyBanner] = useState<boolean>(false); // Removed sticky banner
 
   // Refs
-  const fileInputRef = useRef < HTMLInputElement > (null);
-  const cameraInputRef = useRef < HTMLInputElement > (null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // Hooks
   const navigate = useNavigate();
@@ -71,6 +72,7 @@ const Gallery = () => {
     addUploadedPhoto,
     fetchDefaultImages,
     loading: isUploading,
+    deletePhoto,
   } = usePicture();
 
   // Categories for filtering
@@ -196,7 +198,7 @@ const Gallery = () => {
   // Initialize liked photos from contextPhotos (when they load or change)
   useEffect(() => {
     if (contextPhotos.length > 0) {
-      const likedPhotoIds = new Set < string > ();
+      const likedPhotoIds = new Set<string>();
       contextPhotos.forEach((photo: any) => {
         if (photo.isLikedByCurrentUser) {
           likedPhotoIds.add(photo.photoId);
@@ -349,16 +351,39 @@ const Gallery = () => {
     }
   };
 
+  // Handle photo delete
+  const handleDelete = async (photoId: string) => {
+    try {
+      await deletePhoto(photoId);
+      toast.success("Photo deleted");
+      // If the deleted photo is currently open in the modal, close it
+      if (selectedPhotoIndex !== null && sortedPhotos[selectedPhotoIndex]?.photoId === photoId) {
+        setSelectedPhotoIndex(null);
+      }
+    } catch (error) {
+      console.error("Failed to delete photo:", error);
+      toast.error("Failed to delete photo");
+    }
+  };
+
   // Handle photo download
   const handleDownload = (photoId: string) => {
     // Check if user is authenticated
     if (!isAuthenticated) {
-      // Session user trying to download - show signup prompt
-      setShowSignupPrompt(true);
-      return;
+      // Check local storage for guest download count
+      const guestDownloadCount = parseInt(localStorage.getItem('_mm_sess_trk_id_d') || '0', 10);
+      
+      if (guestDownloadCount >= 6) {
+        // Session user trying to download more than 6 times - show signup prompt
+        setShowSignupPrompt(true);
+        return;
+      } else {
+        // Increment guest download count
+        localStorage.setItem('_mm_sess_trk_id_d', (guestDownloadCount + 1).toString());
+      }
     }
 
-    // Authenticated user - proceed with download
+    // Authenticated user or guest under limit - proceed with download
     const photo = contextPhotos.find((p) => p.photoId === photoId);
     if (photo) {
       downloadImage(photo.imageUrl, `MyMemori-Photo-${photoId}.jpg`);
@@ -512,7 +537,7 @@ const Gallery = () => {
           {sortedPhotos.length > 0 ? (
             <>
               <PhotoGrid
-                photos={sortedPhotos}
+                photos={displayedItems}
                 viewMode={viewMode}
                 likedPhotos={likedPhotos}
                 onPhotoClick={(photoId) => {
@@ -521,6 +546,7 @@ const Gallery = () => {
                 }}
                 onLike={handleLike}
                 onDownload={handleDownload}
+                onDelete={isAuthenticated ? handleDelete : undefined}
                 isAuthenticated={isAuthenticated}
               />
 
