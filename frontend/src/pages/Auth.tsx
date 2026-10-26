@@ -126,8 +126,7 @@ const Auth = () => {
       // - Otherwise, redirect to /home (authenticated users should see /home, not /)
       const redirectUrl = returnTo && returnTo !== "/" ? returnTo : "/home";
       navigate(redirectUrl);
-    } catch (error) {
-      console.error(error);
+    } catch {
       // Error is handled by the context/toast
     }
   };

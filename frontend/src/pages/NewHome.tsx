@@ -80,8 +80,7 @@ const NewHome = () => {
       try {
         const events = await getAllEvent();
         setCreatedEvents(events || []);
-      } catch (error) {
-        console.error("Error fetching created events:", error);
+      } catch {
         setCreatedEvents([]);
       }
 
@@ -89,8 +88,7 @@ const NewHome = () => {
       try {
         const response = await apiClient.get("/api/attendance/my-events");
         setAttendedEvents(response.data || []);
-      } catch (error) {
-        console.error("Error fetching attended events:", error);
+      } catch {
         setAttendedEvents([]);
       } finally {
         setIsLoadingEvents(false);
@@ -101,8 +99,7 @@ const NewHome = () => {
       try {
         const photos = await getAllPhoto();
         setUserPhotos(photos || []);
-      } catch (error) {
-        console.error("Error fetching photos:", error);
+      } catch {
         setUserPhotos([]);
       } finally {
         setIsLoadingPhotos(false);
@@ -113,8 +110,7 @@ const NewHome = () => {
       try {
         const liked = await getLikedPhotos();
         setLikedPhotos(liked || []);
-      } catch (error) {
-        console.error("Error fetching liked photos:", error);
+      } catch {
         setLikedPhotos([]);
       } finally {
         setIsLoadingLikedPhotos(false);

@@ -51,7 +51,6 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
       } catch (err) {
         const error =
           err instanceof Error ? err : new Error("Failed to process image");
-        console.error("Image upload error:", error);
 
         // Set error state
         setError(error.message);

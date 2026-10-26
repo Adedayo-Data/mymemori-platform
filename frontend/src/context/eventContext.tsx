@@ -38,7 +38,6 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const response = await apiClient.post("/api/event/create", data);
       toast.success("Event created successfully!");
-      console.log("Event creation response:", response.data);
       return response.data as EventResponse;
     } catch (err: unknown) {
       const errorMessage = handleApiError(
@@ -57,7 +56,6 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
     setError(null);
     try {
       const response = await apiClient.get("/api/event");
-      console.log("Fetched events:", response.data);
       return response.data as EventResponse[];
     } catch (err: unknown) {
       const errorMessage = handleApiError(
@@ -77,7 +75,6 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
       setError(null);
       try {
         const response = await apiClient.get(`/api/public/event/${eventSlug}`);
-        console.log("Event fetch response:", response.data);
         return response.data as EventResponse;
       } catch (err: unknown) {
         const errorMessage = handleApiError(

@@ -101,10 +101,6 @@ export const PictureProvider = ({
             { headers }
           );
         } catch (saveError: any) {
-          console.error('Failed to save image to backend:', saveError);
-          if (saveError.response) {
-            console.error('Server response:', saveError.response.data);
-          }
           // Don't show toast here - let the calling component handle it
           throw saveError;
         }
@@ -147,7 +143,6 @@ export const PictureProvider = ({
 
       if (response.data) {
         setDefaultImages(response.data);
-        console.log("Fetched default images with like status:", response.data);
       }
       return response.data;
     } catch (error: unknown) {
@@ -158,8 +153,6 @@ export const PictureProvider = ({
         };
         message?: string;
       };
-
-      console.error("Failed to fetch default images:", error);
 
       // If unauthorized, clear invalid session and retry once (only for guest users)
       if (axiosError.response?.status === 401) {
@@ -177,11 +170,9 @@ export const PictureProvider = ({
 
             if (retryResponse.data) {
               setDefaultImages(retryResponse.data);
-              console.log("Retry: Fetched default images with like status:", retryResponse.data);
               return retryResponse.data;
             }
           } catch (retryError) {
-            console.error("Retry failed:", retryError);
             handleApiError(
               retryError,
               "Failed to load images. Please try again.",
@@ -206,20 +197,17 @@ export const PictureProvider = ({
   const getAllPhoto = async () => {
     try {
       const response = await apiClient.get("/api/public/my-photos");
-      console.log("Event fetch response:", response.data);
       return response.data;
-    } catch (error) {
-      console.error("Failed to fetch default images:", error);
+    } catch {
+      // Failed to fetch photos
     }
   }
 
   const getLikedPhotos = async () => {
     try {
       const response = await apiClient.get("/api/public/liked-photos");
-      console.log("Liked photos fetch response:", response.data);
       return response.data;
-    } catch (error) {
-      console.error("Failed to fetch liked photos:", error);
+    } catch {
       return [];
     }
   }

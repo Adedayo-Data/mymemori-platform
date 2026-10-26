@@ -124,8 +124,7 @@ const Gallery = () => {
             title: data.eventName || "Gallery",
             date: data.eventDate || "",
           });
-        } catch (error) {
-          console.error("Failed to load event details:", error);
+        } catch {
           toast.error("Failed to load event details");
         }
 
@@ -146,15 +145,13 @@ const Gallery = () => {
             headers,
           });
           setHasUploaded(uploadCheckResponse.data.hasUploaded || false);
-        } catch (error) {
-          console.error("Failed to check upload status:", error);
+        } catch {
           // Default to false if check fails
           setHasUploaded(false);
         }
 
         setIsLoading(false);
-      } catch (error) {
-        console.error("Error loading gallery data:", error);
+      } catch {
         toast.error("Failed to load gallery. Please try again.");
         setIsLoading(false);
       }
@@ -252,8 +249,7 @@ const Gallery = () => {
 
       // Close modal
       setShowUploadModal(false);
-    } catch (error) {
-      console.error("Failed to add files to queue:", error);
+    } catch {
       toast.error("Failed to start upload");
     } finally {
       // Reset file input
@@ -291,8 +287,7 @@ const Gallery = () => {
 
       // Close modal
       setShowUploadModal(false);
-    } catch (error) {
-      console.error("Failed to process captured photos:", error);
+    } catch {
       toast.error("Failed to start upload");
     } finally {
       // Reset the input to allow capturing another photo
@@ -330,8 +325,7 @@ const Gallery = () => {
       if (slug) {
         await fetchDefaultImages(slug);
       }
-    } catch (error: any) {
-      console.error("Failed to update reaction:", error);
+    } catch {
 
       // Revert optimistic update on error
       setLikedPhotos((prev) => {
@@ -445,15 +439,11 @@ const Gallery = () => {
         }
         setHasUploaded(true);
 
-      } catch (saveError: any) {
-        console.error('Failed to save image to backend:', saveError);
-        if (saveError.response) {
-          console.error('Server response:', saveError.response.data);
-        }
+      } catch {
         toast.error('Image uploaded but failed to save to gallery');
       }
-    } catch (error) {
-      console.error("Failed to process uploaded photo:", error);
+    } catch {
+      // Failed to process uploaded photo
     }
   };
 

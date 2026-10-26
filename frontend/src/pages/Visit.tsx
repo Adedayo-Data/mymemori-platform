@@ -192,9 +192,6 @@ const Visit = () => {
         {
           maxRetries: 3,
           baseDelay: 1000,
-          onRetry: (attempt) => {
-            console.log(`Retry attempt ${attempt} for fetching event`);
-          },
         }
       );
       setEventData({
@@ -249,7 +246,6 @@ const Visit = () => {
         throw error;
       }
     } catch (error) {
-      console.error("Failed to start photo sharing:", error);
       toast.error(
         error instanceof Error
           ? error.message
@@ -328,7 +324,6 @@ const Visit = () => {
             className="hidden"
             onLoad={handleImageLoad}
             onError={() => {
-              console.error("Failed to load background image");
               setIsImageLoaded(true);
             }}
           />
@@ -419,7 +414,6 @@ const Visit = () => {
                   className="w-40 h-40 object-cover rounded-full"
                   onLoad={handleImageLoad}
                   onError={() => {
-                    console.error("Failed to load event image");
                     setIsImageLoaded(true);
                   }}
                 />

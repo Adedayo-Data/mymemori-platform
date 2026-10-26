@@ -38,21 +38,12 @@ export const compressImage = async (
     
     // Skip compression if file is already small
     if (originalSizeMB < 0.5) {
-      console.log(`File ${file.name} is already small (${originalSizeMB.toFixed(2)}MB), skipping compression`);
       return file;
     }
 
     const compressedFile = await imageCompression(file, finalOptions);
-    const compressedSizeMB = compressedFile.size / 1024 / 1024;
-    
-    console.log(`Compressed ${file.name}:`);
-    console.log(`  Original: ${originalSizeMB.toFixed(2)}MB`);
-    console.log(`  Compressed: ${compressedSizeMB.toFixed(2)}MB`);
-    console.log(`  Reduction: ${((1 - compressedSizeMB / originalSizeMB) * 100).toFixed(1)}%`);
-    
     return compressedFile;
-  } catch (error) {
-    console.error('Compression failed:', error);
+  } catch {
     toast.error('Image compression failed, uploading original');
     return file; // Return original if compression fails
   }

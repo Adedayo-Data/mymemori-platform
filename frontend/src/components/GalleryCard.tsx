@@ -5,7 +5,6 @@ interface GalleryCardProps {
 }
 
 const handleViewGallery = (eventTitle: string) => {
-  console.log("Viewing gallery for:", eventTitle);
   alert(`Opening gallery for ${eventTitle}`);
 };
 const GalleryCard = ({ image, title, date }: GalleryCardProps) => {

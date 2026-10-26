@@ -116,8 +116,7 @@ class UploadQueueManager {
         } else if (task.status === 'error') {
           failedCount++;
         }
-      } catch (error) {
-        console.error(`Failed to process task ${task.id}:`, error);
+      } catch {
         failedCount++;
       }
 
@@ -181,7 +180,6 @@ class UploadQueueManager {
       task.error = error instanceof Error ? error.message : 'Upload failed';
       task.progress = 0;
       this.notifyListeners();
-      console.error(`Upload failed for ${task.fileName}:`, error);
     }
   }
 

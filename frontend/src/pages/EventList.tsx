@@ -51,8 +51,7 @@ const EventList = () => {
         }));
 
         setEventsCreated(transformedEvents);
-      } catch (error) {
-        console.error("Error fetching events:", error);
+      } catch {
         setEventsCreated([]);
       } finally {
         setIsLoading(false);

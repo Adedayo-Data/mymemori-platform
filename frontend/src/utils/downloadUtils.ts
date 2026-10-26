@@ -27,8 +27,7 @@ export const downloadImage = async (imageUrl: string, filename: string = "image.
     // Clean up
     window.URL.revokeObjectURL(url);
     toast.success("Download started!");
-  } catch (error) {
-    console.error("Download failed:", error);
+  } catch {
     // Fallback: Open in new tab if fetch fails (e.g. CORS)
     window.open(imageUrl, "_blank");
     toast.error("Download failed, opened in new tab instead");

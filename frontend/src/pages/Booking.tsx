@@ -72,8 +72,8 @@ const Booking = () => {
           ...prev,
           imageUrl: imageUrl,
         }));
-      } catch (error) {
-        console.error("Upload failed:", error);
+      } catch {
+        // Upload failed
       }
     }
   };
@@ -136,8 +136,8 @@ const Booking = () => {
           },
         });
       }, 2000);
-    } catch (error) {
-      console.error("Failed to create event:", error);
+    } catch {
+      // Failed to create event
     }
   };
 

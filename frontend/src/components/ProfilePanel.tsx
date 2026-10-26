@@ -32,7 +32,6 @@ const ProfilePanel = ({ isOpen, onClose }: ProfilePanelProps) => {
 
   const handleSave = () => {
     // TODO: Save to backend
-    console.log("Saving profile:", formData);
   };
 
   const handleLogout = () => {
