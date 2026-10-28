@@ -102,4 +102,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(502, pie.getMessage(), Instant.now()));
     }
+
+    @ExceptionHandler(InvalidResetTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidResetToken(InvalidResetTokenException ex) {
+        log.warn("Invalid or expired password reset token used");
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                ex.getMessage(),
+                Instant.now());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
 }

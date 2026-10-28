@@ -2,6 +2,8 @@ package com.mymemori.controller;
 
 import com.mymemori.Repository.UserRepository;
 import com.mymemori.dto.AuthMessage;
+import com.mymemori.dto.ForgetPasswordRequest;
+import com.mymemori.dto.ResetPasswordRequest;
 import com.mymemori.dto.LoginRequest;
 import com.mymemori.dto.UserRequestDTO;
 import com.mymemori.exception.EmailAlreadyExistsException;
@@ -9,6 +11,7 @@ import com.mymemori.exception.InvalidCredentialsException;
 import com.mymemori.models.UserRole;
 import com.mymemori.models.Users;
 import com.mymemori.security.JwtService;
+import com.mymemori.services.AuthService;
 import com.mymemori.services.SessionConversionService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +40,9 @@ public class AuthController {
 
     @Autowired
     private SessionConversionService sessionConversionService;
+
+    @Autowired
+    private AuthService authService;
 
     @PostMapping("/sign-up")
     public ResponseEntity<AuthMessage> register(@Valid @RequestBody UserRequestDTO request) {
@@ -112,5 +118,18 @@ public class AuthController {
         message.setMessage("Sign-in Successful");
 
         return ResponseEntity.status(HttpStatus.OK).body(message);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgetPasswordRequest request) {
+        authService.forgotPassword(request.getEmail());
+        // Always return ACCEPTED regardless of whether the email exists (prevents enumeration)
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body("If an account with that email exists, a reset link has been sent.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.getToken(), request.getNewPassword());
+        return ResponseEntity.ok("Password has been reset successfully. Please sign in with your new password.");
     }
 }
