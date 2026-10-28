@@ -16,9 +16,25 @@ public class Users {
     private UUID id;
     private String email;
     private String fullName;
+
+    /** Null for Google-auth users — never try to match a password against null. */
     private String password;
 
-    // Add user role based on payment
+    /** Google's unique "sub" claim — stored to detect returning Google users. */
+    @Column(unique = true)
+    private String googleId;
+
+    /** Profile picture URL provided by Google (optional). */
+    private String avatarUrl;
+
+    /** How the user signed up — defaults to LOCAL for existing users. */
+    @Enumerated(EnumType.STRING)
+    private AuthProvider authProvider = AuthProvider.LOCAL;
+
+    public AuthProvider getAuthProvider() {
+        return authProvider != null ? authProvider : AuthProvider.LOCAL;
+    }
+
     @Enumerated(EnumType.STRING)
     private UserRole Role;
 
@@ -27,3 +43,4 @@ public class Users {
 
     private UUID originalSessionId;
 }
+

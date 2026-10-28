@@ -3,6 +3,7 @@ package com.mymemori.controller;
 import com.mymemori.Repository.UserRepository;
 import com.mymemori.dto.AuthMessage;
 import com.mymemori.dto.ForgetPasswordRequest;
+import com.mymemori.dto.GoogleAuthRequest;
 import com.mymemori.dto.ResetPasswordRequest;
 import com.mymemori.dto.LoginRequest;
 import com.mymemori.dto.UserRequestDTO;
@@ -12,6 +13,7 @@ import com.mymemori.models.UserRole;
 import com.mymemori.models.Users;
 import com.mymemori.security.JwtService;
 import com.mymemori.services.AuthService;
+import com.mymemori.services.GoogleAuthService;
 import com.mymemori.services.SessionConversionService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +45,9 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
+
+    @Autowired
+    private GoogleAuthService googleAuthService;
 
     @PostMapping("/sign-up")
     public ResponseEntity<AuthMessage> register(@Valid @RequestBody UserRequestDTO request) {
@@ -102,7 +107,8 @@ public class AuthController {
         // check if user Exist in the db
         Users user = userRepo.findByEmail(request.getEmail());
 
-        if (user == null || !passEncoder.matches(request.getPassword(), user.getPassword())) {
+        if (user == null || user.getPassword() == null
+                || !passEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("Invalid credentials");
         }
 
@@ -131,5 +137,11 @@ public class AuthController {
     public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request.getToken(), request.getNewPassword());
         return ResponseEntity.ok("Password has been reset successfully. Please sign in with your new password.");
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<AuthMessage> googleSignIn(@Valid @RequestBody GoogleAuthRequest request) {
+        AuthMessage response = googleAuthService.authenticateWithGoogle(request.getIdToken(), request.getSessionId());
+        return ResponseEntity.ok(response);
     }
 }

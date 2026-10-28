@@ -28,10 +28,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex) {
-        log.warn("Invalid credentials attempt");
+        log.warn("Invalid credentials attempt: {}", ex.getMessage());
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.UNAUTHORIZED.value(),
-                "Invalid email or password", // Don't reveal which one is wrong
+                ex.getMessage() != null ? ex.getMessage() : "Invalid credentials",
                 Instant.now());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
