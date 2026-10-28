@@ -41,6 +41,11 @@ build/
 logs/
 *.log
 
+### Local / secret Spring config files (never commit real credentials) ###
+src/main/resources/application-test.yaml
+src/main/resources/application-local.yaml
+src/main/resources/application-dev.yaml
+
+### Internal docs (keep local only) ###
 PRODUCTION_READINESS_REVIEW.md
-.env.example
 DAY1_PROGRESS.md
