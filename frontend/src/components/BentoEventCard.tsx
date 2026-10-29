@@ -127,9 +127,11 @@ const BentoEventCard: React.FC<BentoEventCardProps> = ({
               className="w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-700 ease-out"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-surface-container/60 text-on-surface-variant/40">
-              <span className="material-symbols-outlined text-4xl">image</span>
-            </div>
+            <img
+              src="/images/event-placeholder.jpg"
+              alt="MyMemori event placeholder"
+              className="w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-700 ease-out"
+            />
           )}
           {event.photoCount !== undefined && event.photoCount > 0 && (
             <div className="absolute bottom-2 left-2 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-md text-xs text-white border border-white/10 font-label-md flex items-center gap-1">

@@ -250,8 +250,7 @@ const Booking = () => {
   const eventVisitUrl = `${window.location.origin}/visit/${createdSlug || "event"}/`;
 
   // Fallback placeholder image when none is uploaded
-  const defaultPlaceholderCover =
-    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1200&auto=format&fit=crop";
+  const defaultPlaceholderCover = "/images/event-placeholder.jpg";
 
   return (
     <div className="min-h-screen bg-[#131318] text-[#e4e1e9] antialiased flex flex-col relative overflow-x-hidden selection:bg-[#ffb0cd]/30 selection:text-[#ffb0cd]">
