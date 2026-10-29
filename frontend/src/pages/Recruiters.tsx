@@ -19,7 +19,7 @@ const Recruiters = () => {
       opacity: 1,
       transition: {
         duration: 0.5,
-        ease: "easeOut",
+        ease: "easeOut" as const,
       },
     },
   };
@@ -29,7 +29,7 @@ const Recruiters = () => {
     visible: { 
       opacity: 1, 
       scale: 1,
-      transition: { duration: 0.6, ease: "easeOut" }
+      transition: { duration: 0.6, ease: "easeOut" as const }
     }
   };
 
