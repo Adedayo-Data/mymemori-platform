@@ -1,5 +1,4 @@
 import imageCompression from 'browser-image-compression';
-import toast from 'react-hot-toast';
 
 /**
  * Options for image compression
@@ -52,8 +51,7 @@ export const compressImage = async (
     
     return compressedFile;
   } catch (error) {
-    console.error('Compression failed:', error);
-    toast.error('Image compression failed, uploading original');
+    console.warn('Compression skipped or failed, uploading original file:', error);
     return file; // Return original if compression fails
   }
 };

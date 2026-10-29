@@ -21,6 +21,8 @@ const Visit = lazy(() => import("./pages/Visit"));
 const JoinCelebration = lazy(() => import("./pages/JoinCelebration"));
 const Gallery = lazy(() => import("./pages/Gallery"));
 const Profile = lazy(() => import("./pages/Profile"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 const App = () => {
   return (
@@ -39,6 +41,8 @@ const App = () => {
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/login" element={<Navigate to="/auth?mode=login" replace />} />
                   <Route path="/signup" element={<Navigate to="/auth?mode=signup" replace />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/book" element={<Booking />} />
                   <Route path="/event-list" element={<EventList />} />
                   <Route path="/share-details" element={<ShareDetails />} />

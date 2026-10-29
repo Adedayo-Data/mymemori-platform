@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { retryWithBackoff } from "../utils/retryUtils";
 import { getOrCreateSession } from "../utils/sessionUtils";
 import { formatEventDate } from "../utils/dateUtils";
+import { extractErrorMessage } from "../utils/errorUtils";
 
 const Visit = () => {
   const navigate = useNavigate();
@@ -59,7 +60,12 @@ const Visit = () => {
       setError(null);
     } catch (err: any) {
       console.error("Error fetching event:", err);
-      setError(err?.message || "Failed to load event details");
+      setError(
+        extractErrorMessage(
+          err,
+          "This event could not be found or may have been removed."
+        )
+      );
     } finally {
       setIsLoading(false);
     }
@@ -125,9 +131,10 @@ const Visit = () => {
     } catch (err) {
       console.error("Failed to start photo sharing:", err);
       toast.error(
-        err instanceof Error
-          ? err.message
-          : "Failed to connect to celebration. Please try again."
+        extractErrorMessage(
+          err,
+          "Failed to connect to celebration. Please try again."
+        )
       );
     } finally {
       setIsConnecting(false);

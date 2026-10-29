@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import {
   validateSignupForm,
@@ -215,7 +215,12 @@ const Auth = () => {
                 </div>
               </div>
               <div className="flex justify-end mt-[-8px]">
-                <a className="font-hanken text-sm font-semibold text-secondary hover:text-primary transition-colors text-xs" href="#">Forgot password?</a>
+                <Link
+                  to="/forgot-password"
+                  className="font-hanken text-sm font-semibold text-secondary hover:text-primary transition-colors text-xs"
+                >
+                  Forgot password?
+                </Link>
               </div>
 
               {errors.email && <span className="text-red-400 text-xs">{errors.email}</span>}

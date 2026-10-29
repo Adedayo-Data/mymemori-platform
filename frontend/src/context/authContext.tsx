@@ -131,9 +131,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       clearSession();
 
       setUser(userData);
-      console.log("Signup response:", response.data);
-      console.log("userData:", userData);
-      console.log("Session cleared - user now authenticated via JWT");
     } catch (err: unknown) {
       const errorMessage = handleApiError(
         err,
@@ -156,8 +153,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       localStorage.setItem("authToken", token);
       localStorage.setItem("userData", JSON.stringify(userData));
       setUser(userData);
-      console.log("Signin response:", response.data);
-      console.log("userData:", userData);
     } catch (err: unknown) {
       const errorMessage = handleApiError(
         err,
