@@ -89,7 +89,10 @@ class UploadQueueManager {
       this.processQueue();
     }
 
-    toast.success(`${files.length} photo${files.length > 1 ? 's' : ''} added to upload queue`);
+    toast.success(
+      `${files.length} photo${files.length > 1 ? 's' : ''} added to queue. Please stay on this page until uploads complete!`,
+      { duration: 5000, icon: '📸' }
+    );
   }
 
   /**
