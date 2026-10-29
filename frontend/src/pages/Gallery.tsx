@@ -473,7 +473,7 @@ const Gallery = () => {
 
 
   // Infinite scroll for performance
-  const { displayedItems } = useInfiniteScroll({
+  const { displayedItems, observerRef, hasMore, isLoadingMore } = useInfiniteScroll({
     items: sortedPhotos,
     batchSize: 20,
   });
@@ -549,6 +549,18 @@ const Gallery = () => {
                 onDelete={isAuthenticated ? handleDelete : undefined}
                 isAuthenticated={isAuthenticated}
               />
+
+              {/* Infinite scroll sentinel - triggers loading more photos */}
+              {hasMore && (
+                <div ref={observerRef} className="flex justify-center py-8">
+                  {isLoadingMore && (
+                    <div className="flex items-center gap-2 text-gray-400">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span className="text-sm">Loading more photos...</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Unlock message - shown when user hasn't uploaded */}
               {shouldShowUnlock && (
