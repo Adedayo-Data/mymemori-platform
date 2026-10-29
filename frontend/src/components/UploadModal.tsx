@@ -1,4 +1,4 @@
-import { Camera, Image as ImageIcon, X } from "lucide-react";
+import { Camera, Image as ImageIcon, X, Info } from "lucide-react";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -77,6 +77,14 @@ const UploadModal = ({
               </p>
             </div>
           </button>
+
+          {/* Stay on page tip */}
+          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 border border-amber-200/70 text-amber-900 text-xs mt-2">
+            <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <p className="leading-relaxed">
+              <strong className="font-semibold text-amber-950">Tip:</strong> Please keep this page open while photos upload so your upload isn&apos;t interrupted.
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -325,7 +325,7 @@ const Gallery = () => {
       if (slug) {
         await fetchDefaultImages(slug);
       }
-    } catch {
+    } catch (error: any) {
 
       // Revert optimistic update on error
       setLikedPhotos((prev) => {
