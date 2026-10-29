@@ -109,6 +109,8 @@ const Auth = () => {
       console.error(error);
     } finally {
       setIsSubmitting(false);
+    } catch {
+      // Error is handled by the context/toast
     }
   };
 

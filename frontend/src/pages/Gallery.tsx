@@ -430,6 +430,10 @@ const Gallery = () => {
 
   // Infinite scroll
   const { displayedItems } = useInfiniteScroll({
+
+
+  // Infinite scroll for performance
+  const { displayedItems, observerRef, hasMore, isLoadingMore } = useInfiniteScroll({
     items: sortedPhotos,
     batchSize: 20,
   });
@@ -651,6 +655,51 @@ const Gallery = () => {
                   photoCount={sortedPhotos.length}
                   onUploadClick={() => setShowUploadUnlockModal(true)}
                 />
+        </main>
+      ) : (
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+          {sortedPhotos.length > 0 ? (
+            <>
+              <PhotoGrid
+                photos={displayedItems}
+                viewMode={viewMode}
+                likedPhotos={likedPhotos}
+                onPhotoClick={(photoId) => {
+                  const index = sortedPhotos.findIndex(p => p.photoId === photoId);
+                  setSelectedPhotoIndex(index);
+                }}
+                onLike={handleLike}
+                onDownload={handleDownload}
+                onDelete={isAuthenticated ? handleDelete : undefined}
+                isAuthenticated={isAuthenticated}
+              />
+
+              {/* Infinite scroll sentinel - triggers loading more photos */}
+              {hasMore && (
+                <div ref={observerRef} className="flex justify-center py-8">
+                  {isLoadingMore && (
+                    <div className="flex items-center gap-2 text-gray-400">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span className="text-sm">Loading more photos...</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Unlock message - shown when user hasn't uploaded */}
+              {shouldShowUnlock && (
+                <div className="mt-8">
+                  <UploadUnlockOverlay
+                    photoCount={0} // Backend doesn't tell us total count
+                    onUploadClick={() => setShowUploadModal(true)}
+                  />
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+              <div className="w-24 h-24 bg-linear-to-br from-pink-100 to-rose-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                <Camera className="w-10 h-10 text-pink-500" />
               </div>
             )}
           </>
