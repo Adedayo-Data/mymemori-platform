@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { AuthProvider } from "./context/authContext";
 import { Toaster } from "react-hot-toast";
@@ -6,6 +6,7 @@ import { EventProvider } from "./context/eventContext";
 import { PictureProvider } from "./context/pictureContext";
 import { ProtectedRoute } from "./hooks/ProtectedRoute";
 import Layout from "./components/Layout";
+import Loader from "./components/ui/Loader";
 
 // Lazy load all page components
 const Landing = lazy(() => import("./pages/Landing"));
@@ -17,6 +18,7 @@ const Booking = lazy(() => import("./pages/Booking"));
 const EventList = lazy(() => import("./pages/EventList"));
 const ShareDetails = lazy(() => import("./pages/ShareDetails"));
 const Visit = lazy(() => import("./pages/Visit"));
+const JoinCelebration = lazy(() => import("./pages/JoinCelebration"));
 const Gallery = lazy(() => import("./pages/Gallery"));
 const Profile = lazy(() => import("./pages/Profile"));
 
@@ -27,13 +29,7 @@ const App = () => {
         <EventProvider>
           <PictureProvider>
             <Toaster position="top-right" reverseOrder={false} />
-            <Suspense
-              fallback={
-                <div className="min-h-screen flex items-center justify-center">
-                  Loading...
-                </div>
-              }
-            >
+            <Suspense fallback={<Loader />}>
               <Routes>
                 <Route element={<Layout />}>
                   <Route path="/" element={<Landing />} />
@@ -41,10 +37,14 @@ const App = () => {
                   <Route path="/waitlist" element={<Waitlist />} />
                   <Route path="/home" element={<Home2 />} />
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/login" element={<Navigate to="/auth?mode=login" replace />} />
+                  <Route path="/signup" element={<Navigate to="/auth?mode=signup" replace />} />
                   <Route path="/book" element={<Booking />} />
                   <Route path="/event-list" element={<EventList />} />
                   <Route path="/share-details" element={<ShareDetails />} />
                   <Route path="/visit/:slug" element={<Visit />} />
+                  <Route path="/join" element={<JoinCelebration />} />
+                  <Route path="/join-celebration" element={<Navigate to="/join" replace />} />
                   <Route path="/gallery" element={<Gallery />} />
                   <Route
                     path="/profile"

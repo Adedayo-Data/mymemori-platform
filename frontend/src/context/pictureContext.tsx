@@ -10,7 +10,7 @@ import { uploadToCloudinary } from '../utils/upload';
 import { getOrCreateSession, clearSession } from '../utils/sessionUtils';
 import { handleApiError } from '../utils/errorUtils';
 
-interface UploadedPhoto {
+export interface UploadedPhoto {
   photoId: string;
   imageUrl: string;
   uploader: string;
@@ -19,6 +19,8 @@ interface UploadedPhoto {
   size: string;
   color: string;
   canDelete?: boolean;
+  reactionCount?: number;
+  isLikedByCurrentUser?: boolean;
 }
 
 interface PictureContextType {

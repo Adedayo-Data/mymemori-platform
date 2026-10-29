@@ -37,11 +37,14 @@ apiClient.interceptors.response.use(
     console.log("Error response:", error.response);
     console.log("Error status:", error.response?.status);
     
-    // Only auto-logout on 401 from protected endpoints (not /api/public/*)
+    // Only auto-logout on 401 from protected endpoints (not /api/public/* or /api/auth/*)
     if (error.response?.status === 401) {
-      const isPublicEndpoint = error.config?.url?.includes("/api/public/");
+      const url = error.config?.url || "";
+      const isPublicEndpoint = url.includes("/api/public/");
+      const isAuthEndpoint = url.includes("/api/auth/");
+      const isAlreadyOnAuthPage = window.location.pathname.startsWith("/auth");
       
-      if (!isPublicEndpoint) {
+      if (!isPublicEndpoint && !isAuthEndpoint && !isAlreadyOnAuthPage) {
         console.log("401 error on protected endpoint, clearing auth data");
         // Token expired or invalid, clear auth data
         localStorage.removeItem("authToken");
@@ -49,9 +52,7 @@ apiClient.interceptors.response.use(
         localStorage.removeItem("sessionId");
         window.location.href = "/auth";
       } else {
-        console.log("401 error on public endpoint, not logging out");
-        // For public endpoints, 401 might mean invalid session, not invalid auth
-        // Don't auto-logout, let the component handle it
+        console.log("401 error on public/auth endpoint or already on auth page, letting component handle it");
       }
     }
     

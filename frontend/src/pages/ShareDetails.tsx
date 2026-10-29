@@ -1,489 +1,297 @@
-import { useState, useRef, useEffect } from "react";
-import { Download, Share2, Mail, Copy, Check, ArrowLeft, Sparkles, ExternalLink, Facebook, Twitter } from "lucide-react";
+import { useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import domtoimage from "dom-to-image";
 import toast from "react-hot-toast";
-import { motion } from "framer-motion";
-import { formatEventDate } from "../utils/dateUtils";
+import ShareModal from "../components/ShareModal";
 
-// Confetti Component
-const Confetti = () => {
-  const colors = ['#ec4899', '#f43f5e', '#a855f7', '#3b82f6', '#f59e0b'];
-  const confettiPieces = Array.from({ length: 50 }, (_, i) => ({
-    id: i,
-    left: Math.random() * 100,
-    delay: Math.random() * 3,
-    duration: 3 + Math.random() * 2,
-    color: colors[Math.floor(Math.random() * colors.length)],
-  }));
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {confettiPieces.map((piece) => (
-        <motion.div
-          key={piece.id}
-          initial={{ y: -20, opacity: 1, rotate: 0 }}
-          animate={{ 
-            y: window.innerHeight + 20, 
-            opacity: 0,
-            rotate: 360 * (Math.random() > 0.5 ? 1 : -1)
-          }}
-          transition={{
-            duration: piece.duration,
-            delay: piece.delay,
-            ease: "easeIn"
-          }}
-          style={{
-            position: 'absolute',
-            left: `${piece.left}%`,
-            width: '10px',
-            height: '10px',
-            backgroundColor: piece.color,
-          }}
-          className="rounded-sm"
-        />
-      ))}
-    </div>
-  );
-};
-
-const Details = () => {
-  const [copied, setCopied] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(true);
-  const qrCodeRef = useRef<HTMLDivElement>(null);
-  const tableCardRef = useRef<HTMLDivElement>(null);
+const ShareDetails = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { qrCodeValue, eventData } = location.state || {};
+  const { qrCodeValue, eventData, eventSlug } = location.state || {};
 
-  const eventLink = qrCodeValue;
+  const targetSlug = eventSlug || eventData?.eventSlug || "event";
+  const eventLink =
+    qrCodeValue || `${window.location.origin}/visit/${targetSlug}/`;
+  const eventTitle =
+    eventData?.eventName || eventData?.title || "My Memory";
+  const eventLocation = eventData?.location || "";
 
-  // Hide confetti after 5 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => setShowConfetti(false), 5000);
-    return () => clearTimeout(timer);
-  }, []);
+  const storyCardRef = useRef<HTMLDivElement>(null);
+  const qrOnlyRef = useRef<HTMLDivElement>(null);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(eventLink);
-    setCopied(true);
-    toast.success("Link copied to clipboard!");
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const [isDownloadingCard, setIsDownloadingCard] = useState(false);
+  const [isDownloadingQR, setIsDownloadingQR] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
-  const handleShare = (platform: string) => {
-    const text = `Join me at ${eventData?.title || eventData?.eventName}!`;
-    switch (platform) {
-      case "whatsapp":
-        window.open(
-          `https://wa.me/?text=${encodeURIComponent(text + " " + eventLink)}`,
-          "_blank"
-        );
-        break;
-      case "facebook":
-        window.open(
-          `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(eventLink)}`,
-          "_blank"
-        );
-        break;
-      case "twitter":
-        window.open(
-          `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(eventLink)}`,
-          "_blank"
-        );
-        break;
-      case "email":
-        window.location.href = `mailto:?subject=${encodeURIComponent(
-          eventData?.eventName
-        )}&body=${encodeURIComponent(text + " " + eventLink)}`;
-        break;
-    }
-  };
-
-  const downloadAsImage = async (
-    ref: React.RefObject<HTMLDivElement | null>,
-    filename: string
-  ) => {
-    if (!ref.current) {
-      toast.error("Element not found for download");
-      return;
-    }
-
+  // Option 1: Download the complete 9:16 Story Card
+  const handleDownloadStoryCard = async () => {
+    if (!storyCardRef.current) return;
+    setIsDownloadingCard(true);
     try {
-      const blob = await domtoimage.toBlob(ref.current, {
-        bgcolor: "#ffffff",
+      const blob = await domtoimage.toBlob(storyCardRef.current, {
+        bgcolor: "#0e0e13",
       });
-
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = filename;
+      const safeName = eventTitle
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      link.download = `${safeName || "story"}-card.png`;
       link.click();
       URL.revokeObjectURL(link.href);
-      toast.success(`${filename} downloaded!`);
+      toast.success("Story Card downloaded!");
     } catch (error) {
-      toast.error("Failed to download image");
+      console.error("Failed to download story card:", error);
+      toast.error("Failed to download image. You can also take a screenshot.");
+    } finally {
+      setIsDownloadingCard(false);
     }
   };
 
-  const handleDownloadQR = () => {
-    downloadAsImage(qrCodeRef, "qr-code.png");
-  };
-
-  const handleDownloadTemplate = () => {
-    downloadAsImage(tableCardRef, "table-card.png");
+  // Option 2: Download the standalone QR Code alone
+  const handleDownloadQRAlone = async () => {
+    if (!qrOnlyRef.current) return;
+    setIsDownloadingQR(true);
+    try {
+      const blob = await domtoimage.toBlob(qrOnlyRef.current, {
+        bgcolor: "#ffffff",
+      });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      const safeName = eventTitle
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      link.download = `${safeName || "event"}-qr-code.png`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      toast.success("QR Code downloaded!");
+    } catch (error) {
+      console.error("Failed to download QR code:", error);
+      toast.error("Failed to download QR code.");
+    } finally {
+      setIsDownloadingQR(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-pink-50 overflow-x-hidden relative">
-      {/* Confetti Animation */}
-      {showConfetti && <Confetti />}
+    <div className="bg-[#131318] text-[#e4e1e9] min-h-screen flex flex-col items-center justify-between p-4 sm:p-6 md:p-8 relative overflow-x-hidden selection:bg-[#ffb0cd]/30">
+      {/* Ambient Glows */}
+      <div className="fixed top-[-10%] left-[-10%] w-[60vw] h-[60vw] md:w-[40vw] md:h-[40vw] rounded-full bg-[#f751a1]/10 blur-[120px] pointer-events-none animate-pulse z-0" />
+      <div
+        className="fixed bottom-[-10%] right-[-10%] w-[70vw] h-[70vw] md:w-[50vw] md:h-[50vw] rounded-full bg-[#6f00be]/15 blur-[140px] pointer-events-none z-0"
+        style={{ animationDelay: "2s" }}
+      />
 
-      {/* Background Decorations */}
-      <div className="fixed top-10 right-10 w-72 h-72 bg-pink-200 rounded-full opacity-20 blur-3xl animate-pulse"></div>
-      <div className="fixed bottom-10 left-10 w-96 h-96 bg-purple-200 rounded-full opacity-20 blur-3xl animate-pulse" style={{ animationDelay: "1s" }}></div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8 relative z-10">
-        {/* Back Button */}
-        <motion.button
-          initial={{ x: -20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          onClick={() => navigate("/event-list")}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors group"
+      {/* Top Navigation */}
+      <header className="w-full max-w-sm md:max-w-4xl lg:max-w-5xl flex justify-between items-center z-10 pt-4 pb-2">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center text-[#debec8] hover:text-white transition-all active:scale-95 cursor-pointer"
+          title="Go back"
         >
-          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-          <span className="font-medium">Back to Events</span>
-        </motion.button>
+          <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+        </button>
 
-        {/* Celebration Header */}
-        <motion.div 
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-center mb-12"
+        <span className="text-xs font-bold text-[#ffb0cd] uppercase tracking-widest">
+          Story Card
+        </span>
+
+        <button
+          type="button"
+          onClick={() => navigate("/home")}
+          className="w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center text-[#debec8] hover:text-white transition-all active:scale-95 cursor-pointer"
+          title="Dashboard"
         >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-            className="inline-flex items-center justify-center w-20 h-20 bg-linear-to-br from-pink-500 to-purple-500 rounded-full mb-4 shadow-lg"
-          >
-            <Sparkles className="w-10 h-10 text-white" />
-          </motion.div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-3">
-            🎉 Your Event is Live!
-          </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Share the QR code or link with your guests to start collecting memories
-          </p>
-        </motion.div>
+          <span className="material-symbols-outlined text-[20px]">home</span>
+        </button>
+      </header>
 
-        {/* Event Info Card */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1">
-                {eventData?.title || eventData?.eventName || "Event Details"}
-              </h2>
-              <p className="text-gray-600">
-                {eventData?.location || "Event location"}
-              </p>
-              <p className="text-sm text-gray-500 mt-1">
-                {eventData?.date ||
-                  (eventData?.eventDate
-                    ? formatEventDate(eventData.eventDate)
-                    : "Date not available")}
-              </p>
-            </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => window.open(eventLink, "_blank")}
-              className="flex items-center gap-2 px-4 py-2 bg-pink-50 text-pink-600 rounded-lg hover:bg-pink-100 transition-colors"
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span className="hidden sm:inline">Preview</span>
-            </motion.button>
-          </div>
-        </motion.div>
-
-        <div className="grid lg:grid-cols-3 gap-6 mb-8">
-          {/* QR Code Section */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="lg:col-span-1"
-          >
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              QR Code
-            </h2>
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div
-                ref={qrCodeRef}
-                className="bg-linear-to-br from-gray-50 to-gray-100 rounded-xl p-6 flex items-center justify-center mb-4"
-              >
-                <div className="bg-white p-4 rounded-lg shadow-inner">
-                  {qrCodeValue ? (
-                    <QRCodeSVG
-                      value={qrCodeValue}
-                      size={200}
-                      level="H"
-                    />
-                  ) : (
-                    <p className="text-sm text-gray-500">
-                      Loading QR Code...
-                    </p>
-                  )}
-                </div>
-              </div>
-              <button
-                onClick={handleDownloadQR}
-                className="w-full bg-pink-50 text-pink-600 py-3 rounded-lg hover:bg-pink-100 transition-colors flex items-center justify-center gap-2 font-medium"
-              >
-                <Download className="w-4 h-4" />
-                Download QR Code
-              </button>
-            </div>
-          </motion.div>
-
-          {/* Share Options */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="lg:col-span-2"
-          >
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              Share with Guests
-            </h2>
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
-              {/* Link Copy */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Event Link
-                </label>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <input
-                    type="text"
-                    value={eventLink}
-                    readOnly
-                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 text-sm"
-                  />
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleCopy}
-                    className="px-6 py-3 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors flex items-center justify-center gap-2 font-medium whitespace-nowrap"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-4 h-4" />
-                        Copied!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4" />
-                        Copy Link
-                      </>
-                    )}
-                  </motion.button>
-                </div>
-              </div>
-
-              {/* Social Share Buttons - Redesigned */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Share on Social Media
-                </label>
-                <div className="grid grid-cols-4 sm:grid-cols-2 gap-3">
-                  {/* WhatsApp */}
-                  <motion.button
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleShare("whatsapp")}
-                    className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 p-3 sm:p-4 bg-green-50 rounded-xl hover:bg-green-100 transition-colors border border-green-200"
-                  >
-                    <Share2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
-                    <span className="hidden sm:inline text-sm font-semibold text-green-700">WhatsApp</span>
-                  </motion.button>
-
-                  {/* Facebook */}
-                  <motion.button
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleShare("facebook")}
-                    className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 p-3 sm:p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors border border-blue-200"
-                  >
-                    <Facebook className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-                    <span className="hidden sm:inline text-sm font-semibold text-blue-700">Facebook</span>
-                  </motion.button>
-
-                  {/* Twitter */}
-                  <motion.button
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleShare("twitter")}
-                    className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 p-3 sm:p-4 bg-sky-50 rounded-xl hover:bg-sky-100 transition-colors border border-sky-200"
-                  >
-                    <Twitter className="w-5 h-5 sm:w-6 sm:h-6 text-sky-600" />
-                    <span className="hidden sm:inline text-sm font-semibold text-sky-700">Twitter</span>
-                  </motion.button>
-
-                  {/* Email */}
-                  <motion.button
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleShare("email")}
-                    className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-gray-200"
-                  >
-                    <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
-                    <span className="hidden sm:inline text-sm font-semibold text-gray-700">Email</span>
-                  </motion.button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+      {/* Main Content Area - Flexed beside each other on desktop */}
+      <main className="relative z-10 w-full max-w-sm md:max-w-4xl lg:max-w-5xl flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 my-auto py-4">
+        {/* Mobile Write-up Header */}
+        <div className="md:hidden text-center space-y-1 w-full">
+          <h2 className="text-xl font-bold text-white leading-tight">Ready to Share</h2>
+          <p className="text-xs text-[#debec8]/80">Download for stories or print out for your guests</p>
         </div>
 
-        {/* Table Card Section */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.7 }}
-          className="mb-12"
-        >
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Table Card Template
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Print this card and place it on your tables for easy guest access
-          </p>
-
+        {/* The Downloadable Story Card (9:16 Aspect Ratio) */}
+        <div className="w-full max-w-[320px] sm:max-w-[340px] shrink-0">
           <div
-            id="table"
-            ref={tableCardRef}
-            className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-6"
+            ref={storyCardRef}
+            id="story-card"
+            className="relative w-full aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 group bg-[#0e0e13] transition-transform duration-300 hover:scale-[1.01]"
           >
-            <div className="max-w-xs mx-auto">
-              <div
-                className="relative bg-linear-to-br from-pink-50 via-white to-purple-50 rounded-2xl shadow-xl overflow-hidden border border-pink-200 p-5"
-                style={{ aspectRatio: "3/4" }}
-              >
-                <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-pink-400 to-purple-400"></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-[#ffb0cd]/15 to-[#ddb7ff]/15 p-[2px] rounded-2xl">
+              <div className="w-full h-full bg-[#0e0e13] rounded-2xl flex flex-col items-center p-6 relative overflow-hidden justify-between text-center">
+                {/* Internal Ambient Radial Glow */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(247,81,161,0.25)_0%,transparent_70%)] pointer-events-none" />
 
-                <div className="h-full flex flex-col justify-between items-center">
-                  <div className="text-center">
-                    <h1
-                      className="text-lg font-black tracking-tight bg-linear-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-0.5"
-                      style={{ fontFamily: "Georgia, serif" }}
-                    >
-                      {eventData?.title ||
-                        eventData?.eventName ||
-                        "Your Event"}
+                <div className="relative z-10 flex flex-col items-center w-full h-full justify-between py-2">
+                  {/* Top: Brand, Title & Location */}
+                  <div className="text-center space-y-1">
+                    <span className="text-xs font-semibold text-[#ffb0cd] uppercase tracking-widest block font-sora">
+                      MyMemori
+                    </span>
+                    <h1 className="text-2xl md:text-3xl font-bold text-white line-clamp-2 leading-tight">
+                      {eventTitle}
                     </h1>
-                    <p className="text-xs text-gray-500 font-light tracking-widest uppercase">
-                      {eventData?.location || "Location"}
-                    </p>
+                    {eventLocation && (
+                      <p className="text-[11px] text-[#debec8] uppercase tracking-widest line-clamp-1">
+                        {eventLocation}
+                      </p>
+                    )}
                   </div>
 
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="bg-white rounded-xl p-2.5 shadow-md border border-pink-100">
-                      {qrCodeValue ? (
-                        <QRCodeSVG
-                          value={qrCodeValue}
-                          size={220}
-                          level="H"
-                        />
-                      ) : (
-                        <div className="w-[110px] h-[110px] bg-gray-200 rounded flex items-center justify-center">
-                          <p className="text-gray-500 text-xs">QR</p>
-                        </div>
-                      )}
+                  {/* Center: QR Code Container */}
+                  <div className="bg-white p-4 rounded-2xl shadow-2xl transform transition-transform hover:scale-105 my-2">
+                    <div className="w-52 h-52 sm:w-56 sm:h-56 flex items-center justify-center">
+                      <QRCodeSVG
+                        value={eventLink}
+                        size={216}
+                        level="H"
+                        includeMargin={false}
+                      />
                     </div>
                   </div>
 
-                  <div className="text-center w-full px-2">
-                    <p className="text-xs text-gray-400 font-light mb-1.5 tracking-widest">
-                      SCAN OR VISIT
-                    </p>
-                    <p
-                      className="text-xs font-mono text-pink-600 font-semibold break-all"
-                      style={{
-                        fontFamily: "Courier New, monospace",
-                        letterSpacing: "0.5px",
-                      }}
-                    >
-                      {eventLink
-                        ? eventLink.replace(/^https?:\/\//, "")
-                        : "event.link"}
+                  {/* Bottom: Scan or Visit */}
+                  <div className="text-center space-y-1">
+                    <span className="text-[11px] text-[#debec8] uppercase tracking-widest block">
+                      Scan or Visit
+                    </span>
+                    <p className="text-sm text-[#ffb0cd] font-bold tracking-tight">
+                      mymemori.com/visit/{targetSlug}
                     </p>
                   </div>
-
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linear-to-r from-purple-400 to-pink-400"></div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <button
-            onClick={handleDownloadTemplate}
-            className="w-full bg-linear-to-r from-pink-500 to-purple-500 text-white py-4 rounded-xl hover:from-pink-600 hover:to-purple-600 transition-all shadow-lg flex items-center justify-center gap-2 font-medium"
+        {/* Hidden Container for Downloading Standalone QR Code Only */}
+        <div className="fixed -left-[9999px] top-0 pointer-events-none">
+          <div
+            ref={qrOnlyRef}
+            className="w-[500px] h-[500px] bg-white flex flex-col items-center justify-center p-8 text-center text-black"
           >
-            <Download className="w-5 h-5" />
-            Download Table Card
-          </button>
-        </motion.div>
-
-        {/* What's Next Section */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="bg-linear-to-br from-pink-50 to-purple-50 rounded-2xl p-8 border border-pink-100"
-        >
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">What's Next?</h3>
-          <div className="grid sm:grid-cols-3 gap-4">
-            <motion.button
-              whileHover={{ scale: 1.02, y: -2 }}
-              onClick={() => window.open(eventLink, "_blank")}
-              className="p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-left"
-            >
-              <ExternalLink className="w-6 h-6 text-pink-500 mb-2" />
-              <h4 className="font-semibold text-gray-900 mb-1">View Event Page</h4>
-              <p className="text-sm text-gray-600">See how guests will experience it</p>
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.02, y: -2 }}
-              onClick={() => navigate("/gallery", { state: { slug: eventData?.eventSlug } })}
-              className="p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-left"
-            >
-              <Share2 className="w-6 h-6 text-purple-500 mb-2" />
-              <h4 className="font-semibold text-gray-900 mb-1">Go to Gallery</h4>
-              <p className="text-sm text-gray-600">Start uploading photos</p>
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.02, y: -2 }}
-              onClick={() => navigate("/book")}
-              className="p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-left"
-            >
-              <Sparkles className="w-6 h-6 text-blue-500 mb-2" />
-              <h4 className="font-semibold text-gray-900 mb-1">Create Another</h4>
-              <p className="text-sm text-gray-600">Make a new event</p>
-            </motion.button>
+            <QRCodeSVG value={eventLink} size={360} level="H" includeMargin={false} />
+            <h2 className="text-2xl font-bold text-gray-900 mt-4 line-clamp-1">
+              {eventTitle}
+            </h2>
+            <p className="text-sm text-gray-500 font-mono mt-1">
+              mymemori.com/visit/{targetSlug}
+            </p>
           </div>
-        </motion.div>
-      </div>
+        </div>
+
+        {/* Right Column (Desktop): Write-up, Actions & Print Tips */}
+        <div className="w-full md:max-w-md flex flex-col items-center md:items-start text-center md:text-left space-y-5">
+          {/* Desktop Write-up Header */}
+          <div className="hidden md:block space-y-2">
+            <h1 className="text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
+              Invite your guests to contribute
+            </h1>
+            <p className="text-sm text-[#debec8]/80 leading-relaxed">
+              Save your high-resolution 9:16 story card to post on Instagram and WhatsApp, or download the standalone QR code for table prints and signage.
+            </p>
+          </div>
+
+          {/* Download Action Buttons: 2 Options */}
+          <div className="w-full flex flex-col gap-3">
+            {/* Option 1: Download Story Card (Full 9:16 Poster) */}
+            <button
+              type="button"
+              onClick={handleDownloadStoryCard}
+              disabled={isDownloadingCard}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#f751a1] to-[#6f00be] hover:from-[#ffb0cd] hover:to-[#ddb7ff] text-white font-semibold text-base shadow-[0_0_20px_rgba(247,81,161,0.4)] hover:scale-98 transition-transform duration-200 flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50"
+            >
+              {isDownloadingCard ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Generating Card...</span>
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-[20px]">download</span>
+                  <span>Download Story Card (Card + QR)</span>
+                </>
+              )}
+            </button>
+
+            {/* Option 2: Download QR Code alone */}
+            <button
+              type="button"
+              onClick={handleDownloadQRAlone}
+              disabled={isDownloadingQR}
+              className="w-full py-3.5 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50"
+            >
+              {isDownloadingQR ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Downloading QR...</span>
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-[18px] text-[#ffb0cd]">
+                    qr_code_2
+                  </span>
+                  <span>Download QR Code Alone</span>
+                </>
+              )}
+            </button>
+
+            {/* Open Share the Magic Modal */}
+            <button
+              type="button"
+              onClick={() => setShowShareModal(true)}
+              className="w-full py-3.5 rounded-2xl bg-white/5 hover:bg-white/10 text-[#debec8] hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 border border-white/10"
+            >
+              <span className="material-symbols-outlined text-[18px] text-[#ffb0cd]">
+                share
+              </span>
+              <span>Share the Magic (Apps & Link)</span>
+            </button>
+          </div>
+
+          {/* Desktop Print & Display Tip */}
+          <div className="hidden md:flex items-start gap-3 p-4 rounded-2xl bg-white/5 border border-white/10 text-xs text-[#debec8]/70 leading-relaxed">
+            <span className="material-symbols-outlined text-[#ffb0cd] text-[18px] shrink-0 mt-0.5">
+              tips_and_updates
+            </span>
+            <span>
+              Tip: Place printed QR cards at entrance tables or guest dining tables so guests can effortlessly scan and upload their photos directly to the gallery.
+            </span>
+          </div>
+        </div>
+      </main>
+
+      {/* Footer Navigation Link */}
+      <footer className="w-full max-w-sm md:max-w-4xl lg:max-w-5xl flex justify-center py-4 z-10">
+        <button
+          type="button"
+          onClick={() => navigate(`/gallery?event=${targetSlug}`)}
+          className="text-xs text-[#debec8]/70 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+        >
+          <span className="material-symbols-outlined text-[16px]">photo_library</span>
+          <span>View Event Gallery</span>
+        </button>
+      </footer>
+
+      {/* Reusable Share Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        eventTitle={eventTitle}
+        eventSlug={targetSlug}
+        eventLink={eventLink}
+      />
     </div>
   );
 };
 
-export default Details;
+export default ShareDetails;

@@ -7,7 +7,7 @@ interface PhotoSkeletonProps {
 const PhotoSkeleton: React.FC<PhotoSkeletonProps> = ({ count = 8 }) => {
   // Generate random heights for variety (like Pinterest)
   const getRandomHeight = () => {
-    const heights = [200, 250, 300, 350, 280, 320];
+    const heights = [200, 260, 320, 240, 290, 340];
     return heights[Math.floor(Math.random() * heights.length)];
   };
 
@@ -16,11 +16,9 @@ const PhotoSkeleton: React.FC<PhotoSkeletonProps> = ({ count = 8 }) => {
       {Array.from({ length: count }).map((_, index) => (
         <div
           key={`skeleton-${index}`}
-          className="skeleton"
+          className="w-full bg-white/5 border border-white/5 rounded-xl animate-pulse mb-4"
           style={{
-            width: "100%",
             height: `${getRandomHeight()}px`,
-            borderRadius: "var(--radius-2xl)",
           }}
         />
       ))}

@@ -1,11 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { Upload, Loader2, Camera } from "lucide-react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import Masonry from "react-masonry-css";
+import { motion } from "framer-motion";
 
-import GalleryHeader from "../components/GalleryHeader";
-import GalleryFilters from "../components/GalleryFilters";
 import PhotoGrid from "../components/PhotoGrid";
 import EnhancedPhotoModal from "../components/EnhancedPhotoModal";
 import UploadModal from "../components/UploadModal";
@@ -13,8 +11,8 @@ import PhotoSkeleton from "../components/PhotoSkeleton";
 import FloatingUploadIndicator from "../components/FloatingUploadIndicator";
 import SignupPromptModal from "../components/SignupPromptModal";
 import UploadUnlockOverlay from "../components/UploadUnlockOverlay";
+import UploadUnlockModal from "../components/UploadUnlockModal";
 import UnlockSuccessModal from "../components/UnlockSuccessModal";
-// import StickyUploadBanner from "../components/StickyUploadBanner"; // Removed sticky banner
 import { useEvent } from "../context/eventContext";
 import { usePicture } from "../context/pictureContext";
 import { useAuth } from "../context/authContext";
@@ -33,18 +31,19 @@ interface Photo {
   type: string;
   size: string;
   color: string;
+  reactionCount?: number;
   canDelete?: boolean;
 }
 
 const Gallery = () => {
-  // State management
+  // View & filtering state
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [selectedFilter, setSelectedFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<string>("recent");
+  const [activeTab, setActiveTab] = useState<"all" | "my" | "recent" | "likes">("all");
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const [likedPhotos, setLikedPhotos] = useState<Set<string>>(new Set());
   const [showUploadModal, setShowUploadModal] = useState<boolean>(false);
   const [showSignupPrompt, setShowSignupPrompt] = useState<boolean>(false);
+  const [showMoreMenu, setShowMoreMenu] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [eventData, setEventData] = useState<{ title: string; date: string }>({
     title: "Gallery",
@@ -55,17 +54,22 @@ const Gallery = () => {
   const [hasUploaded, setHasUploaded] = useState<boolean>(false);
   const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
   const [hasShownUnlockModal, setHasShownUnlockModal] = useState<boolean>(false);
-  // const [showStickyBanner, setShowStickyBanner] = useState<boolean>(false); // Removed sticky banner
+  const [showUploadUnlockModal, setShowUploadUnlockModal] = useState<boolean>(false);
+  const [guestDownloadCount, setGuestDownloadCount] = useState<number>(() => {
+    return parseInt(localStorage.getItem("_mm_sess_trk_id_d") || "0", 10);
+  });
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
 
   // Hooks
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { getSessionContext } = useAuth();
+  const { getSessionContext, isAuthenticated: authContextIsAuthenticated } = useAuth();
+  const isUserAuthenticated = isAuthenticated || authContextIsAuthenticated;
   const { getEventBySlug } = useEvent();
   const {
     uploadedPhotos: contextPhotos,
@@ -75,35 +79,38 @@ const Gallery = () => {
     deletePhoto,
   } = usePicture();
 
-  // Categories for filtering
-  const categories = ["all", "uploaded",];
-
   // Track if we've already loaded data to prevent multiple loads
   const hasLoadedRef = useRef(false);
 
-  // Load data on component mount or when auth state changes
+  // Close more menu when clicking outside
   useEffect(() => {
-    // Only run this effect once on mount or when auth state changes
+    const handleClickOutside = (e: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
+        setShowMoreMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Load data on component mount
+  useEffect(() => {
     if (hasLoadedRef.current) return;
 
     const loadData = async () => {
       try {
         setIsLoading(true);
 
-        // Get event slug from URL or state
         const slug = searchParams.get("event") || location.state?.slug;
 
         if (!slug) {
           toast.error("Event information is missing");
-          navigate("/");
+          navigate("/home");
           return;
         }
 
-        // Store the slug for later use (e.g., in returnTo URL)
         setCurrentEventSlug(slug);
 
-        // Clean up URL - remove the event query parameter to keep URL clean
-        // The slug is now stored in state, so we don't need it in the URL
         if (searchParams.get("event")) {
           navigate("/gallery", { replace: true, state: { slug } });
         }
@@ -112,10 +119,8 @@ const Gallery = () => {
           searchParams,
           location.state
         );
-        const { isAuthenticated, sessionId } = sessionContext;
-
-        // Update isAuthenticated state
-        setIsAuthenticated(isAuthenticated);
+        const { isAuthenticated: authed, sessionId } = sessionContext;
+        setIsAuthenticated(authed);
 
         // Fetch event details
         try {
@@ -126,7 +131,6 @@ const Gallery = () => {
           });
         } catch (error) {
           console.error("Failed to load event details:", error);
-          toast.error("Failed to load event details");
         }
 
         // Fetch photos
@@ -135,10 +139,8 @@ const Gallery = () => {
         // Check if user has uploaded
         try {
           const headers: Record<string, string> = {};
-
-          // Add session ID for guest users so backend can check their upload status
-          if (!isAuthenticated && sessionId) {
-            headers['X-Session-Id'] = sessionId;
+          if (!authed && sessionId) {
+            headers["X-Session-Id"] = sessionId;
           }
 
           const uploadCheckResponse = await apiClient.get("/api/public/upload-status", {
@@ -148,14 +150,13 @@ const Gallery = () => {
           setHasUploaded(uploadCheckResponse.data.hasUploaded || false);
         } catch (error) {
           console.error("Failed to check upload status:", error);
-          // Default to false if check fails
           setHasUploaded(false);
         }
 
         setIsLoading(false);
       } catch (error) {
         console.error("Error loading gallery data:", error);
-        toast.error("Failed to load gallery. Please try again.");
+        toast.error("Failed to load gallery");
         setIsLoading(false);
       }
     };
@@ -163,7 +164,6 @@ const Gallery = () => {
     loadData();
     hasLoadedRef.current = true;
 
-    // Cleanup function
     return () => {
       hasLoadedRef.current = false;
     };
@@ -176,26 +176,14 @@ const Gallery = () => {
     searchParams,
   ]);
 
-  // Helper function to get a random gradient
-  const getRandomGradient = () => {
-    const gradients = [
-      "from-blue-100 to-indigo-100",
-      "from-pink-100 to-rose-100",
-      "from-green-100 to-emerald-100",
-      "from-purple-100 to-violet-100",
-      "from-amber-100 to-orange-100",
-    ];
-    return gradients[Math.floor(Math.random() * gradients.length)];
-  };
-
-  // Additional effect to handle the case where default images are already loaded
+  // Handle case where default images are already loaded in context
   useEffect(() => {
     if (contextPhotos.length > 0 && isLoading) {
       setIsLoading(false);
     }
   }, [contextPhotos, isLoading]);
 
-  // Initialize liked photos from contextPhotos (when they load or change)
+  // Initialize liked photos from contextPhotos
   useEffect(() => {
     if (contextPhotos.length > 0) {
       const likedPhotoIds = new Set<string>();
@@ -211,26 +199,24 @@ const Gallery = () => {
     }
   }, [contextPhotos]);
 
-  // Handle file selection - Add to background upload queue
+  // Handle file selection
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     try {
-      // Get session context and event slug
-      const { isAuthenticated, sessionId } = await getSessionContext(
+      const { isAuthenticated: authed, sessionId } = await getSessionContext(
         searchParams,
         location.state
       );
-      const slug = searchParams.get("event") || location.state?.slug;
+      const slug = currentEventSlug || searchParams.get("event") || location.state?.slug;
 
       if (!slug) {
         toast.error("Event information is missing");
         return;
       }
 
-      // Filter out non-image files
-      const imageFiles = Array.from(files).filter(file => {
+      const imageFiles = Array.from(files).filter((file) => {
         if (!file.type.startsWith("image/")) {
           toast.error(`Skipped ${file.name}: Not an image file`);
           return false;
@@ -243,59 +229,50 @@ const Gallery = () => {
         return;
       }
 
-      // Add to background upload queue
       await uploadQueueManager.addToQueue(imageFiles, {
         eventSlug: slug,
         sessionId,
-        isAuthenticated,
+        isAuthenticated: authed,
       });
 
-      // Close modal
       setShowUploadModal(false);
     } catch (error) {
       console.error("Failed to add files to queue:", error);
       toast.error("Failed to start upload");
     } finally {
-      // Reset file input
       if (e.target) e.target.value = "";
     }
   };
 
-  // Handle camera capture - Add to background upload queue
-  const handleCameraCapture = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  // Handle camera capture
+  const handleCameraCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     try {
-      // Get session context and event slug
-      const { isAuthenticated, sessionId } = await getSessionContext(
+      const { isAuthenticated: authed, sessionId } = await getSessionContext(
         searchParams,
         location.state
       );
-      const slug = searchParams.get("event") || location.state?.slug;
+      const slug = currentEventSlug || searchParams.get("event") || location.state?.slug;
 
       if (!slug) {
         toast.error("Event information is missing");
         return;
       }
 
-      // Add all captured photos to upload queue
       const imageFiles = Array.from(files);
       await uploadQueueManager.addToQueue(imageFiles, {
         eventSlug: slug,
         sessionId,
-        isAuthenticated,
+        isAuthenticated: authed,
       });
 
-      // Close modal
       setShowUploadModal(false);
     } catch (error) {
       console.error("Failed to process captured photos:", error);
       toast.error("Failed to start upload");
     } finally {
-      // Reset the input to allow capturing another photo
       if (e.target) e.target.value = "";
     }
   };
@@ -303,8 +280,7 @@ const Gallery = () => {
   // Handle photo like
   const handleLike = async (photoId: string) => {
     try {
-      // Get session context
-      const { isAuthenticated, sessionId: currentSessionId } = await getSessionContext(
+      const { isAuthenticated: authed, sessionId: currentSessionId } = await getSessionContext(
         searchParams,
         location.state
       );
@@ -322,18 +298,16 @@ const Gallery = () => {
         return newLiked;
       });
 
-      // Call API - backend handles toggle (like/unlike)
-      await addReaction(photoId, !isAuthenticated ? currentSessionId : undefined);
+      await addReaction(photoId, !authed ? currentSessionId : undefined);
 
-      // Refresh gallery to get updated reaction counts
-      const slug = searchParams.get("event") || location.state?.slug;
+      const slug = currentEventSlug || searchParams.get("event") || location.state?.slug;
       if (slug) {
         await fetchDefaultImages(slug);
       }
     } catch (error: any) {
       console.error("Failed to update reaction:", error);
 
-      // Revert optimistic update on error
+      // Revert optimistic update
       setLikedPhotos((prev) => {
         const newLiked = new Set(prev);
         if (newLiked.has(photoId)) {
@@ -344,7 +318,6 @@ const Gallery = () => {
         return newLiked;
       });
 
-      // Only show error for non-toggle errors
       if (!error.response?.data?.message?.includes("already reacted")) {
         toast.error("Failed to update reaction");
       }
@@ -356,7 +329,6 @@ const Gallery = () => {
     try {
       await deletePhoto(photoId);
       toast.success("Photo deleted");
-      // If the deleted photo is currently open in the modal, close it
       if (selectedPhotoIndex !== null && sortedPhotos[selectedPhotoIndex]?.photoId === photoId) {
         setSelectedPhotoIndex(null);
       }
@@ -368,227 +340,359 @@ const Gallery = () => {
 
   // Handle photo download
   const handleDownload = (photoId: string) => {
-    // Check if user is authenticated
     if (!isAuthenticated) {
-      // Check local storage for guest download count
-      const guestDownloadCount = parseInt(localStorage.getItem('_mm_sess_trk_id_d') || '0', 10);
-      
-      if (guestDownloadCount >= 6) {
-        // Session user trying to download more than 6 times - show signup prompt
+      const currentCount = parseInt(localStorage.getItem("_mm_sess_trk_id_d") || "0", 10);
+
+      if (currentCount >= 6) {
         setShowSignupPrompt(true);
         return;
       } else {
-        // Increment guest download count
-        localStorage.setItem('_mm_sess_trk_id_d', (guestDownloadCount + 1).toString());
+        const nextCount = currentCount + 1;
+        localStorage.setItem("_mm_sess_trk_id_d", nextCount.toString());
+        setGuestDownloadCount(nextCount);
       }
     }
 
-    // Authenticated user or guest under limit - proceed with download
     const photo = contextPhotos.find((p) => p.photoId === photoId);
-    if (photo) {
+    if (photo && photo.imageUrl) {
       downloadImage(photo.imageUrl, `MyMemori-Photo-${photoId}.jpg`);
     }
   };
 
-  // Handle completed uploads from background queue
+  // Handle completed uploads
   const handleUploadComplete = async (task: UploadTask) => {
     try {
-      const { eventSlug, sessionId, isAuthenticated } = task.metadata;
-
+      const { eventSlug, sessionId, isAuthenticated: authed } = task.metadata;
       if (!task.imageUrl) return;
 
-      // Save to backend using the correct endpoint
       try {
         const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
+          "Content-Type": "application/json",
+          Accept: "application/json",
         };
 
-        // Add session ID to header for guest users
-        if (!isAuthenticated && sessionId) {
-          headers['X-Session-Id'] = sessionId;
+        if (!authed && sessionId) {
+          headers["X-Session-Id"] = sessionId;
         }
 
         await apiClient.post(
-          '/api/public/save-image',
+          "/api/public/save-image",
           {
             eventSlug,
-            imageUrl: [task.imageUrl], // Backend expects an array
+            imageUrl: [task.imageUrl],
           },
           { headers }
         );
 
-        // Add to local gallery optimistically (will be deduplicated when backend returns)
         const newPhoto: Photo = {
-          photoId: `temp-${Date.now()}`, // Temporary ID
+          photoId: `temp-${Date.now()}`,
           imageUrl: task.imageUrl,
-          uploader: isAuthenticated ? "You" : "Guest",
+          uploader: authed ? "You" : "Guest",
           uploadedAt: "Just now",
           type: "uploaded",
           size: "medium",
-          color: getRandomGradient(),
+          color: "from-pink-500/20 to-purple-500/20",
         };
 
         addUploadedPhoto(newPhoto);
-
-        // FOMO Strategy: Refresh gallery to show all photos after first upload
-        // This will fetch all photos from backend since user has now uploaded
-        // CRITICAL: Pass the SAME sessionId to ensure backend checks the correct session
         await fetchDefaultImages(eventSlug, sessionId);
 
-        // Update state to unlock all photos and dismiss overlay
-        // Only show modal on FIRST upload that unlocks gallery (locked → unlocked transition)
-        // If user already uploaded (hasUploaded=true) or modal already shown, don't show again
         if (!hasUploaded && !hasShownUnlockModal) {
           setShowSuccessModal(true);
           setHasShownUnlockModal(true);
         }
         setHasUploaded(true);
-
       } catch (saveError: any) {
-        console.error('Failed to save image to backend:', saveError);
-        if (saveError.response) {
-          console.error('Server response:', saveError.response.data);
-        }
-        toast.error('Image uploaded but failed to save to gallery');
+        console.error("Failed to save image to backend:", saveError);
+        toast.error("Image uploaded but failed to save to gallery");
       }
     } catch (error) {
       console.error("Failed to process uploaded photo:", error);
     }
   };
 
-  // Filter and sort photos
-  const filteredPhotos = contextPhotos.filter(
-    (photo) => selectedFilter === "all" || photo.type === selectedFilter
-  );
-
-  const sortedPhotos = [...filteredPhotos].sort((a, b) => {
-    if (sortBy === "recent") {
-      // Sort by photoId (assuming it's timestamp based for uploaded photos)
-      return b.photoId.localeCompare(a.photoId);
+  // Filter photos
+  const filteredPhotos = contextPhotos.filter((photo) => {
+    if (activeTab === "my") {
+      return photo.type === "uploaded" || photo.uploader === "You" || photo.uploader === "Guest";
     }
-    return 0;
+    return true;
   });
 
+  // Sort photos
+  const sortedPhotos = [...filteredPhotos].sort((a, b) => {
+    if (activeTab === "likes") {
+      return (b.reactionCount || 0) - (a.reactionCount || 0);
+    }
+    // "recent" and default: newest first
+    return b.photoId.localeCompare(a.photoId);
+  });
 
-
-  // Infinite scroll for performance
+  // Infinite scroll
   const { displayedItems } = useInfiniteScroll({
     items: sortedPhotos,
     batchSize: 20,
   });
 
-  // FOMO: Backend already limits to 10 photos if user hasn't uploaded
-  // We just need to show the unlock message when hasUploaded = false
   const shouldShowUnlock = !hasUploaded && sortedPhotos.length >= 10;
 
-  // Removed sticky banner functionality
-  // useEffect(() => {
-  //   if (shouldShowUnlock && !showStickyBanner) {
-  //     const timer = setTimeout(() => {
-  //       setShowStickyBanner(true);
-  //     }, 30000);
-  //     return () => clearTimeout(timer);
-  //   }
-  // }, [shouldShowUnlock, showStickyBanner]);
 
-
+  // Copy share invite link
+  const handleCopyLink = () => {
+    const url = currentEventSlug 
+      ? `${window.location.origin}/visit/${currentEventSlug}`
+      : window.location.href;
+    navigator.clipboard.writeText(url);
+    toast.success("Event link copied!");
+    setShowMoreMenu(false);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <GalleryHeader
-            eventTitle={eventData.title}
-            eventDate={eventData.date}
-            photoCount={sortedPhotos.length}
-          // onDownloadAll={() => toast.success("Preparing download...")} // Commented out download all
-          />
+    <div className="bg-[#131318] text-[#e4e1e9] min-h-screen relative overflow-x-hidden">
+      {/* Ambient Mesh Background */}
+      <div className="mesh-bg">
+        <div className="mesh-blob blob-1" />
+        <div className="mesh-blob blob-2" />
+        <div className="mesh-blob blob-3" />
+      </div>
 
-          {/* Filters */}
-          <div className="mt-4">
-            <GalleryFilters
-              sortBy={sortBy}
-              selectedFilter={selectedFilter}
-              viewMode={viewMode}
-              onSortChange={setSortBy}
-              onFilterChange={setSelectedFilter}
-              onViewModeChange={setViewMode}
-              categories={categories}
-            />
-          </div>
+      {/* TopAppBar */}
+      <header className="flex justify-between items-center px-4 sm:px-8 h-16 w-full fixed top-0 z-50 bg-white/5 backdrop-blur-md border-b border-white/10 text-primary">
+        {/* Left Action: Home Button for authenticated users, nothing for unauthenticated users */}
+        {isUserAuthenticated ? (
+          <button
+            type="button"
+            onClick={() => navigate("/home")}
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors scale-95 active:scale-90 duration-200 text-[#debec8] hover:text-white cursor-pointer"
+            title="Home"
+          >
+            <span className="material-symbols-outlined">home</span>
+          </button>
+        ) : (
+          <div className="w-10 h-10" />
+        )}
+
+        {/* Event Title */}
+        <h1 className="font-headline-lg-mobile text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent truncate max-w-[200px] sm:max-w-md text-center">
+          {eventData.title || "Summer Gala '24"}
+        </h1>
+
+        {/* More Options Button */}
+        <div className="relative" ref={moreMenuRef}>
+          <button
+            type="button"
+            onClick={() => setShowMoreMenu((prev) => !prev)}
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors scale-95 active:scale-90 duration-200 text-[#debec8] cursor-pointer"
+            title="More Options"
+          >
+            <span className="material-symbols-outlined">more_vert</span>
+          </button>
+
+          {/* More Options Dropdown */}
+          {showMoreMenu && (
+            <div className="absolute right-0 top-12 w-48 bg-[#1f1f25]/95 border border-white/15 rounded-2xl shadow-2xl backdrop-blur-xl py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="w-full px-4 py-2.5 text-left text-sm text-[#e4e1e9] hover:bg-white/10 flex items-center gap-2.5 transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px] text-[#ffb0cd]">share</span>
+                <span>Share Event</span>
+              </button>
+
+              {currentEventSlug && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigate(`/visit/${currentEventSlug}`);
+                    setShowMoreMenu(false);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-[#e4e1e9] hover:bg-white/10 flex items-center gap-2.5 transition-colors cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-[#ddb7ff]">celebration</span>
+                  <span>Event Landing</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setViewMode((prev) => (prev === "grid" ? "list" : "grid"));
+                  setShowMoreMenu(false);
+                }}
+                className="w-full px-4 py-2.5 text-left text-sm text-[#e4e1e9] hover:bg-white/10 flex items-center gap-2.5 transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px] text-[#debec8]">
+                  {viewMode === "grid" ? "view_list" : "grid_view"}
+                </span>
+                <span>{viewMode === "grid" ? "List View" : "Grid View"}</span>
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
-      {/* Main Content */}
-      {isLoading ? (
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      {/* Filter Tabs Bar */}
+      <div className="fixed top-16 left-0 w-full z-40 bg-[#131318]/75 backdrop-blur-xl border-b border-white/[0.06]">
+        <div className="flex items-center justify-between gap-4 px-4 sm:px-8 py-2.5 max-w-7xl mx-auto">
+          {/* Tabs Segmented Glass Dock */}
+          <div className="w-full md:w-auto flex items-center justify-between md:justify-start gap-1 p-1 bg-white/[0.04] md:bg-white/[0.06] border border-white/10 rounded-full backdrop-blur-xl shadow-lg">
+            {[
+              { id: "all", label: "All Photos", icon: "auto_awesome" },
+              { id: "recent", label: "Recent", icon: "schedule" },
+              { id: "likes", label: "Most Liked", icon: "favorite" },
+            ].map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                  className={`flex-1 md:flex-initial justify-center relative px-3 sm:px-4 py-2 sm:py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap active:scale-95 ${
+                    isActive
+                      ? "text-[#40000d]"
+                      : "text-[#debec8] hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeFilterTab"
+                      className="absolute inset-0 bg-gradient-to-r from-[#ffb0cd] to-[#ddb7ff] rounded-full shadow-[0_0_20px_rgba(255,176,205,0.35)]"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.45 }}
+                    />
+                  )}
+                  <span
+                    className="material-symbols-outlined text-[16px] sm:text-[18px] relative z-10"
+                    style={{
+                      fontVariationSettings:
+                        isActive && tab.id === "likes" ? "'FILL' 1" : "'FILL' 0",
+                    }}
+                  >
+                    {tab.icon}
+                  </span>
+                  <span className="relative z-10">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right side info & view switcher on desktop */}
+          <div className="hidden md:flex items-center gap-3 shrink-0">
+            {/* Photo Counter Pill */}
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#debec8] bg-white/[0.04] px-3.5 py-1.5 rounded-full border border-white/10 backdrop-blur-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ffb0cd] animate-pulse" />
+              <span>
+                {sortedPhotos.length} {sortedPhotos.length === 1 ? "memory" : "memories"}
+              </span>
+            </div>
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-white/[0.04] border border-white/10 rounded-full p-1 backdrop-blur-md">
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`flex items-center justify-center w-8 h-8 rounded-full transition-all cursor-pointer ${
+                  viewMode === "grid"
+                    ? "bg-gradient-to-r from-[#ffb0cd]/30 to-[#ddb7ff]/30 text-white shadow-sm border border-white/15"
+                    : "text-[#debec8]/60 hover:text-white"
+                }`}
+                title="Grid view"
+              >
+                <span className="material-symbols-outlined text-[18px]">grid_view</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={`flex items-center justify-center w-8 h-8 rounded-full transition-all cursor-pointer ${
+                  viewMode === "list"
+                    ? "bg-gradient-to-r from-[#ffb0cd]/30 to-[#ddb7ff]/30 text-white shadow-sm border border-white/15"
+                    : "text-[#debec8]/60 hover:text-white"
+                }`}
+                title="List view"
+              >
+                <span className="material-symbols-outlined text-[18px]">view_list</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Canvas */}
+      <main className="min-h-screen relative z-10 pt-[144px] pb-28 md:pb-16 max-w-7xl mx-auto px-4 sm:px-6">
+        {isLoading ? (
           <Masonry
-            breakpointCols={{ default: 5, 1100: 4, 768: 3, 500: 2 }}
+            breakpointCols={{ default: 5, 1280: 4, 900: 3, 640: 2 }}
             className="masonry-grid"
             columnClassName="masonry-grid-column"
           >
-            <PhotoSkeleton count={15} />
+            <PhotoSkeleton count={12} />
           </Masonry>
-        </main>
-      ) : (
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-          {sortedPhotos.length > 0 ? (
-            <>
-              <PhotoGrid
-                photos={displayedItems}
-                viewMode={viewMode}
-                likedPhotos={likedPhotos}
-                onPhotoClick={(photoId) => {
-                  const index = sortedPhotos.findIndex(p => p.photoId === photoId);
-                  setSelectedPhotoIndex(index);
-                }}
-                onLike={handleLike}
-                onDownload={handleDownload}
-                onDelete={isAuthenticated ? handleDelete : undefined}
-                isAuthenticated={isAuthenticated}
-              />
+        ) : sortedPhotos.length > 0 ? (
+          <>
+            <PhotoGrid
+              photos={displayedItems}
+              viewMode={viewMode}
+              likedPhotos={likedPhotos}
+              onPhotoClick={(photoId) => {
+                const index = sortedPhotos.findIndex((p) => p.photoId === photoId);
+                setSelectedPhotoIndex(index);
+              }}
+              onLike={handleLike}
+              onDownload={handleDownload}
+              onDelete={isAuthenticated ? handleDelete : undefined}
+              isAuthenticated={isUserAuthenticated}
+              isDownloadLocked={!isUserAuthenticated && guestDownloadCount >= 6}
+            />
 
-              {/* Unlock message - shown when user hasn't uploaded */}
-              {shouldShowUnlock && (
-                <div className="mt-8">
-                  <UploadUnlockOverlay
-                    photoCount={0} // Backend doesn't tell us total count
-                    onUploadClick={() => setShowUploadModal(true)}
-                  />
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-              <div className="w-24 h-24 bg-linear-to-br from-pink-100 to-rose-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                <Camera className="w-10 h-10 text-pink-500" />
+            {/* Unlock message - shown when user hasn't uploaded */}
+            {shouldShowUnlock && (
+              <div className="mt-8 cursor-pointer" onClick={() => setShowUploadUnlockModal(true)}>
+                <UploadUnlockOverlay
+                  photoCount={sortedPhotos.length}
+                  onUploadClick={() => setShowUploadUnlockModal(true)}
+                />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                No photos yet
-              </h3>
-              <p className="text-gray-500 max-w-md mb-8 text-lg">
-                Be the first to capture the moment! Upload a photo to start the gallery.
-              </p>
+            )}
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-24 px-4 text-center">
+            <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-5 backdrop-blur-xl shadow-xl">
+              <span className="material-symbols-outlined text-4xl text-[#ffb0cd]">
+                photo_camera
+              </span>
             </div>
-          )}
-        </main>
-      )}
+            <h3 className="text-2xl font-bold text-white mb-2 font-headline-lg-mobile">
+              No photos yet
+            </h3>
+            <p className="text-[#debec8] max-w-md mb-8 text-base">
+              Be the first to capture the moment! Upload a photo to kick off the gallery.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowUploadModal(true)}
+              className="px-6 py-3 rounded-full bg-gradient-to-r from-primary to-secondary text-[#40000d] font-bold shadow-lg hover:shadow-primary/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <span className="material-symbols-outlined">upload</span>
+              <span>Upload First Photo</span>
+            </button>
+          </div>
+        )}
+      </main>
 
-      {/* Upload Button (Mobile) */}
-      <div className="fixed bottom-20 right-4 z-10">
+      {/* Floating Upload FAB */}
+      <div className="fixed bottom-20 md:bottom-8 right-4 sm:right-8 z-40">
         <button
+          type="button"
           onClick={() => setShowUploadModal(true)}
-          className="fixed bottom-20 sm:bottom-8 right-4 sm:right-8 px-4 sm:px-6 py-3 sm:py-4 bg-linear-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-full font-semibold shadow-2xl hover:shadow-pink-500/50 transition-all flex items-center gap-2 hover:scale-105 z-10"
           disabled={isUploading}
+          className="px-5 py-5 bg-gradient-to-r from-[#f751a1] to-[#ddb7ff] hover:brightness-110 text-[#40000d] font-bold rounded-full shadow-2xl shadow-primary/30 flex items-center gap-2.5 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
         >
           {isUploading ? (
-            <Loader2 className="w-6 h-6 animate-spin" />
+            <div className="w-5 h-5 border-2 border-[#40000d] border-t-transparent rounded-full animate-spin" />
           ) : (
-            <Upload className="w-6 h-6" />
+            <span className="material-symbols-outlined text-[22px]">photo_camera</span>
           )}
-          <span className="hidden sm:inline">Upload Photo</span>
+          <span className="hidden sm:inline font-semibold">Upload Photo</span>
         </button>
       </div>
 
@@ -628,9 +732,8 @@ const Gallery = () => {
       {/* Floating Upload Indicator */}
       <FloatingUploadIndicator onTaskComplete={handleUploadComplete} />
 
-
       {/* Enhanced Photo Modal */}
-      {selectedPhotoIndex !== null && (
+      {selectedPhotoIndex !== null && sortedPhotos[selectedPhotoIndex] && (
         <EnhancedPhotoModal
           photos={sortedPhotos}
           currentIndex={selectedPhotoIndex}
@@ -645,33 +748,30 @@ const Gallery = () => {
       {/* Signup Prompt Modal */}
       <SignupPromptModal
         isOpen={showSignupPrompt}
-        onClose={() => {
-          setShowSignupPrompt(false);
-        }}
-        returnTo={(() => {
-          // Use the stored event slug to construct the return URL
-          const returnUrl = currentEventSlug
+        onClose={() => setShowSignupPrompt(false)}
+        returnTo={
+          currentEventSlug
             ? `/gallery?event=${currentEventSlug}`
-            : "/gallery";
-          return returnUrl;
-        })()}
+            : "/gallery"
+        }
       />
 
-      {/* Removed Sticky Upload Banner */}
-      {/* <StickyUploadBanner
-        isVisible={showStickyBanner && shouldShowUnlock}
-        onUploadClick={() => setShowUploadModal(true)}
-        onDismiss={() => setShowStickyBanner(false)}
-      /> */}
+      {/* Upload to See More Images Modal */}
+      <UploadUnlockModal
+        isOpen={showUploadUnlockModal}
+        onClose={() => setShowUploadUnlockModal(false)}
+        onUploadClick={() => {
+          setShowUploadUnlockModal(false);
+          setShowUploadModal(true);
+        }}
+        photoCount={sortedPhotos.length}
+      />
 
       {/* Success Modal */}
       <UnlockSuccessModal
         isVisible={showSuccessModal}
         onClose={() => setShowSuccessModal(false)}
       />
-
-
-
     </div>
   );
 };

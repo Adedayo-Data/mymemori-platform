@@ -1,76 +1,47 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Calendar,
-  Image as ImageIcon,
-  Users,
-  MapPin,
-  Camera,
-  Plus,
-  Download,
-  Trash2,
-  MoreVertical,
-  Edit2,
-} from "lucide-react";
-import ProfilePanel from "../components/ProfilePanel";
-import ConfirmModal from "../components/ConfirmModal";
-import EditNameModal from "../components/EditNameModal";
+import HomeTopNav from "../components/HomeTopNav";
+import HomeBottomNav from "../components/HomeBottomNav";
+import BentoEventCard, { type EventItem } from "../components/BentoEventCard";
+import BentoPictureCard, { type PhotoItem } from "../components/BentoPictureCard";
+import JoinEventModal from "../components/JoinEventModal";
+import EmptyState from "../components/EmptyState";
 import { useEvent } from "../context/eventContext";
 import { usePicture } from "../context/pictureContext";
+import { useAuth } from "../context/authContext";
 import apiClient from "../api/apiClient";
-
-interface Event {
-  eventName?: string;
-  eventDate?: string;
-  location?: string;
-  description?: string;
-  eventSlug: string;
-  imageUrl?: string;
-  photoCount?: number;
-  id?: string | number;
-  [key: string]: string | number | undefined;
-}
-
-interface Photo {
-  photoId: string;
-  imageUrl: string;
-  uploader: string;
-  uploadedAt: string;
-  type: string;
-  size: string;
-  color: string;
-}
 
 const NewHome = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
   const { getAllEvent } = useEvent();
   const { getAllPhoto, getLikedPhotos, deletePhoto } = usePicture();
-  const location = useLocation();
-  const [mainTab, setMainTab] = useState<"events" | "pictures">("events");
-  const [eventsSubTab, setEventsSubTab] = useState<"created" | "attended">(
-    "created"
-  );
-  const [picturesSubTab, setPicturesSubTab] = useState<"yours" | "liked">(
-    "yours"
-  );
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [createdEvents, setCreatedEvents] = useState<Event[]>([]);
-  const [attendedEvents, setAttendedEvents] = useState<Event[]>([]);
+
+  const [mainTab, setMainTab] = useState<"home" | "events" | "pictures">("home");
+  const [eventsSubTab, setEventsSubTab] = useState<"created" | "attended">("created");
+  const [picturesSubTab, setPicturesSubTab] = useState<"yours" | "liked">("yours");
+
+  // Modals state
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+
+  // Data state
+  const [createdEvents, setCreatedEvents] = useState<EventItem[]>([]);
+  const [attendedEvents, setAttendedEvents] = useState<EventItem[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
-  const [userPhotos, setUserPhotos] = useState<Photo[]>([]);
+
+  const [userPhotos, setUserPhotos] = useState<PhotoItem[]>([]);
   const [isLoadingPhotos, setIsLoadingPhotos] = useState(true);
-  const [likedPhotos, setLikedPhotos] = useState<Photo[]>([]);
+  const [likedPhotos, setLikedPhotos] = useState<PhotoItem[]>([]);
   const [isLoadingLikedPhotos, setIsLoadingLikedPhotos] = useState(true);
 
-  // Check if we should open profile panel based on route
+  // Check if we should redirect to profile based on route state
   useEffect(() => {
     if (location.state?.openProfile) {
-      setIsProfileOpen(true);
-      // Clear the state
-      navigate(location.pathname, { replace: true, state: {} });
+      navigate("/profile", { replace: true });
     }
-  }, [location.state, location.pathname, navigate]);
+  }, [location.state, navigate]);
 
   // Fetch all events and photos on component load
   useEffect(() => {
@@ -128,542 +99,297 @@ const NewHome = () => {
     try {
       await deletePhoto(photoId);
       setUserPhotos((prev) => prev.filter((p) => p.photoId !== photoId));
+      setLikedPhotos((prev) => prev.filter((p) => p.photoId !== photoId));
     } catch (error) {
       console.error("Failed to delete photo:", error);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            {/* Title */}
-            <h1 className="text-xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-              MyMemori
-            </h1>
-
-            {/* Main Tabs - Inline with title */}
-            <div className="flex">
-              <button
-                onClick={() => setMainTab("events")}
-                className={`relative py-2 px-4 font-medium text-sm transition-all rounded-lg ${mainTab === "events"
-                  ? "text-pink-600 bg-pink-50"
-                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                  }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5" />
-                  <span>Events </span>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setMainTab("pictures")}
-                className={`relative py-2 px-4 font-medium text-sm transition-all rounded-lg ${mainTab === "pictures"
-                  ? "text-pink-600 bg-pink-50"
-                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                  }`}
-              >
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="w-5 h-5" />
-                  <span>Pictures </span>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
+    <div className="bg-background text-on-background antialiased min-h-screen pb-28 md:pb-12 relative overflow-x-hidden selection:bg-primary/30 selection:text-primary">
+      {/* Ambient Background Glows (Vivid Luminescence) */}
+      <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-secondary-container/10 blur-[100px]" />
+        <div className="absolute bottom-[20%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-primary-container/5 blur-[120px]" />
       </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <AnimatePresence mode="wait">
-          {mainTab === "events" ? (
-            <motion.div
-              key="events"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.2 }}
+      {/* Top App Bar Navigation */}
+      <HomeTopNav
+        mainTab={mainTab}
+        onTabChange={setMainTab}
+        onOpenProfile={() => navigate("/profile")}
+        user={user}
+      />
+
+      {/* Main Content Canvas */}
+      <main className="mt-20 px-container-margin max-w-7xl mx-auto flex flex-col gap-6">
+        {/* CTA Banner with Storyteller Greeting (Only visible when user has no events) */}
+        {createdEvents.length === 0 && (
+          <section
+            onClick={() => navigate("/book")}
+            className="relative bg-gradient-to-br from-[#b4136d] via-[#f751a1] to-[#6f00be] rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-[0_8px_32px_rgba(247,81,161,0.25)] overflow-hidden group cursor-pointer hover:shadow-[0_8px_40px_rgba(247,81,161,0.35)] transition-all duration-300"
+          >
+            {/* Decorative flare */}
+            <div className="absolute top-0 right-0 w-44 h-44 bg-white/20 blur-3xl rounded-full transform translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+            <div className="z-10 flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="font-headline-lg-mobile text-xl md:text-2xl font-bold text-white tracking-tight">
+                  Hey, Storyteller
+                </h2>
+                <span className="inline-block animate-pulse text-[22px]">✨</span>
+              </div>
+              <p className="font-body-md text-white/90 text-sm md:text-base leading-relaxed">
+                Your live celebration stream is currently quiet.
+              </p>
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate("/book");
+              }}
+              className="z-10 flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/40 text-white rounded-full px-5 py-2.5 scale-95 active:scale-90 transition-all duration-200 cursor-pointer shrink-0 font-semibold text-sm shadow-md"
             >
-              {/* Events Sub-tabs */}
-              <div className="flex gap-4 mb-6 border-b border-gray-200">
+              <span className="material-symbols-outlined text-[20px]">add</span>
+              <span>Create Event</span>
+            </button>
+          </section>
+        )}
+
+        {/* Primary Dual-Tab Navigation (Glass Segmented Control) */}
+        <section>
+          <div className="flex bg-surface-container/40 backdrop-blur-xl rounded-lg p-1 border border-white/10 max-w-sm mx-auto md:mx-0">
+            <button
+              onClick={() => setMainTab("home")}
+              className={`flex-1 py-2 text-center rounded-md font-label-md text-label-md transition-all cursor-pointer ${
+                mainTab === "home" || mainTab === "events"
+                  ? "bg-white/15 shadow-[0_2px_10px_rgba(0,0,0,0.2)] border border-white/20 text-white font-semibold"
+                  : "text-on-surface-variant hover:text-on-surface hover:bg-white/5"
+              }`}
+            >
+              Events
+            </button>
+            <button
+              onClick={() => setMainTab("pictures")}
+              className={`flex-1 py-2 text-center rounded-md font-label-md text-label-md transition-all cursor-pointer ${
+                mainTab === "pictures"
+                  ? "bg-white/15 shadow-[0_2px_10px_rgba(0,0,0,0.2)] border border-white/20 text-white font-semibold"
+                  : "text-on-surface-variant hover:text-on-surface hover:bg-white/5"
+              }`}
+            >
+              Pictures
+            </button>
+          </div>
+        </section>
+
+        {/* Tab Content Canvas */}
+        <AnimatePresence mode="wait">
+          {mainTab === "home" || mainTab === "events" ? (
+            <motion.div
+              key="events-view"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="flex flex-col gap-6"
+            >
+              {/* Secondary Sub-tabs */}
+              <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1">
                 <button
                   onClick={() => setEventsSubTab("created")}
-                  className={`relative pb-3 px-1 font-medium text-sm transition-colors ${eventsSubTab === "created"
-                    ? "text-pink-600"
-                    : "text-gray-500 hover:text-gray-700"
-                    }`}
+                  className={`px-4 py-1.5 rounded-full font-label-md text-label-md whitespace-nowrap transition-colors cursor-pointer ${
+                    eventsSubTab === "created"
+                      ? "bg-secondary-container/30 text-secondary-fixed-dim border border-secondary-container/50"
+                      : "text-on-surface-variant border border-transparent hover:bg-white/5"
+                  }`}
                 >
-                  Created({createdEvents.length})
-                  {eventsSubTab === "created" && (
-                    <motion.div
-                      layoutId="eventsSubTab"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-pink-600"
-                    />
-                  )}
+                  Created ({createdEvents.length})
                 </button>
-
                 <button
                   onClick={() => setEventsSubTab("attended")}
-                  className={`relative pb-3 px-1 font-medium text-sm transition-colors ${eventsSubTab === "attended"
-                    ? "text-pink-600"
-                    : "text-gray-500 hover:text-gray-700"
-                    }`}
+                  className={`px-4 py-1.5 rounded-full font-label-md text-label-md whitespace-nowrap transition-colors cursor-pointer ${
+                    eventsSubTab === "attended"
+                      ? "bg-secondary-container/30 text-secondary-fixed-dim border border-secondary-container/50"
+                      : "text-on-surface-variant border border-transparent hover:bg-white/5"
+                  }`}
                 >
-                  Attended({attendedEvents.length})
-                  {eventsSubTab === "attended" && (
-                    <motion.div
-                      layoutId="eventsSubTab"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-pink-600"
-                    />
-                  )}
+                  Attended ({attendedEvents.length})
                 </button>
               </div>
-              {/* Events Content */}
+
+              {/* Bento Grid List of Events */}
               {isLoadingEvents ? (
                 <div className="flex items-center justify-center py-20">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600">
-                    {" "}
-                  </div>
+                  <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent" />
                 </div>
               ) : eventsSubTab === "created" ? (
                 createdEvents.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {createdEvents.map((event) => (
-                      <EventCard 
-                        key={event.eventSlug} 
-                        event={event} 
-                        isOwner={true} 
-                        onDelete={(id) => setCreatedEvents(prev => prev.filter(e => (e.id || e.eventSlug) !== id))}
-                        onUpdate={(id, newName) => setCreatedEvents(prev => prev.map(e => (e.id || e.eventSlug) === id ? { ...e, eventName: newName } : e))}
+                      <BentoEventCard
+                        key={event.eventSlug}
+                        event={event}
+                        isOwner={true}
+                        onDelete={(id) =>
+                          setCreatedEvents((prev) =>
+                            prev.filter((e) => (e.id || e.eventSlug) !== id)
+                          )
+                        }
+                        onUpdate={(id, newName) =>
+                          setCreatedEvents((prev) =>
+                            prev.map((e) =>
+                              (e.id || e.eventSlug) === id
+                                ? { ...e, eventName: newName }
+                                : e
+                            )
+                          )
+                        }
                       />
                     ))}
                   </div>
                 ) : (
                   <EmptyState
-                    icon={Calendar}
-                    title="No events created yet"
-                    description="Start creating memorable events and share them with your friends and family."
+                    icon="shutter_speed"
+                    title="No Live Celebrations Yet"
+                    description="Live guest uploads, shared reactions, and curated story reels will light up your feed once you host or join."
+                    actionText="Create Your First Event"
+                    onAction={() => navigate("/book")}
+                    showJoinButton={true}
+                    onJoinAction={() => navigate("/join")}
                   />
                 )
               ) : attendedEvents.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {attendedEvents.map((event) => (
-                    <EventCard key={event.eventSlug} event={event} isOwner={false} />
+                    <BentoEventCard key={event.eventSlug} event={event} isOwner={false} />
                   ))}
                 </div>
               ) : (
                 <EmptyState
-                  icon={Users}
+                  icon="groups"
                   title="No attended events"
-                  description="Events you've attended will appear here."
-                />
+                  description="Events you join with a room code or QR invite will appear here in your celebration stream."
+                  actionText="Join with Code or QR"
+                  onAction={() => navigate("/join")}
+                  showJoinButton={false}
+                  />
               )}
             </motion.div>
           ) : (
             <motion.div
-              key="pictures"
-              initial={{ opacity: 0, y: 20 }}
+              key="pictures-view"
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
+              exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
+              className="flex flex-col gap-6"
             >
-              {/* Pictures Sub-tabs */}
-              <div className="flex gap-4 mb-6 border-b border-gray-200">
+              {/* Secondary Sub-tabs */}
+              <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1">
                 <button
                   onClick={() => setPicturesSubTab("yours")}
-                  className={`relative pb-3 px-1 font-medium text-sm transition-colors ${picturesSubTab === "yours"
-                    ? "text-pink-600"
-                    : "text-gray-500 hover:text-gray-700"
-                    }`}
+                  className={`px-4 py-1.5 rounded-full font-label-md text-label-md whitespace-nowrap transition-colors cursor-pointer ${
+                    picturesSubTab === "yours"
+                      ? "bg-secondary-container/30 text-secondary-fixed-dim border border-secondary-container/50"
+                      : "text-on-surface-variant border border-transparent hover:bg-white/5"
+                  }`}
                 >
-                  Your Pictures({userPhotos.length})
-                  {picturesSubTab === "yours" && (
-                    <motion.div
-                      layoutId="picturesSubTab"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-pink-600"
-                    />
-                  )}
+                  Your Pictures ({userPhotos.length})
                 </button>
-
                 <button
                   onClick={() => setPicturesSubTab("liked")}
-                  className={`relative pb-3 px-1 font-medium text-sm transition-colors ${picturesSubTab === "liked"
-                    ? "text-pink-600"
-                    : "text-gray-500 hover:text-gray-700"
-                    }`}
+                  className={`px-4 py-1.5 rounded-full font-label-md text-label-md whitespace-nowrap transition-colors cursor-pointer ${
+                    picturesSubTab === "liked"
+                      ? "bg-secondary-container/30 text-secondary-fixed-dim border border-secondary-container/50"
+                      : "text-on-surface-variant border border-transparent hover:bg-white/5"
+                  }`}
                 >
-                  Liked Pictures({likedPhotos.length})
-                  {picturesSubTab === "liked" && (
-                    <motion.div
-                      layoutId="picturesSubTab"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-pink-600"
-                    />
-                  )}
+                  Liked Pictures ({likedPhotos.length})
                 </button>
               </div>
-              {/* Pictures Content */}
+
+              {/* Bento Grid List of Pictures */}
               {isLoadingPhotos ? (
                 <div className="flex items-center justify-center py-20">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600">
-                    {" "}
-                  </div>
+                  <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent" />
                 </div>
               ) : picturesSubTab === "yours" ? (
                 userPhotos.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                     {userPhotos.map((picture) => (
-                      <PictureCard key={picture.photoId} picture={picture} onDelete={handleDeletePhoto} />
+                      <BentoPictureCard
+                        key={picture.photoId}
+                        picture={picture}
+                        onDelete={handleDeletePhoto}
+                      />
                     ))}
                   </div>
                 ) : (
                   <EmptyState
-                    icon={Camera}
+                    icon="photo_camera"
                     title="No pictures yet"
-                    description="Pictures you've uploaded to events will appear here."
+                    description="Pictures you've uploaded to events will appear here in your memory reel."
+                    actionText="Create an Event"
+                    onAction={() => navigate("/book")}
+                    showJoinButton={true}
+                    onJoinAction={() => navigate("/join")}
                   />
                 )
               ) : isLoadingLikedPhotos ? (
                 <div className="flex items-center justify-center py-20">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600">
-                    {" "}
-                  </div>
+                  <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent" />
                 </div>
               ) : likedPhotos.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                   {likedPhotos.map((picture) => (
-                    <PictureCard key={picture.photoId} picture={picture} />
+                    <BentoPictureCard key={picture.photoId} picture={picture} />
                   ))}
                 </div>
               ) : (
                 <EmptyState
-                  icon={ImageIcon}
+                  icon="favorite"
                   title="No liked pictures"
-                  description="Pictures you've liked will appear here."
+                  description="Pictures you've liked in active celebration streams will appear here."
+                  showJoinButton={false}
                 />
               )}
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </main>
 
-      {/* Floating Action Button */}
-      <motion.button
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={() => navigate("/book")}
-        className="fixed bottom-20 right-6 md:bottom-8 md:right-8 w-14 h-14 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center z-50 transition-shadow"
-      >
-        <Plus className="w-6 h-6" />
-      </motion.button>
-
-      {/* Profile Panel */}
-      <ProfilePanel
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-      />
-    </div>
-  );
-};
-
-// Empty State Component
-const EmptyState = ({
-  icon: Icon,
-  title,
-  description,
-  actionText,
-  onAction,
-}: {
-  icon: any;
-  title: string;
-  description: string;
-  actionText?: string;
-  onAction?: () => void;
-}) => {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center justify-center py-20 px-4"
-    >
-      <div className="bg-gradient-to-br from-pink-100 to-purple-100 rounded-full p-6 mb-4">
-        <Icon className="w-12 h-12 text-pink-600" />
-      </div>
-      <h3 className="text-xl font-semibold text-gray-900 mb-2"> {title} </h3>
-      <p className="text-gray-500 text-center max-w-md mb-6"> {description} </p>
-      {actionText && onAction && (
+      {/* Floating Action Button (Shows only when the top banner is hidden) */}
+      {createdEvents.length > 0 && (
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={onAction}
-          className="bg-gradient-to-r from-pink-600 to-purple-600 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-shadow"
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.92 }}
+          onClick={() => navigate("/book")}
+          title="Create Event"
+          className="fixed bottom-24 right-5 md:bottom-8 md:right-8 w-14 h-14 bg-gradient-to-r from-primary-container via-primary to-secondary text-white rounded-full shadow-[0_8px_24px_rgba(247,81,161,0.4)] hover:shadow-[0_8px_32px_rgba(247,81,161,0.6)] flex items-center justify-center z-40 transition-shadow cursor-pointer"
         >
-          {actionText}
+          <span className="material-symbols-outlined text-2xl font-bold">add</span>
         </motion.button>
       )}
-    </motion.div>
-  );
-};
 
-// Event Card Component
-interface EventCardProps {
-  event: Event;
-  isOwner?: boolean;
-  onUpdate?: (id: string | number, newName: string) => void;
-  onDelete?: (id: string | number) => void;
-}
-
-const EventCard = ({ event, isOwner = false, onUpdate, onDelete }: EventCardProps) => {
-  const navigate = useNavigate();
-  const [showMenu, setShowMenu] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const { updateEvent, deleteEvent } = useEvent();
-  
-  const eventId = event.id || event.eventSlug;
-
-  const handleDelete = async () => {
-    if (!eventId) return;
-    try {
-      await deleteEvent(eventId);
-      setShowDeleteConfirm(false);
-      if (onDelete) onDelete(eventId);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const handleEdit = async (newName: string) => {
-    if (!eventId) return;
-    try {
-      await updateEvent(eventId, {
-        eventName: newName,
-        eventDate: event.eventDate,
-        location: event.location,
-        description: event.description,
-        imageUrl: event.imageUrl
-      });
-      setShowEditModal(false);
-      if (onUpdate) onUpdate(eventId, newName);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  return (
-    <>
-      <motion.div
-        whileHover={{ y: -4, scale: 1.02 }}
-        onClick={() => {
-          if (!showMenu) navigate(`/gallery?event=${event.eventSlug}`);
+      {/* Mobile Bottom Navigation Bar */}
+      <HomeBottomNav
+        mainTab={mainTab}
+        onTabChange={(tab) => {
+          if (tab === "events") {
+            navigate("/join");
+          } else {
+            setMainTab(tab);
+          }
         }}
-        className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer relative"
-      >
-        <div className="relative aspect-[4/3]">
-          <img
-            src={event.imageUrl}
-            alt={event.eventName}
-            className="w-full h-full object-cover"
-          />
-          
-          {/* Action Menu (Top Right) */}
-          {isOwner && (
-            <div className="absolute top-2 right-2 z-20">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(!showMenu);
-                }}
-                className="p-1.5 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full text-white transition-colors"
-              >
-                <MoreVertical className="w-4 h-4" />
-              </button>
-
-              <AnimatePresence>
-                {showMenu && (
-                  <>
-                    <div 
-                      className="fixed inset-0 z-30"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowMenu(false);
-                      }}
-                    />
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      className="absolute right-0 mt-1 w-36 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-40 py-1 origin-top-right"
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowMenu(false);
-                          setShowEditModal(true);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                        Edit Name
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowMenu(false);
-                          setShowDeleteConfirm(true);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Delete Event
-                      </button>
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
-
-          {/* Photo count badge (Moved to bottom left so it doesn't overlap) */}
-          {event.photoCount !== undefined && event.photoCount > 0 && (
-            <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm text-white px-2 py-1 rounded-full flex items-center gap-1 text-xs font-semibold z-10">
-              <ImageIcon className="w-3 h-3" />
-              <span>{event.photoCount}</span>
-            </div>
-          )}
-        </div>
-        <div className="p-3">
-          <h3 className="font-semibold text-sm mb-1 truncate">
-            {event.eventName}
-          </h3>
-          <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-            <Calendar className="w-3 h-3" />
-            <span>
-              {event.eventDate
-                ? new Date(event.eventDate).toLocaleDateString()
-                : "TBD"}
-            </span>
-          </div>
-          <div className="flex items-center gap-1 text-xs text-gray-500">
-            <MapPin className="w-3 h-3" />
-            <span>{event.location}</span>
-          </div>
-        </div>
-      </motion.div>
-
-      <ConfirmModal
-        isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        onConfirm={handleDelete}
-        title="Delete Event"
-        description={`Are you sure you want to delete "${event.eventName}"? This will permanently remove the event and all its photos.`}
-        confirmText="Delete Event"
-        isDestructive={true}
+        onOpenProfile={() => navigate("/profile")}
+        onCreateClick={() => navigate("/book")}
       />
 
-      <EditNameModal
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        onSave={handleEdit}
-        initialName={event.eventName || ""}
-        title="Edit Event Name"
+      {/* Join with Code/QR Modal */}
+      <JoinEventModal
+        isOpen={isJoinModalOpen}
+        onClose={() => setIsJoinModalOpen(false)}
       />
-    </>
-  );
-};
-
-// Picture Card Component
-const PictureCard = ({ picture, onDelete }: { picture: Photo, onDelete?: (id: string) => void }) => {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-
-  const handleDownload = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      const response = await fetch(picture.imageUrl);
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = `photo-${picture.photoId}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (error) {
-      console.error("Error downloading image:", error);
-      window.open(picture.imageUrl, '_blank');
-    }
-  };
-
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!onDelete || isDeleting) return;
-    setShowConfirm(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!onDelete) return;
-    setIsDeleting(true);
-    try {
-      await onDelete(picture.photoId);
-    } finally {
-      setIsDeleting(false);
-      setShowConfirm(false);
-    }
-  };
-
-  return (
-    <>
-      <motion.div
-        whileHover={{ y: -4, scale: 1.02 }}
-        className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer group relative"
-      >
-        <div className="relative aspect-square">
-          <img
-            src={picture.imageUrl}
-            alt={`Photo by ${picture.uploader}`}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 pointer-events-none" />
-
-          {/* Actions Overlay */}
-          <div className="absolute bottom-2 left-2 flex flex-row gap-25 z-10">
-            <button
-              onClick={handleDownload}
-              className="p-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full text-white transition-colors"
-              title="Download"
-            >
-              <Download className="w-4 h-4" />
-            </button>
-
-            {onDelete && (
-              <button
-                onClick={handleDeleteClick}
-                disabled={isDeleting}
-                className="p-1.5 bg-red-500/80 hover:bg-red-600 backdrop-blur-sm rounded-full text-white transition-colors disabled:opacity-50"
-                title="Delete"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </div>
-      </motion.div>
-
-      <ConfirmModal
-        isOpen={showConfirm}
-        onClose={() => setShowConfirm(false)}
-        onConfirm={confirmDelete}
-        title="Delete Picture"
-        description="Are you sure you want to delete this picture? This action cannot be undone."
-        confirmText="Delete"
-        isDestructive={true}
-        isLoading={isDeleting}
-      />
-    </>
+    </div>
   );
 };
 

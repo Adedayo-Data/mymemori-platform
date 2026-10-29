@@ -1,173 +1,94 @@
+import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect } from "react";
 
 interface UnlockSuccessModalProps {
-    isVisible: boolean;
-    onClose: () => void;
+  isVisible: boolean;
+  onClose: () => void;
 }
 
-const UnlockSuccessModal = ({ isVisible, onClose }: UnlockSuccessModalProps) => {
-    // Auto-dismiss after 2.5 seconds
-    useEffect(() => {
-        if (isVisible) {
-            const timer = setTimeout(() => {
-                onClose();
-            }, 2500);
-            return () => clearTimeout(timer);
-        }
-    }, [isVisible, onClose]);
+const UnlockSuccessModal: React.FC<UnlockSuccessModalProps> = ({
+  isVisible,
+  onClose,
+}) => {
+  // Auto-dismiss after 3 seconds if not dismissed by user
+  useEffect(() => {
+    if (isVisible) {
+      const timer = setTimeout(() => {
+        onClose();
+      }, 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible, onClose]);
 
-    return (
-        <AnimatePresence>
-            {isVisible && (
-                <>
-                    {/* Backdrop */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={onClose}
-                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                    >
-                        {/* Modal */}
-                        <motion.div
-                            initial={{ scale: 0.5, opacity: 0, y: 50 }}
-                            animate={{
-                                scale: 1,
-                                opacity: 1,
-                                y: 0,
-                                transition: {
-                                    type: "spring",
-                                    duration: 0.5,
-                                    bounce: 0.4
-                                }
-                            }}
-                            exit={{
-                                scale: 0.8,
-                                opacity: 0,
-                                transition: { duration: 0.2 }
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="relative bg-gradient-to-br from-white via-pink-50 to-rose-50 rounded-3xl shadow-2xl overflow-hidden max-w-sm w-full"
-                            style={{
-                                clipPath: "polygon(3% 0%, 97% 0%, 100% 3%, 100% 85%, 97% 88%, 92% 100%, 8% 100%, 3% 95%, 0% 88%, 0% 3%)",
-                            }}
-                        >
-                            {/* Confetti particles */}
-                            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                                {[...Array(12)].map((_, i) => (
-                                    <motion.div
-                                        key={i}
-                                        initial={{
-                                            y: -20,
-                                            x: Math.random() * 100 + "%",
-                                            opacity: 1,
-                                            rotate: 0
-                                        }}
-                                        animate={{
-                                            y: "120%",
-                                            rotate: 360,
-                                            opacity: 0,
-                                            transition: {
-                                                duration: 2 + Math.random(),
-                                                delay: Math.random() * 0.3,
-                                                ease: "linear"
-                                            }
-                                        }}
-                                        className="absolute w-2 h-2 rounded-full"
-                                        style={{
-                                            background: ["#ec4899", "#f43f5e", "#f97316", "#fbbf24"][i % 4],
-                                            left: `${(i * 8.33)}%`
-                                        }}
-                                    />
-                                ))}
-                            </div>
+  return (
+    <AnimatePresence>
+      {isVisible && (
+        <div className="fixed inset-0 z-[130] flex items-end md:items-center justify-center p-4">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-[#0a0a0f]/75 backdrop-blur-xl"
+          />
 
-                            {/* Content */}
-                            <div className="relative p-8 text-center">
-                                {/* Animated Emoji */}
-                                <motion.div
-                                    animate={{
-                                        rotate: [0, -10, 10, -10, 10, 0],
-                                        scale: [1, 1.1, 1, 1.1, 1],
-                                    }}
-                                    transition={{
-                                        duration: 0.6,
-                                        repeat: Infinity,
-                                        repeatDelay: 1,
-                                    }}
-                                    className="text-7xl mb-4"
-                                >
-                                    🎉
-                                </motion.div>
+          {/* Modal Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 60, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 40, scale: 0.95 }}
+            transition={{ type: "spring", damping: 25, stiffness: 280 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-[32px] p-8 pb-10 md:p-10 flex flex-col items-center text-center relative overflow-hidden z-10 bg-white/5 border border-white/20 backdrop-blur-2xl shadow-2xl"
+            style={{
+              boxShadow:
+                "0 25px 50px -12px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.08)",
+            }}
+          >
+            {/* Ambient Glow behind modal content */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-emerald-500/20 blur-[60px] rounded-full pointer-events-none" />
 
-                                {/* Title */}
-                                <motion.h2
-                                    initial={{ y: 20, opacity: 0 }}
-                                    animate={{ y: 0, opacity: 1 }}
-                                    transition={{ delay: 0.2 }}
-                                    className="text-2xl font-bold mb-2 bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent"
-                                >
-                                    All Memories Unlocked!
-                                </motion.h2>
+            {/* Success Icon */}
+            <div className="relative w-24 h-24 mb-6 flex items-center justify-center z-10">
+              <div className="absolute inset-0 rounded-full bg-emerald-500/20 blur-xl animate-pulse" />
+              <div className="absolute inset-0 rounded-full border border-emerald-500/30 flex items-center justify-center bg-white/5 backdrop-blur-sm shadow-inner">
+                <span
+                  className="material-symbols-outlined text-[64px] text-emerald-400"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  check_circle
+                </span>
+              </div>
+            </div>
 
-                                {/* Message */}
-                                <motion.p
-                                    initial={{ y: 20, opacity: 0 }}
-                                    animate={{ y: 0, opacity: 1 }}
-                                    transition={{ delay: 0.3 }}
-                                    className="text-gray-600 text-sm"
-                                >
-                                    Thank you for sharing your moment! 💖
-                                </motion.p>
+            {/* Text Content */}
+            <h2 className="font-headline-lg-mobile text-2xl sm:text-3xl font-bold text-white mb-2 z-10 tracking-tight">
+              Magic Captured!
+            </h2>
+            <p className="font-body-md text-sm sm:text-base text-[#debec8] mb-8 z-10 max-w-[260px] leading-relaxed">
+              You can now see all images in the gallery.
+            </p>
 
-                                {/* Sparkles */}
-                                <div className="absolute top-4 right-4">
-                                    <motion.span
-                                        animate={{
-                                            opacity: [0.4, 1, 0.4],
-                                            scale: [0.8, 1.2, 0.8],
-                                        }}
-                                        transition={{
-                                            duration: 1.5,
-                                            repeat: Infinity,
-                                        }}
-                                        className="text-2xl"
-                                    >
-                                        ✨
-                                    </motion.span>
-                                </div>
-                                <div className="absolute top-4 left-4">
-                                    <motion.span
-                                        animate={{
-                                            opacity: [0.4, 1, 0.4],
-                                            scale: [0.8, 1.2, 0.8],
-                                        }}
-                                        transition={{
-                                            duration: 1.5,
-                                            repeat: Infinity,
-                                            delay: 0.5,
-                                        }}
-                                        className="text-2xl"
-                                    >
-                                        ✨
-                                    </motion.span>
-                                </div>
-                            </div>
+            {/* Action Button */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full py-4 rounded-full font-label-md text-sm sm:text-base font-bold text-white bg-gradient-to-r from-[#f751a1] to-[#6f00be] shadow-lg shadow-[#f751a1]/30 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 z-10 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[20px]">
+                photo_library
+              </span>
+              <span>View Gallery</span>
+            </button>
 
-                            {/* Progress bar */}
-                            <motion.div
-                                initial={{ scaleX: 0 }}
-                                animate={{ scaleX: 1 }}
-                                transition={{ duration: 2.5, ease: "linear" }}
-                                className="h-1 bg-gradient-to-r from-pink-500 to-rose-500 origin-left"
-                            />
-                        </motion.div>
-                    </motion.div>
-                </>
-            )}
-        </AnimatePresence>
-    );
+            {/* Close indicator for mobile */}
+            <div className="w-12 h-1 bg-white/20 rounded-full mt-6 z-10 md:hidden" />
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
 };
 
 export default UnlockSuccessModal;
