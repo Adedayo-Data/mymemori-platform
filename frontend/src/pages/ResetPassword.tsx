@@ -12,7 +12,7 @@ const ResetPassword = () => {
   // Read token from URL query param if present
   const urlToken = searchParams.get("token") || searchParams.get("code") || "";
 
-  const [token, setToken] = useState(urlToken);
+  const [token, _setToken] = useState(urlToken);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
