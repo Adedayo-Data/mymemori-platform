@@ -16,7 +16,7 @@ const Profile: React.FC = () => {
 
   // State
   const [userName, setUserName] = useState<string>(user?.fullName || "Alex Rivera");
-  const [userBio, setUserBio] = useState<string>("Capturing the magic of every moment. ✨");
+  const [userBio, _setUserBio] = useState<string>("Capturing the magic of every moment. ✨");
   const [eventsCount, setEventsCount] = useState<number>(12);
   const [memoriesCount, setMemoriesCount] = useState<number>(850);
   const [storiesCount] = useState<number>(42);
@@ -76,21 +76,6 @@ const Profile: React.FC = () => {
     setIsEditProfileOpen(false);
   };
 
-  // Handle Share Profile
-  const handleShareProfile = () => {
-    if (navigator.share) {
-      navigator
-        .share({
-          title: `${userName}'s MyMemori Profile`,
-          text: `Check out ${userName}'s visual archive on MyMemori!`,
-          url: window.location.href,
-        })
-        .catch(() => {});
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success("Profile link copied to clipboard!");
-    }
-  };
 
   // Handle Logout
   const handleConfirmLogout = () => {
