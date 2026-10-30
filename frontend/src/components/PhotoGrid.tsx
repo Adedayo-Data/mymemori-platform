@@ -121,29 +121,28 @@ const PhotoGrid = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onLike(photo.photoId);
                 }}
-                className={`action-icon relative w-10 h-10 rounded-full bg-[#1e1d24]/90 hover:bg-[#2c2b36] border border-white/15 backdrop-blur-md flex items-center justify-center shadow-md active:scale-90 transition-all cursor-pointer ${
+                className={`action-icon relative w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#1e1d24]/90 hover:bg-[#2c2b36] border border-white/15 backdrop-blur-md flex items-center justify-center shadow-md active:scale-90 transition-all cursor-pointer ${
                   isLiked ? "text-[#ffb0cd]" : "text-white"
                 }`}
                 title="Like"
               >
                 <span
-                  className="material-symbols-outlined"
+                  className="material-symbols-outlined text-[16px] sm:text-[20px]"
                   style={{
                     fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0",
-                    fontSize: "20px",
                   }}
                 >
                   favorite
                 </span>
                 {photo.reactionCount !== undefined && photo.reactionCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 bg-[#ffb0cd] text-[#40000d] rounded-full text-[9px] font-bold flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] sm:min-w-[16px] sm:h-[16px] px-1 bg-[#ffb0cd] text-[#40000d] rounded-full text-[8px] sm:text-[9px] font-bold flex items-center justify-center">
                     {photo.reactionCount > 99 ? "99+" : photo.reactionCount}
                   </span>
                 )}
@@ -155,15 +154,15 @@ const PhotoGrid = ({
                   e.stopPropagation();
                   onDownload(photo.photoId);
                 }}
-                className="action-icon relative w-10 h-10 rounded-full bg-[#1e1d24]/90 hover:bg-[#2c2b36] border border-white/15 backdrop-blur-md flex items-center justify-center text-white shadow-md active:scale-90 transition-all cursor-pointer"
+                className="action-icon relative w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#1e1d24]/90 hover:bg-[#2c2b36] border border-white/15 backdrop-blur-md flex items-center justify-center text-white shadow-md active:scale-90 transition-all cursor-pointer"
                 title={isDownloadLocked ? "Sign up to download (Free limit reached)" : "Download"}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
+                <span className="material-symbols-outlined text-[16px] sm:text-[20px]">
                   download
                 </span>
                 {isDownloadLocked && (
                   <div className="absolute -top-1 -right-1 bg-[#f751a1] rounded-full p-0.5">
-                    <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                     </svg>
                   </div>
@@ -177,10 +176,10 @@ const PhotoGrid = ({
                     e.stopPropagation();
                     onDelete(photo.photoId);
                   }}
-                  className="action-icon w-10 h-10 rounded-full bg-[#1e1d24]/90 hover:bg-red-500/25 border border-white/15 backdrop-blur-md flex items-center justify-center text-white hover:text-[#ffb4ab] hover:border-red-500/30 shadow-md active:scale-90 transition-all cursor-pointer"
+                  className="action-icon w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#1e1d24]/90 hover:bg-red-500/25 border border-white/15 backdrop-blur-md flex items-center justify-center text-white hover:text-[#ffb4ab] hover:border-red-500/30 shadow-md active:scale-90 transition-all cursor-pointer"
                   title="Delete photo"
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
+                  <span className="material-symbols-outlined text-[16px] sm:text-[20px]">
                     delete
                   </span>
                 </button>
@@ -322,7 +321,7 @@ const PhotoCard = ({
       </AnimatePresence>
 
       {/* Floating Action Buttons at bottom - Centered Circular Row */}
-      <div className="overlay-actions absolute inset-x-0 bottom-0 p-3 sm:p-4 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex justify-center items-center gap-3 sm:gap-4 z-20">
+      <div className="overlay-actions absolute inset-x-0 bottom-0 p-2 sm:p-4 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex justify-center items-center gap-2 sm:gap-4 z-20">
         {/* Like button */}
         <button
           type="button"
@@ -330,22 +329,21 @@ const PhotoCard = ({
             e.stopPropagation();
             onLike(photo.photoId);
           }}
-          className={`action-icon relative w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#1e1d24]/90 hover:bg-[#2c2b36] border border-white/15 backdrop-blur-md flex items-center justify-center shadow-lg active:scale-90 transition-all cursor-pointer ${
+          className={`action-icon relative w-8.5 h-8.5 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full bg-[#1e1d24]/90 hover:bg-[#2c2b36] border border-white/15 backdrop-blur-md flex items-center justify-center shadow-lg active:scale-90 transition-all cursor-pointer ${
             isLiked ? "text-[#ffb0cd]" : "text-white hover:text-[#ffb0cd]"
           }`}
           title="Like"
         >
           <span
-            className="material-symbols-outlined"
+            className="material-symbols-outlined text-[17px] sm:text-[20px] md:text-[22px]"
             style={{
               fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0",
-              fontSize: "22px",
             }}
           >
             favorite
           </span>
           {photo.reactionCount !== undefined && photo.reactionCount > 0 && (
-            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#ffb0cd] text-[#40000d] rounded-full text-[10px] font-bold flex items-center justify-center shadow-sm">
+            <span className="absolute -top-1 -right-1 min-w-[15px] h-[15px] sm:min-w-[18px] sm:h-[18px] px-1 bg-[#ffb0cd] text-[#40000d] rounded-full text-[8px] sm:text-[10px] font-bold flex items-center justify-center shadow-sm">
               {photo.reactionCount > 99 ? "99+" : photo.reactionCount}
             </span>
           )}
@@ -355,15 +353,15 @@ const PhotoCard = ({
         <button
           type="button"
           onClick={handleDownloadClick}
-          className="action-icon relative w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#1e1d24]/90 hover:bg-[#2c2b36] border border-white/15 backdrop-blur-md flex items-center justify-center text-white hover:text-primary shadow-lg active:scale-90 transition-all cursor-pointer"
+          className="action-icon relative w-8.5 h-8.5 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full bg-[#1e1d24]/90 hover:bg-[#2c2b36] border border-white/15 backdrop-blur-md flex items-center justify-center text-white hover:text-primary shadow-lg active:scale-90 transition-all cursor-pointer"
           title={isDownloadLocked ? "Sign up to download (Free limit reached)" : "Download"}
         >
-          <span className="material-symbols-outlined" style={{ fontSize: "22px" }}>
+          <span className="material-symbols-outlined text-[17px] sm:text-[20px] md:text-[22px]">
             download
           </span>
           {isDownloadLocked && (
             <div className="absolute -top-1 -right-1 bg-[#f751a1] rounded-full p-0.5 shadow-sm">
-              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
                   d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
@@ -382,10 +380,10 @@ const PhotoCard = ({
               e.stopPropagation();
               onDelete(photo.photoId);
             }}
-            className="action-icon w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#1e1d24]/90 hover:bg-red-500/25 border border-white/15 backdrop-blur-md flex items-center justify-center text-white hover:text-[#ffb4ab] hover:border-red-500/30 shadow-lg active:scale-90 transition-all cursor-pointer"
+            className="action-icon w-8.5 h-8.5 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full bg-[#1e1d24]/90 hover:bg-red-500/25 border border-white/15 backdrop-blur-md flex items-center justify-center text-white hover:text-[#ffb4ab] hover:border-red-500/30 shadow-lg active:scale-90 transition-all cursor-pointer"
             title="Delete photo"
           >
-            <span className="material-symbols-outlined" style={{ fontSize: "22px" }}>
+            <span className="material-symbols-outlined text-[17px] sm:text-[20px] md:text-[22px]">
               delete
             </span>
           </button>

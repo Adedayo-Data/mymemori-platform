@@ -243,13 +243,13 @@ const Auth = () => {
               className={`absolute inset-0 flex flex-col gap-[16px] transition-opacity duration-300 ${activeTab === 'signup' ? 'opacity-100 pointer-events-auto z-10' : 'opacity-0 pointer-events-none z-0'}`}
             >
               <div className="flex flex-col gap-[4px] auth-input-glow group rounded-t-md bg-white/5 border-b border-white/20 transition-all duration-300 p-[8px] px-[16px]">
-                <label className="font-hanken font-semibold text-[10px] uppercase text-on-surface-variant/70 tracking-wider">Username</label>
+                <label className="font-hanken font-semibold text-[10px] uppercase text-on-surface-variant/70 tracking-wider">Fullname</label>
                 <input
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleInputChange}
                   className="bg-transparent border-none p-0 focus:ring-0 font-hanken text-base text-on-surface placeholder-on-surface-variant/30 w-full outline-none"
-                  placeholder="@neon_wanderer"
+                  placeholder="neon wanderer"
                   type="text"
                 />
               </div>
@@ -310,7 +310,7 @@ const Auth = () => {
 
           {/* Social Buttons */}
           <div className="flex gap-4 justify-center">
-            <button
+            {/* <button
               type="button"
               disabled
               title="Coming soon"
@@ -318,7 +318,7 @@ const Auth = () => {
               className="w-12 h-12 rounded-full auth-glass-panel border border-white/10 flex items-center justify-center opacity-40 cursor-not-allowed opacity-50"
             >
               <span className="material-symbols-outlined text-on-surface">fingerprint</span>
-            </button>
+            </button> */}
             <button
               type="button"
               disabled
