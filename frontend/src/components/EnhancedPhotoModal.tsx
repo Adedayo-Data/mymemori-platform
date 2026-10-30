@@ -1,7 +1,7 @@
-import { Download, Heart, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Download, Heart, X, ChevronLeft, ChevronRight, Play, Pause } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGesture } from "@use-gesture/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { optimizeCloudinaryUrl } from "../utils/cloudinaryOptimizer";
 
 interface Photo {
@@ -35,17 +35,69 @@ const EnhancedPhotoModal = ({
 }: EnhancedPhotoModalProps) => {
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isSlideshow, setIsSlideshow] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastTimeRef = useRef<number>(Date.now());
+  const SLIDESHOW_DURATION = 5000;
+
   const currentPhoto = photos[currentIndex];
+
 
   // Generate optimized URL for modal view (larger size)
   const optimizedModalUrl = currentPhoto.imageUrl
     ? optimizeCloudinaryUrl(currentPhoto.imageUrl, { context: 'modal' })
     : currentPhoto.imageUrl;
 
-  // Reset zoom when photo changes
+  // Background preloader for upcoming images (eliminates stutter during slideshow)
+  useEffect(() => {
+    if (photos.length <= 1) return;
+    const nextIdx1 = (currentIndex + 1) % photos.length;
+    const nextIdx2 = (currentIndex + 2) % photos.length;
+    [nextIdx1, nextIdx2].forEach((idx) => {
+      if (photos[idx]?.imageUrl) {
+        const img = new Image();
+        img.src = optimizeCloudinaryUrl(photos[idx].imageUrl, { context: "modal" });
+      }
+    });
+  }, [currentIndex, photos]);
+
+  // Slideshow auto-advance loop (Optimized 50ms tick, zero UI freeze)
+  useEffect(() => {
+    if (!isSlideshow || photos.length <= 1) {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      return;
+    }
+
+    lastTimeRef.current = Date.now();
+    const tickInterval = 50;
+
+    progressIntervalRef.current = setInterval(() => {
+      const now = Date.now();
+      const elapsed = now - lastTimeRef.current;
+      const nextProgress = Math.min((elapsed / SLIDESHOW_DURATION) * 100, 100);
+
+      setProgress(nextProgress);
+
+      if (elapsed >= SLIDESHOW_DURATION) {
+        lastTimeRef.current = now;
+        setProgress(0);
+        onNavigate((currentIndex + 1) % photos.length);
+      }
+    }, tickInterval);
+
+    return () => {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    };
+  }, [isSlideshow, currentIndex, photos.length, onNavigate]);
+
+  // Reset zoom & timer when photo changes
   useEffect(() => {
     setScale(1);
     setPosition({ x: 0, y: 0 });
+    setProgress(0);
+    lastTimeRef.current = Date.now();
   }, [currentIndex]);
 
   // Keyboard navigation
@@ -73,6 +125,12 @@ const EnhancedPhotoModal = ({
         case "D":
           onDownload(currentPhoto.photoId);
           break;
+        case "p":
+        case "P":
+        case "s":
+        case "S":
+          setIsSlideshow((prev) => !prev);
+          break;
       }
     };
 
@@ -84,6 +142,9 @@ const EnhancedPhotoModal = ({
   const bind = useGesture(
     {
       onDrag: ({ offset: [x, y], direction: [xDir], cancel, canceled }) => {
+        // Pause slideshow on manual gesture interaction
+        if (isSlideshow) setIsSlideshow(false);
+
         // If zoomed in, allow panning
         if (scale > 1) {
           setPosition({ x, y });
@@ -105,6 +166,7 @@ const EnhancedPhotoModal = ({
         }
       },
       onPinch: ({ offset: [d] }) => {
+        if (isSlideshow) setIsSlideshow(false);
         const newScale = Math.max(1, Math.min(3, 1 + d / 200));
         setScale(newScale);
         if (newScale === 1) {
@@ -124,6 +186,7 @@ const EnhancedPhotoModal = ({
   );
 
   const handleDoubleClick = () => {
+    if (isSlideshow) setIsSlideshow(false);
     if (scale === 1) {
       setScale(2);
     } else {
@@ -138,22 +201,59 @@ const EnhancedPhotoModal = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex items-center justify-center"
+        className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex items-center justify-center select-none"
         onClick={onClose}
       >
+        {/* Slideshow Progress Bar */}
+        {isSlideshow && (
+          <div className="absolute top-0 inset-x-0 h-1 bg-white/10 z-50">
+            <div
+              className="h-full bg-gradient-to-r from-[#ff4f93] via-[#ff75ab] to-[#ddb7ff] shadow-[0_0_10px_rgba(255,79,147,0.8)]"
+              style={{ width: `${progress}%`, transition: "width 50ms linear" }}
+            />
+          </div>
+        )}
+
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-50 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+          className="absolute top-4 right-4 z-50 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors cursor-pointer"
+          title="Close (Esc)"
         >
           <X className="w-6 h-6 text-white" />
         </button>
 
-        {/* Photo Counter */}
-        <div className="absolute top-4 left-4 z-50 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full">
-          <p className="text-white text-sm font-medium">
-            {currentIndex + 1} / {photos.length}
-          </p>
+        {/* Photo Counter & Slideshow Toggle */}
+        <div className="absolute top-4 left-4 z-50 flex items-center gap-2">
+          <div className="px-4 py-2 bg-white/10 backdrop-blur-md rounded-full">
+            <p className="text-white text-sm font-medium">
+              {currentIndex + 1} / {photos.length}
+            </p>
+          </div>
+
+          {photos.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsSlideshow((prev) => !prev);
+              }}
+              className={`px-3 py-2 rounded-full flex items-center gap-1.5 backdrop-blur-md transition-all text-xs font-semibold cursor-pointer ${
+                isSlideshow
+                  ? "bg-[#ff4f93] text-white shadow-[0_0_12px_rgba(255,79,147,0.5)]"
+                  : "bg-white/10 hover:bg-white/20 text-white"
+              }`}
+              title={isSlideshow ? "Pause Slideshow (P)" : "Play Slideshow (P)"}
+            >
+              {isSlideshow ? (
+                <Pause className="w-3.5 h-3.5 fill-current" />
+              ) : (
+                <Play className="w-3.5 h-3.5 fill-current" />
+              )}
+              <span className="hidden sm:inline">
+                {isSlideshow ? "Pause" : "Slideshow"}
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Navigation Arrows */}
