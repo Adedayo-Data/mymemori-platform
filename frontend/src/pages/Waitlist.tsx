@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiCheckCircle, FiArrowRight, FiCamera, FiBook, FiZap } from 'react-icons/fi';
 
@@ -140,9 +141,10 @@ const Waitlist = () => {
         <div className="text-xl font-black bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent opacity-50">
           MyMemori
         </div>
-        <div className="flex gap-8 text-[10px] font-mono text-gray-600 uppercase tracking-widest">
-          <span>Privacy</span>
-          <span>Terms</span>
+        <div className="flex gap-8 text-[10px] font-mono text-gray-500 uppercase tracking-widest">
+          <Link to="/privacy" className="hover:text-pink-400 transition-colors">Privacy</Link>
+          <Link to="/terms" className="hover:text-pink-400 transition-colors">Terms</Link>
+          <Link to="/contact" className="hover:text-pink-400 transition-colors">Contact</Link>
           <span>&copy; {new Date().getFullYear()}</span>
         </div>
       </footer>

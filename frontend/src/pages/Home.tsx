@@ -1,6 +1,7 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "../components/ui/Button";
+import { LegalModal, type LegalTab } from "../components/LegalModal";
 
 /* ─── Data ─────────────────────────────────────────────────── */
 
@@ -23,8 +24,8 @@ const GALLERY_IMAGES = [
 ];
 
 const STATS = [
-  { value: "100+", label: "Photos Shared" },
-  { value: "2+", label: "Events Hosted" },
+  { value: "550+", label: "Photos Shared" },
+  { value: "5+", label: "Events Hosted" },
   { value: "30+", label: "Memory Makers" },
 ];
 
@@ -56,6 +57,13 @@ const HOW_IT_WORKS = [
 
 const Home = () => {
   const navigate = useNavigate();
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<LegalTab>("privacy");
+
+  const handleOpenLegalModal = (tab: LegalTab) => {
+    setLegalModalTab(tab);
+    setLegalModalOpen(true);
+  };
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -368,13 +376,33 @@ const Home = () => {
                 <div key={heading}>
                   <p className="font-hanken text-[10px] font-semibold tracking-widest uppercase text-white/35 mb-4">{heading}</p>
                   <ul className="list-none flex flex-col gap-2.5">
-                    {links.map(l => (
-                      <li key={l}>
-                        <a href="#" className="inline-block hover:text-[#ffb0cd] hover:translate-x-1 transition-all font-hanken text-[14px] text-white/45 font-normal">
-                          {l}
-                        </a>
-                      </li>
-                    ))}
+                    {links.map((l) => {
+                      const isLegal = heading === "Legal";
+                      const legalTabMap: Record<string, LegalTab> = {
+                        Privacy: "privacy",
+                        Terms: "terms",
+                        Contact: "contact",
+                      };
+                      const tab = legalTabMap[l];
+                      const href = tab ? `/${tab}` : "#";
+
+                      return (
+                        <li key={l}>
+                          <Link
+                            to={href}
+                            onClick={(e) => {
+                              if (isLegal && tab) {
+                                e.preventDefault();
+                                handleOpenLegalModal(tab);
+                              }
+                            }}
+                            className="inline-block hover:text-[#ffb0cd] hover:translate-x-1 transition-all font-hanken text-[14px] text-white/45 font-normal cursor-pointer"
+                          >
+                            {l}
+                          </Link>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               ))}
@@ -393,6 +421,13 @@ const Home = () => {
             </div>
           </div>
         </footer>
+
+        {/* Reusable Legal & Contact Modal */}
+        <LegalModal
+          isOpen={legalModalOpen}
+          onClose={() => setLegalModalOpen(false)}
+          initialTab={legalModalTab}
+        />
       </div>
     </div>
   );

@@ -68,22 +68,22 @@ const BentoPictureCard: React.FC<BentoPictureCardProps> = ({ picture, onDelete }
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
           {/* Action Overlay */}
-          <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-center justify-center gap-3 z-10 opacity-90 group-hover:opacity-100 transition-opacity">
+          <div className="absolute inset-x-0 bottom-0 p-2 sm:p-3 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-center justify-center gap-2 sm:gap-3 z-10 opacity-90 group-hover:opacity-100 transition-opacity">
             <button
               onClick={handleDownload}
               title="Download photo"
-              className="w-10 h-10 bg-[#1e1d24]/90 hover:bg-[#2c2b36] backdrop-blur-md rounded-full text-white border border-white/15 shadow-lg flex items-center justify-center active:scale-90 transition-all cursor-pointer"
+              className="w-8 h-8 sm:w-10 sm:h-10 bg-[#1e1d24]/90 hover:bg-[#2c2b36] backdrop-blur-md rounded-full text-white border border-white/15 shadow-lg flex items-center justify-center active:scale-90 transition-all cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[20px]">download</span>
+              <span className="material-symbols-outlined text-[16px] sm:text-[20px]">download</span>
             </button>
             {onDelete && (
               <button
                 onClick={handleDeleteClick}
                 disabled={isDeleting}
                 title="Delete photo"
-                className="w-10 h-10 bg-[#1e1d24]/90 hover:bg-red-500/25 backdrop-blur-md rounded-full text-white hover:text-[#ffb4ab] border border-white/15 hover:border-red-500/30 shadow-lg flex items-center justify-center active:scale-90 transition-all cursor-pointer disabled:opacity-50"
+                className="w-8 h-8 sm:w-10 sm:h-10 bg-[#1e1d24]/90 hover:bg-red-500/25 backdrop-blur-md rounded-full text-white hover:text-[#ffb4ab] border border-white/15 hover:border-red-500/30 shadow-lg flex items-center justify-center active:scale-90 transition-all cursor-pointer disabled:opacity-50"
               >
-                <span className="material-symbols-outlined text-[20px]">delete</span>
+                <span className="material-symbols-outlined text-[16px] sm:text-[20px]">delete</span>
               </button>
             )}
           </div>

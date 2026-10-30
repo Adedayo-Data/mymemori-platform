@@ -10,9 +10,30 @@ const ShareDetails = () => {
   const navigate = useNavigate();
   const { qrCodeValue, eventData, eventSlug } = location.state || {};
 
-  const targetSlug = eventSlug || eventData?.eventSlug || "event";
+  const targetSlug =
+    eventSlug ||
+    eventData?.eventSlug ||
+    eventData?.slug ||
+    "";
+
+  // Use server-provided visit URL or dynamic location origin
   const eventLink =
-    qrCodeValue || `${window.location.origin}/visit/${targetSlug}/`;
+    qrCodeValue ||
+    eventData?.visitUrl ||
+    eventData?.shareUrl ||
+    eventData?.eventLink ||
+    (targetSlug ? `${window.location.origin}/visit/${targetSlug}/` : `${window.location.origin}/visit/event/`);
+
+  // Dynamically derive the host and clean path from the server URL or current domain
+  const displayUrl = (() => {
+    try {
+      const parsed = new URL(eventLink);
+      const cleanPath = parsed.pathname.replace(/\/+$/, "");
+      return `${parsed.host}${cleanPath}`;
+    } catch {
+      return targetSlug ? `${window.location.host}/visit/${targetSlug}` : `${window.location.host}/visit/event`;
+    }
+  })();
   const eventTitle =
     eventData?.eventName || eventData?.title || "My Memory";
   const eventLocation = eventData?.location || "";
@@ -164,7 +185,7 @@ const ShareDetails = () => {
                       Scan or Visit
                     </span>
                     <p className="text-sm text-[#ffb0cd] font-bold tracking-tight">
-                      mymemori.com/visit/{targetSlug}
+                      {displayUrl}
                     </p>
                   </div>
                 </div>
@@ -184,7 +205,7 @@ const ShareDetails = () => {
               {eventTitle}
             </h2>
             <p className="text-sm text-gray-500 font-mono mt-1">
-              mymemori.com/visit/{targetSlug}
+              {displayUrl}
             </p>
           </div>
         </div>
