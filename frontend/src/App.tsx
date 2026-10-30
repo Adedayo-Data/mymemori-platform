@@ -7,6 +7,7 @@ import { PictureProvider } from "./context/pictureContext";
 import { ProtectedRoute } from "./hooks/ProtectedRoute";
 import Layout from "./components/Layout";
 import Loader from "./components/ui/Loader";
+import { Analytics } from "@vercel/analytics/react";
 
 // Lazy load all page components
 const Landing = lazy(() => import("./pages/Landing"));
@@ -64,6 +65,7 @@ const App = () => {
           </PictureProvider>
         </EventProvider>
       </AuthProvider>
+      <Analytics />
     </>
   );
 };
