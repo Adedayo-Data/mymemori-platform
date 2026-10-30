@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { QRCodeSVG } from "qrcode.react";
 import { optimizeCloudinaryUrl } from "../utils/cloudinaryOptimizer";
 
 interface Photo {
@@ -17,7 +18,9 @@ interface SlideshowModalProps {
   photos: Photo[];
   initialIndex?: number;
   eventTitle?: string;
+  eventSlug?: string;
   onLike?: (photoId: string) => void;
+  onRefreshPhotos?: () => void | Promise<void>;
 }
 
 const SPEED_OPTIONS = [
@@ -32,7 +35,9 @@ export const SlideshowModal: React.FC<SlideshowModalProps> = ({
   photos,
   initialIndex = 0,
   eventTitle = "Event Gallery",
+  eventSlug,
   onLike,
+  onRefreshPhotos,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -41,6 +46,9 @@ export const SlideshowModal: React.FC<SlideshowModalProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [currentSrc, setCurrentSrc] = useState<string>("");
+  const [isQrExpanded, setIsQrExpanded] = useState(true);
+  const [isWakeLocked, setIsWakeLocked] = useState(false);
+  const [newPhotoNotice, setNewPhotoNotice] = useState<string | null>(null);
 
   const currentPhoto = photos[currentIndex];
 
@@ -48,6 +56,89 @@ export const SlideshowModal: React.FC<SlideshowModalProps> = ({
   const hideControlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastTimeRef = useRef<number>(Date.now());
+  const wakeLockSentinelRef = useRef<any>(null);
+  const isFirstOpenRef = useRef(true);
+  const prevPhotosCountRef = useRef(photos.length);
+
+  // Upload URL for guest camera QR scanning
+  const uploadUrl = eventSlug
+    ? `${window.location.origin}/visit/${eventSlug}`
+    : window.location.href;
+
+  // Screen Wake Lock API: Prevent laptop/device from dimming or sleeping during projection
+  const requestWakeLock = useCallback(async () => {
+    if (typeof navigator !== "undefined" && "wakeLock" in navigator && document.visibilityState === "visible") {
+      try {
+        wakeLockSentinelRef.current = await (navigator as any).wakeLock.request("screen");
+        setIsWakeLocked(true);
+        wakeLockSentinelRef.current.addEventListener("release", () => {
+          setIsWakeLocked(false);
+        });
+      } catch (err) {
+        console.warn("Screen Wake Lock could not be acquired:", err);
+        setIsWakeLocked(false);
+      }
+    }
+  }, []);
+
+  const releaseWakeLock = useCallback(async () => {
+    if (wakeLockSentinelRef.current) {
+      try {
+        await wakeLockSentinelRef.current.release();
+      } catch {
+        // ignore
+      }
+      wakeLockSentinelRef.current = null;
+      setIsWakeLocked(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      requestWakeLock();
+
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === "visible" && isOpen) {
+          requestWakeLock();
+        }
+      };
+
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      return () => {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+        releaseWakeLock();
+      };
+    } else {
+      releaseWakeLock();
+    }
+  }, [isOpen, requestWakeLock, releaseWakeLock]);
+
+  // Live polling for newly uploaded images during presentation
+  useEffect(() => {
+    if (!isOpen || !onRefreshPhotos) return;
+
+    // Refresh every 12 seconds silently in the background
+    const pollInterval = setInterval(() => {
+      onRefreshPhotos();
+    }, 12000);
+
+    return () => clearInterval(pollInterval);
+  }, [isOpen, onRefreshPhotos]);
+
+  // Detect when new photos arrive from guest uploads and show animated toast
+  useEffect(() => {
+    if (isOpen && photos.length > prevPhotosCountRef.current && prevPhotosCountRef.current > 0) {
+      const addedCount = photos.length - prevPhotosCountRef.current;
+      setNewPhotoNotice(
+        addedCount === 1 ? "✨ New photo added to the event!" : `✨ ${addedCount} new photos added to the event!`
+      );
+      const timer = setTimeout(() => {
+        setNewPhotoNotice(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+    prevPhotosCountRef.current = photos.length;
+  }, [photos.length, isOpen]);
 
   // Whenever currentPhoto changes, start immediately with cached thumbnail, then upgrade to full-res seamlessly
   useEffect(() => {
@@ -69,15 +160,25 @@ export const SlideshowModal: React.FC<SlideshowModalProps> = ({
     };
   }, [currentPhoto]);
 
-  // Reset index when opening
+  // Reset index ONLY when opening initially; newly uploaded photos do NOT reset the slideshow position!
   useEffect(() => {
     if (isOpen) {
-      setCurrentIndex(initialIndex >= 0 && initialIndex < photos.length ? initialIndex : 0);
-      setIsPlaying(true);
-      setProgress(0);
-      lastTimeRef.current = Date.now();
+      if (isFirstOpenRef.current) {
+        setCurrentIndex(initialIndex >= 0 && initialIndex < photos.length ? initialIndex : 0);
+        setIsPlaying(true);
+        setProgress(0);
+        lastTimeRef.current = Date.now();
+        isFirstOpenRef.current = false;
+      } else {
+        // If photos changed and currentIndex is beyond bounds, clamp safely
+        if (currentIndex >= photos.length && photos.length > 0) {
+          setCurrentIndex(photos.length - 1);
+        }
+      }
+    } else {
+      isFirstOpenRef.current = true;
     }
-  }, [isOpen, initialIndex, photos.length]);
+  }, [isOpen, initialIndex, photos.length, currentIndex]);
 
   // Next photo handler
   const handleNext = useCallback(() => {
@@ -267,6 +368,17 @@ export const SlideshowModal: React.FC<SlideshowModalProps> = ({
 
           {/* Quick Actions (Speed, Fullscreen, Close) */}
           <div className="flex items-center gap-2">
+            {/* Screen Wake Lock Status */}
+            {isWakeLocked && (
+              <div
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-medium"
+                title="Device screen wake lock is active. The display will not sleep or dim."
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Screen Awake</span>
+              </div>
+            )}
+
             {/* Speed Selector */}
             <div className="flex items-center bg-white/10 rounded-full p-0.5 border border-white/10 backdrop-blur-md">
               {SPEED_OPTIONS.map((speed) => (
@@ -432,6 +544,78 @@ export const SlideshowModal: React.FC<SlideshowModalProps> = ({
             </>
           )}
         </div>
+
+        {/* Live New Photo Toast Notification */}
+        <AnimatePresence>
+          {newPhotoNotice && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -15, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+              className="absolute top-20 z-40 px-4 py-2 rounded-full bg-gradient-to-r from-[#ff4f93] to-[#c0299b] text-white text-xs sm:text-sm font-semibold shadow-[0_0_25px_rgba(255,79,147,0.5)] border border-white/20 flex items-center gap-2 pointer-events-none"
+            >
+              <span className="material-symbols-outlined text-[18px]">add_photo_alternate</span>
+              <span>{newPhotoNotice}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* "Scan to add photos" Floating Corner Card */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ delay: 0.25, duration: 0.35 }}
+          className="absolute bottom-5 right-5 sm:bottom-7 sm:right-7 z-40 flex flex-col items-end pointer-events-auto select-none"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {isQrExpanded ? (
+            <div className="relative p-3.5 sm:p-4 rounded-2xl bg-black/85 border border-white/20 backdrop-blur-xl shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col items-center gap-2.5 max-w-[175px] sm:max-w-[205px] text-center transition-all">
+              {/* Minimize Button */}
+              <button
+                onClick={() => setIsQrExpanded(false)}
+                className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-[#1e1e24] border border-white/25 text-white/70 hover:text-white flex items-center justify-center text-xs shadow-md cursor-pointer hover:bg-white/20 transition-colors"
+                title="Minimize QR code"
+              >
+                <span className="material-symbols-outlined text-[14px]">remove</span>
+              </button>
+
+              {/* Header */}
+              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-white tracking-wide">
+                <span className="w-2 h-2 rounded-full bg-[#ff4f93] animate-pulse" />
+                <span>Scan to add photos</span>
+              </div>
+
+              {/* High-contrast QR Container */}
+              <div className="bg-white p-2.5 rounded-xl shadow-inner flex items-center justify-center">
+                <QRCodeSVG
+                  value={uploadUrl}
+                  size={110}
+                  level="M"
+                  bgColor="#ffffff"
+                  fgColor="#000000"
+                />
+              </div>
+
+              {/* Prompt / Instructions */}
+              <p className="text-[10px] text-white/70 leading-tight">
+                Aim your phone camera to add your photos live
+              </p>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsQrExpanded(true)}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-black/85 border border-white/25 backdrop-blur-xl text-white text-xs font-semibold shadow-[0_4px_20px_rgba(0,0,0,0.6)] hover:border-[#ff4f93] transition-all cursor-pointer group"
+              title="Show QR Code"
+            >
+              <span className="w-2 h-2 rounded-full bg-[#ff4f93] animate-pulse" />
+              <span className="material-symbols-outlined text-[16px] text-[#ff4f93] group-hover:scale-110 transition-transform">
+                qr_code_2
+              </span>
+              <span>Add photos</span>
+            </button>
+          )}
+        </motion.div>
       </motion.div>
     </AnimatePresence>
   );

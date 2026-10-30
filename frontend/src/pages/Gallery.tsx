@@ -821,7 +821,15 @@ const Gallery = () => {
         photos={sortedPhotos}
         initialIndex={0}
         eventTitle={eventData.title}
+        eventSlug={currentEventSlug || searchParams.get("event") || location.state?.slug || ""}
         onLike={(photoId) => handleLike(photoId)}
+        onRefreshPhotos={async () => {
+          const slug = currentEventSlug || searchParams.get("event") || location.state?.slug;
+          if (slug) {
+            const context = await getSessionContext(searchParams, location.state);
+            await fetchDefaultImages(slug, context?.sessionId, true);
+          }
+        }}
       />
     </div>
   );

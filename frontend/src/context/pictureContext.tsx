@@ -37,7 +37,7 @@ interface PictureContextType {
   uploadedPhotos: UploadedPhoto[];
   addUploadedPhoto: (photo: UploadedPhoto) => void;
   loading: boolean;
-  fetchDefaultImages: (eventSlug: string, existingSessionId?: string) => Promise<void>;
+  fetchDefaultImages: (eventSlug: string, existingSessionId?: string, silent?: boolean) => Promise<void>;
   defaultImages: UploadedPhoto[];
   getAllPhoto: () => Promise<UploadedPhoto[]>;
   getLikedPhotos: () => Promise<UploadedPhoto[]>;
@@ -119,9 +119,9 @@ export const PictureProvider = ({
     []
   );
 
-  const fetchDefaultImages = useCallback(async (eventSlug: string, existingSessionId?: string) => {
+  const fetchDefaultImages = useCallback(async (eventSlug: string, existingSessionId?: string, silent: boolean = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       // Check if user is authenticated - if so, don't create a session
       const hasAuthToken = !!localStorage.getItem("authToken");
       let sessionId: string | undefined = existingSessionId;
@@ -152,6 +152,11 @@ export const PictureProvider = ({
       }
       return response.data;
     } catch (error: unknown) {
+      if (silent) {
+        console.warn("Silent photo fetch failed:", error);
+        return;
+      }
+
       const axiosError = error as {
         response?: {
           status: number;
@@ -199,7 +204,7 @@ export const PictureProvider = ({
 
       throw error;
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 

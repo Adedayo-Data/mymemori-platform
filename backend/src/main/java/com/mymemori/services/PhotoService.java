@@ -118,11 +118,12 @@ public class PhotoService {
             log.info("Marked session {} as attendee for visiting event {}", sessionId, event.getId());
         }
 
-        // Check if user/session has uploaded photos for this event
+        // Check if user/session has uploaded photos for this event (or is the event host)
         boolean hasUploaded = false;
         if (user != null) {
-            hasUploaded = photoRepo.hasUserUploadedForEvent(event.getId(), user.getId());
-            log.info("User {} has uploaded: {}", user.getEmail(), hasUploaded);
+            boolean isHost = event.getHostId() != null && event.getHostId().equals(user.getId());
+            hasUploaded = isHost || photoRepo.hasUserUploadedForEvent(event.getId(), user.getId());
+            log.info("User {} has uploaded (or isHost={}): {}", user.getEmail(), isHost, hasUploaded);
         } else if (sessionId != null) {
             hasUploaded = photoRepo.hasSessionUploadedForEvent(event.getId(), sessionId);
             log.info("Session {} has uploaded: {}", sessionId, hasUploaded);
