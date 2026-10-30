@@ -89,9 +89,7 @@ const FloatingUploadIndicator = ({ onTaskComplete }: FloatingUploadIndicatorProp
   }
 
   const { tasks, isProcessing, completedTasks, failedTasks, totalTasks } = queueStatus;
-  const overallProgress = totalTasks > 0 
-    ? Math.round((completedTasks / totalTasks) * 100) 
-    : 0;
+
 
   return (
     <AnimatePresence>
@@ -144,22 +142,6 @@ const FloatingUploadIndicator = ({ onTaskComplete }: FloatingUploadIndicatorProp
               </div>
             </div>
 
-            {/* Overall Progress Bar */}
-            <div className="mt-3">
-              <div className="h-2 bg-white/30 rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-white"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${overallProgress}%` }}
-                  transition={{ duration: 0.3 }}
-                />
-              </div>
-              <div className="flex justify-between text-xs mt-1 text-white/90">
-                <span>{completedTasks} completed</span>
-                <span>{overallProgress}%</span>
-              </div>
-            </div>
-
             {/* Stay-on-page Alert Banner */}
             {isProcessing && (
               <div className="mt-3 px-3 py-2 bg-black/25 backdrop-blur-sm rounded-lg flex items-center gap-2 text-xs text-white border border-white/20">
@@ -181,12 +163,6 @@ const FloatingUploadIndicator = ({ onTaskComplete }: FloatingUploadIndicatorProp
                 className="overflow-hidden"
               >
                 <div className="max-h-80 overflow-y-auto p-4 space-y-3">
-                  {isProcessing && (
-                    <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200/80 flex items-center gap-2 text-xs text-amber-900">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                      <span>Please keep this screen open until all photos finish uploading.</span>
-                    </div>
-                  )}
                   {tasks.map((task) => (
                     <UploadTaskItem
                       key={task.id}

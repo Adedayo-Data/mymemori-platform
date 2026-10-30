@@ -1,6 +1,5 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Info } from "lucide-react";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -93,7 +92,6 @@ const UploadModal: React.FC<UploadModalProps> = ({
                   </span>
                 </button>
               </div>
-
               {/* Cancel Button */}
               <button
                 type="button"
@@ -104,14 +102,6 @@ const UploadModal: React.FC<UploadModalProps> = ({
               </button>
             </div>
           </motion.div>
-
-          {/* Stay on page tip */}
-          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 border border-amber-200/70 text-amber-900 text-xs mt-2">
-            <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <p className="leading-relaxed">
-              <strong className="font-semibold text-amber-950">Tip:</strong> Please keep this page open while photos upload so your upload isn&apos;t interrupted.
-            </p>
-          </div>
         </div>
       )}
     </AnimatePresence>
