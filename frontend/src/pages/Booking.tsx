@@ -68,7 +68,11 @@ const Booking = () => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [createdSlug, setCreatedSlug] = useState<string>("");
+  const [serverVisitUrl, setServerVisitUrl] = useState<string>("");
   const [showShareModal, setShowShareModal] = useState(false);
+
+  // Today's date in YYYY-MM-DD local format to block past dates
+  const todayStr = new Date().toLocaleDateString("en-CA");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -183,6 +187,10 @@ const Booking = () => {
         toast.error("Please choose a date for this event");
         return;
       }
+      if (date < todayStr) {
+        toast.error("Event date cannot be in the past. Please select today or a future date.");
+        return;
+      }
       setCurrentStep(3);
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
@@ -205,6 +213,10 @@ const Booking = () => {
   // Submit and Publish the Story
   const handlePublishEvent = async () => {
     try {
+      if (date && date < todayStr) {
+        toast.error("Event date cannot be in the past.");
+        return;
+      }
       const combinedDate = date ? `${date}T${time || "00:00"}` : new Date().toISOString();
       const eventData = {
         eventName: eventName.trim(),
@@ -215,8 +227,26 @@ const Booking = () => {
       };
 
       const response = await createEvent(eventData);
-      const generatedSlug = response?.eventSlug || "event";
+      const generatedSlug =
+        response?.eventSlug ||
+        (response as any)?.slug ||
+        (response as any)?.data?.eventSlug ||
+        (response as any)?.data?.slug ||
+        (response as any)?.event?.eventSlug ||
+        (response as any)?.event?.slug ||
+        "";
+
+      const returnedVisitUrl =
+        (response as any)?.visitUrl ||
+        (response as any)?.shareUrl ||
+        (response as any)?.eventLink ||
+        (response as any)?.data?.visitUrl ||
+        (response as any)?.data?.shareUrl ||
+        (response as any)?.event?.visitUrl ||
+        "";
+
       setCreatedSlug(generatedSlug);
+      setServerVisitUrl(returnedVisitUrl);
 
       // Clear draft
       localStorage.removeItem("mymemori_booking_draft");
@@ -247,7 +277,9 @@ const Booking = () => {
     }
   };
 
-  const eventVisitUrl = `${window.location.origin}/visit/${createdSlug || "event"}/`;
+  const eventVisitUrl =
+    serverVisitUrl ||
+    (createdSlug ? `${window.location.origin}/visit/${createdSlug}/` : `${window.location.origin}/visit/event/`);
 
   // Fallback placeholder image when none is uploaded
   const defaultPlaceholderCover = "/images/event-placeholder.jpg";
@@ -467,19 +499,28 @@ const Booking = () => {
                       The Hour
                     </label>
                     <p className="text-sm text-[#debec8] mb-4">
-                      When did the stars align for this moment?
+                      When will this celebration take place?
                     </p>
 
                     <div className="space-y-4 mt-2">
                       <div>
                         <label htmlFor="date" className="block text-xs uppercase tracking-wider text-[#debec8]/70 mb-1">
-                          Date
+                          Date <span className="text-[#ffb0cd]">*</span>
                         </label>
                         <input
                           id="date"
                           type="date"
+                          min={todayStr}
                           value={date}
-                          onChange={(e) => setDate(e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val && val < todayStr) {
+                              toast.error("Event date cannot be in the past. Please select today or a future date.");
+                              setDate("");
+                              return;
+                            }
+                            setDate(val);
+                          }}
                           className="w-full bg-[#35343a]/70 border-b-2 border-[#574048] focus:border-[#ffb0cd] text-[#e4e1e9] text-base px-4 py-3 rounded-t-lg outline-none transition-all [color-scheme:dark]"
                         />
                       </div>
@@ -503,7 +544,7 @@ const Booking = () => {
                   <div className="mt-6 p-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2.5">
                     <span className="material-symbols-outlined text-[#ffb0cd] text-[18px]">event</span>
                     <span className="text-xs text-[#e4e1e9]">
-                      {date ? displayDateText() : "Select a date to anchor this memory"}
+                      {date ? displayDateText() : "Select today or an upcoming date to anchor this memory"}
                     </span>
                   </div>
                 </div>
@@ -515,9 +556,9 @@ const Booking = () => {
               <button
                 type="button"
                 onClick={goToNextStep}
-                disabled={!location.trim() || !date}
+                disabled={!location.trim() || !date || date < todayStr}
                 className={`pointer-events-auto w-full md:w-auto md:min-w-[320px] h-14 bg-gradient-to-r from-[#f751a1] to-[#6f00be] hover:from-[#ffb0cd] hover:to-[#ddb7ff] text-white font-semibold py-4 px-8 rounded-full shadow-[0_0_20px_rgba(111,0,190,0.4)] transition-all duration-300 flex items-center justify-center gap-2 group ${
-                  location.trim() && date
+                  location.trim() && date && date >= todayStr
                     ? "opacity-100 cursor-pointer active:scale-95"
                     : "opacity-40 cursor-not-allowed"
                 }`}

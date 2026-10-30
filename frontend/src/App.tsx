@@ -1,5 +1,5 @@
 import { Route, Routes, Navigate } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { AuthProvider } from "./context/authContext";
 import { Toaster } from "react-hot-toast";
 import { EventProvider } from "./context/eventContext";
@@ -24,8 +24,28 @@ const Gallery = lazy(() => import("./pages/Gallery"));
 const Profile = lazy(() => import("./pages/Profile"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Contact = lazy(() => import("./pages/Contact"));
+
+// Splash screen delay duration in milliseconds (set between 10-15 seconds)
+const SPLASH_DELAY_MS = 8000;
 
 const App = () => {
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, SPLASH_DELAY_MS);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (showSplash) {
+    return <Loader />;
+  }
+
   return (
     <>
       <AuthProvider>
@@ -51,6 +71,9 @@ const App = () => {
                   <Route path="/join" element={<JoinCelebration />} />
                   <Route path="/join-celebration" element={<Navigate to="/join" replace />} />
                   <Route path="/gallery" element={<Gallery />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/contact" element={<Contact />} />
                   <Route
                     path="/profile"
                     element={

@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 
 import PhotoGrid from "../components/PhotoGrid";
 import EnhancedPhotoModal from "../components/EnhancedPhotoModal";
+import SlideshowModal from "../components/SlideshowModal";
 import UploadModal from "../components/UploadModal";
 import PhotoSkeleton from "../components/PhotoSkeleton";
 import FloatingUploadIndicator from "../components/FloatingUploadIndicator";
@@ -44,6 +45,7 @@ const Gallery = () => {
   const [showUploadModal, setShowUploadModal] = useState<boolean>(false);
   const [showSignupPrompt, setShowSignupPrompt] = useState<boolean>(false);
   const [showMoreMenu, setShowMoreMenu] = useState<boolean>(false);
+  const [showSlideshow, setShowSlideshow] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [eventData, setEventData] = useState<{ title: string; date: string }>({
     title: "Gallery",
@@ -500,6 +502,20 @@ const Gallery = () => {
                 <span>Share Event</span>
               </button>
 
+              {sortedPhotos.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSlideshow(true);
+                    setShowMoreMenu(false);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-[#e4e1e9] hover:bg-white/10 flex items-center gap-2.5 transition-colors cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-[#ff75ab]">slideshow</span>
+                  <span>Start Slideshow</span>
+                </button>
+              )}
+
               {currentEventSlug && (
                 <button
                   type="button"
@@ -578,6 +594,19 @@ const Gallery = () => {
 
           {/* Right side info & view switcher on desktop */}
           <div className="hidden md:flex items-center gap-3 shrink-0">
+            {/* Slideshow Presentation Mode Button */}
+            {sortedPhotos.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowSlideshow(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-[#ff4f93]/15 to-[#c0299b]/20 hover:from-[#ff4f93]/30 hover:to-[#c0299b]/35 text-[#ffb0cd] hover:text-white border border-[#ff4f93]/30 transition-all active:scale-95 cursor-pointer shadow-[0_0_15px_rgba(255,79,147,0.15)]"
+                title="Fullscreen Slideshow (Projector / TV Mode)"
+              >
+                <span className="material-symbols-outlined text-[16px]">slideshow</span>
+                <span>Slideshow</span>
+              </button>
+            )}
+
             {/* Photo Counter Pill */}
             <div className="flex items-center gap-2 text-xs font-semibold text-[#debec8] bg-white/[0.04] px-3.5 py-1.5 rounded-full border border-white/10 backdrop-blur-md">
               <span className="w-1.5 h-1.5 rounded-full bg-[#ffb0cd] animate-pulse" />
@@ -783,6 +812,16 @@ const Gallery = () => {
       <UnlockSuccessModal
         isVisible={showSuccessModal}
         onClose={() => setShowSuccessModal(false)}
+      />
+
+      {/* Slideshow Modal (Fullscreen Projector & TV Presentation Mode) */}
+      <SlideshowModal
+        isOpen={showSlideshow}
+        onClose={() => setShowSlideshow(false)}
+        photos={sortedPhotos}
+        initialIndex={0}
+        eventTitle={eventData.title}
+        onLike={(photoId) => handleLike(photoId)}
       />
     </div>
   );
