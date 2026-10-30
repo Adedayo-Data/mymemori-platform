@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import {
   validateSignupForm,
@@ -11,48 +11,42 @@ import type {
   SignupFormData,
   SigninFormData,
 } from "../utils/validation";
-import { motion, AnimatePresence } from "framer-motion";
-import { Mail, Lock, User, Eye, EyeOff, Loader2, ArrowRight } from "lucide-react";
 import toast from "react-hot-toast";
+import { Button } from "../components/ui/Button";
+import { FcGoogle } from "react-icons/fc";
 
 const Auth = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const mode = searchParams.get("mode");
   const returnTo = searchParams.get("returnTo");
 
-  const [activeTab, setActiveTab] = useState < "signup" | "login" > (
+  const [activeTab, setActiveTab] = useState<"signup" | "login">(
     mode === "signup" ? "signup" : "login"
   );
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     password: "",
-    confirmPassword: "",
   });
-  const [errors, setErrors] = useState < ValidationErrors > ({
+  const [errors, setErrors] = useState<ValidationErrors>({
     fullName: "",
     email: "",
     password: "",
-    confirmPassword: "",
   });
 
   const navigate = useNavigate();
-  const { loading, signup, signin, isAuthenticated, isLoading } = useAuth();
+  const { signup, signin, isAuthenticated, isLoading } = useAuth();
 
-  // Redirect authenticated users away from auth page
   useEffect(() => {
-    // Wait for auth check to complete
     if (isLoading) return;
-
-    // If user is already authenticated, redirect them
     if (isAuthenticated) {
       const redirectUrl = returnTo && returnTo !== "/" ? returnTo : "/home";
       navigate(redirectUrl, { replace: true });
     }
   }, [isAuthenticated, isLoading, returnTo, navigate]);
 
-  // Update active tab when mode changes
   useEffect(() => {
     if (mode === "signup" || mode === "login") {
       setActiveTab(mode);
@@ -63,25 +57,15 @@ const Auth = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Real-time validation for password field
     if (name === 'password' && activeTab === 'signup') {
       let passwordError = '';
-
-      if (!value) {
-        passwordError = 'Password is required';
-      } else if (value.length < 8) {
-        passwordError = 'Password must be at least 8 characters';
-      } else if (!/(?=.*[a-z])/.test(value)) {
-        passwordError = 'Password must contain at least one lowercase letter';
-      } else if (!/(?=.*[A-Z])/.test(value)) {
-        passwordError = 'Password must contain at least one uppercase letter';
-      } else if (!/(?=.*\d)/.test(value)) {
-        passwordError = 'Password must contain at least one number';
-      }
-
+      if (!value) passwordError = 'Password is required';
+      else if (value.length < 8) passwordError = 'Password must be at least 8 characters';
+      else if (!/(?=.*[a-z])/.test(value)) passwordError = 'Password must contain at least one lowercase letter';
+      else if (!/(?=.*[A-Z])/.test(value)) passwordError = 'Password must contain at least one uppercase letter';
+      else if (!/(?=.*\d)/.test(value)) passwordError = 'Password must contain at least one number';
       setErrors((prev) => ({ ...prev, password: passwordError }));
     } else {
-      // Clear error when user types in other fields
       if (errors[name as keyof ValidationErrors]) {
         setErrors((prev) => ({ ...prev, [name]: '' }));
       }
@@ -90,21 +74,20 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     let validationErrors: ValidationErrors;
-
     if (activeTab === "signup") {
       validationErrors = validateSignupForm(formData as SignupFormData);
     } else {
       validationErrors = validateSigninForm(formData as SigninFormData);
     }
-
     setErrors(validationErrors);
-
     if (hasValidationErrors(validationErrors)) {
+      const firstError = Object.values(validationErrors).find((err) => !!err);
+      if (firstError) toast.error(firstError);
       return;
     }
 
+    setIsSubmitting(true);
     try {
       if (activeTab === "signup") {
         await signup({
@@ -120,246 +103,234 @@ const Auth = () => {
         });
         toast.success("Welcome back!");
       }
-
-      // Redirect logic: 
-      // - If returnTo is provided and NOT the landing page, use it
-      // - Otherwise, redirect to /home (authenticated users should see /home, not /)
       const redirectUrl = returnTo && returnTo !== "/" ? returnTo : "/home";
       navigate(redirectUrl);
-    } catch {
-      // Error is handled by the context/toast
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const toggleTab = (tab: "signup" | "login") => {
     setActiveTab(tab);
-    setErrors({ fullName: "", email: "", password: "", confirmPassword: "" });
-    setFormData({ fullName: "", email: "", password: "", confirmPassword: "" });
+    setErrors({ fullName: "", email: "", password: "" });
+    setFormData({ fullName: "", email: "", password: "" });
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("mode", tab);
+        return next;
+      },
+      { replace: true }
+    );
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-rose-50 via-orange-50 to-pink-50 flex items-center justify-center p-4 overflow-hidden relative">
-      {/* Background Decorations */}
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-      <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-yellow-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-      <div className="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+    <div className="antialiased h-screen flex flex-col relative overflow-hidden bg-background text-on-surface">
+      {/* Ambient Glows */}
+      <div className="auth-ambient-glow top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
+      <div
+        className="auth-ambient-glow bottom-0 right-0 translate-x-1/3 translate-y-1/3"
+        style={{ background: "radial-gradient(circle, rgba(221, 183, 255, 0.15) 0%, rgba(221, 183, 255, 0) 70%)" }}
+      ></div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-md p-8 border border-white/50 relative z-10"
-      >
-        {/* Header */}
-        <div className="text-center mb-8">
-          <motion.h1
-            layoutId="title"
-            className="text-4xl font-black bg-linear-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent mb-2 tracking-tight"
-          >
-            MyMemori
-          </motion.h1>
-          <motion.p
-            key={activeTab}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-sm text-gray-600 font-medium"
-          >
-            {activeTab === "signup"
-              ? "Create an account to capture your moments"
-              : "Welcome back! Sign in to view your memories"}
-          </motion.p>
-        </div>
+      {/* Main Content Canvas */}
+      <main className="flex-grow pt-[35px] px-[20px] flex flex-col items-center justify-center relative z-10 w-full max-w-[500px] mx-auto">
+        <div className="w-full rounded-xl p-[24px] flex flex-col gap-[24px] relative overflow-hidden md:bg-white/5 md:backdrop-blur-xl md:border md:border-white/10">
+          {/* Header */}
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-8 bg-gray-100/50 p-1.5 rounded-xl backdrop-blur-sm">
-          {(["signup", "login"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => toggleTab(tab)}
-              className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition-all relative ${activeTab === tab
-                ? "text-pink-600 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-                }`}
-            >
-              {activeTab === tab && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute inset-0 bg-white rounded-lg"
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                />
-              )}
-              <span className="relative z-10">
-                {tab === "signup" ? "Sign Up" : "Log In"}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, x: activeTab === "signup" ? -20 : 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: activeTab === "signup" ? 20 : -20 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-5"
-            >
-              {activeTab === "signup" && (
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">
-                    Full Name
-                  </label>
-                  <div className="relative group">
-                    <User className="absolute left-4 top-3.5 w-5 h-5 text-gray-400 group-focus-within:text-pink-500 transition-colors" />
-                    <input
-                      type="text"
-                      name="fullName"
-                      value={formData.fullName}
-                      onChange={handleInputChange}
-                      placeholder="John Doe"
-                      className={`w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/20 transition-all bg-gray-50/50 focus:bg-white ${errors.fullName ? "border-rose-300 focus:border-rose-500" : "border-gray-200 focus:border-pink-500"
-                        }`}
-                    />
-                  </div>
-                  {errors.fullName && (
-                    <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="text-xs text-rose-600 mt-1.5 font-medium ml-1">
-                      {errors.fullName}
-                    </motion.p>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">
-                  Email Address
-                </label>
-                <div className="relative group">
-                  <Mail className="absolute left-4 top-3.5 w-5 h-5 text-gray-400 group-focus-within:text-pink-500 transition-colors" />
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="you@example.com"
-                    className={`w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/20 transition-all bg-gray-50/50 focus:bg-white ${errors.email ? "border-rose-300 focus:border-rose-500" : "border-gray-200 focus:border-pink-500"
-                      }`}
-                  />
-                </div>
-                {errors.email && (
-                  <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="text-xs text-rose-600 mt-1.5 font-medium ml-1">
-                    {errors.email}
-                  </motion.p>
-                )}
+          <div className="text-center space-y-sm">
+            <div className="flex items-center gap-2 justify-center mb-3">
+              <div className="w-9 h-9 rounded-xl overflow-hidden glass-2-0 p-1 flex items-center justify-center">
+                <img alt="MyMemori" className="w-full h-full object-contain mix-blend-screen" src="logo.png" />
               </div>
+            </div>  
+            <h1 className="font-sora text-xl font-semibold text-on-surface transition-all duration-300">
+              {activeTab === 'login' ? 'Welcome Back' : 'First Time Here?'}
+            </h1>
+            <p className="font-hanken text-base text-on-surface-variant transition-all duration-300">
+              {activeTab === 'login'
+                ? 'Good to see you again! Sign in to continue.'
+                : 'Create an account to start capturing your moments.'}
+            </p>
+          </div>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">
-                  Password
-                </label>
-                <div className="relative group">
-                  <Lock className="absolute left-4 top-3.5 w-5 h-5 text-gray-400 group-focus-within:text-pink-500 transition-colors" />
+          {/* Custom Tabs */}
+          <div className="relative flex w-full p-1 bg-surface-container-low rounded-lg">
+            <div
+              className="absolute top-1 left-1 bottom-1 w-[calc(50%-4px)] bg-white/10 rounded-md shadow-sm auth-tab-indicator border border-white/5"
+              style={{ transform: activeTab === 'login' ? 'translateX(0)' : 'translateX(100%)' }}
+            ></div>
+            <button
+              className={`relative z-10 flex-1 py-2 font-hanken text-sm font-semibold transition-colors ${activeTab === 'login' ? 'text-primary' : 'text-on-surface-variant'}`}
+              onClick={() => toggleTab('login')}
+            >
+              Login
+            </button>
+            <button
+              className={`relative z-10 flex-1 py-2 font-hanken text-sm font-semibold transition-colors ${activeTab === 'signup' ? 'text-primary' : 'text-on-surface-variant'}`}
+              onClick={() => toggleTab('signup')}
+            >
+              Sign Up
+            </button>
+          </div>
+
+          {/* Forms Container */}
+          <div className="relative w-full h-[320px]">
+            {/* Login Form */}
+            <form
+              onSubmit={handleSubmit}
+              className={`absolute inset-0 flex flex-col gap-[16px] transition-opacity duration-300 ${activeTab === 'login' ? 'opacity-100 pointer-events-auto z-10' : 'opacity-0 pointer-events-none z-0'}`}
+            >
+              <div className="flex flex-col gap-[4px] auth-input-glow group rounded-t-md bg-white/5 border-b border-white/20 transition-all duration-300 p-[8px] px-[16px]">
+                <label className="font-hanken font-semibold text-[10px] uppercase text-on-surface-variant/70 tracking-wider">Email</label>
+                <input
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="bg-transparent border-none p-0 focus:ring-0 font-hanken text-base text-on-surface placeholder-on-surface-variant/30 w-full outline-none"
+                  placeholder="phantom@night.city"
+                  type="email"
+                />
+              </div>
+              <div className="flex flex-col gap-[4px] auth-input-glow group rounded-t-md bg-white/5 border-b border-white/20 transition-all duration-300 p-[8px] px-[16px] relative">
+                <label className="font-hanken font-semibold text-[10px] uppercase text-on-surface-variant/70 tracking-wider">Password</label>
+                <div className="flex justify-between items-center w-full">
                   <input
-                    type={showPassword ? "text" : "password"}
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
+                    className="bg-transparent border-none p-0 focus:ring-0 font-hanken text-base text-on-surface placeholder-on-surface-variant/30 w-full outline-none"
                     placeholder="••••••••"
-                    className={`w-full pl-12 pr-12 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/20 transition-all bg-gray-50/50 focus:bg-white ${errors.password ? "border-rose-300 focus:border-rose-500" : "border-gray-200 focus:border-pink-500"
-                      }`}
+                    type={showPassword ? "text" : "password"}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
+                    className="text-on-surface-variant hover:text-primary transition-colors p-1"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    <span className="material-symbols-outlined text-sm">{showPassword ? "visibility" : "visibility_off"}</span>
                   </button>
                 </div>
-                {errors.password && (
-                  <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="text-xs text-rose-600 mt-1.5 font-medium ml-1">
-                    {errors.password}
-                  </motion.p>
-                )}
+              </div>
+              <div className="flex justify-end mt-[-8px]">
+                <Link
+                  to="/forgot-password"
+                  className="font-hanken text-sm font-semibold text-secondary hover:text-primary transition-colors text-xs"
+                >
+                  Forgot password?
+                </Link>
               </div>
 
-              {activeTab === "signup" && (
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">
-                    Confirm Password
-                  </label>
-                  <div className="relative group">
-                    <Lock className="absolute left-4 top-3.5 w-5 h-5 text-gray-400 group-focus-within:text-pink-500 transition-colors" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleInputChange}
-                      placeholder="••••••••"
-                      className={`w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/20 transition-all bg-gray-50/50 focus:bg-white ${errors.confirmPassword ? "border-rose-300 focus:border-rose-500" : "border-gray-200 focus:border-pink-500"
-                        }`}
-                    />
-                  </div>
-                  {errors.confirmPassword && (
-                    <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="text-xs text-rose-600 mt-1.5 font-medium ml-1">
-                      {errors.confirmPassword}
-                    </motion.p>
-                  )}
-                </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
+              {errors.email && <span className="text-red-400 text-xs">{errors.email}</span>}
+              {errors.password && <span className="text-red-400 text-xs">{errors.password}</span>}
 
-          {activeTab === "login" && (
-            <div className="text-right">
-              <button
-                type="button"
-                className="text-xs text-pink-600 hover:text-pink-700 font-bold transition-colors"
+              <Button 
+                type="submit"
+                variant="gradient"
+                size="xl"
+                fullWidth
+                disabled={isSubmitting}
               >
-                Forgot Password?
-              </button>
-            </div>
-          )}
+                {isSubmitting ? "Signing in..." : "Welcome Back"}
+              </Button>
+            </form>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-linear-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 disabled:from-pink-300 disabled:to-rose-300 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg hover:shadow-pink-500/30 hover:scale-[1.02] active:scale-[0.98] disabled:shadow-none disabled:scale-100 flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Processing...</span>
-              </>
-            ) : (
-              <>
-                <span>{activeTab === "signup" ? "Create Account" : "Log In"}</span>
-                <ArrowRight className="w-5 h-5" />
-              </>
-            )}
-          </button>
-        </form>
+            {/* Sign Up Form */}
+            <form
+              onSubmit={handleSubmit}
+              className={`absolute inset-0 flex flex-col gap-[16px] transition-opacity duration-300 ${activeTab === 'signup' ? 'opacity-100 pointer-events-auto z-10' : 'opacity-0 pointer-events-none z-0'}`}
+            >
+              <div className="flex flex-col gap-[4px] auth-input-glow group rounded-t-md bg-white/5 border-b border-white/20 transition-all duration-300 p-[8px] px-[16px]">
+                <label className="font-hanken font-semibold text-[10px] uppercase text-on-surface-variant/70 tracking-wider">Username</label>
+                <input
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleInputChange}
+                  className="bg-transparent border-none p-0 focus:ring-0 font-hanken text-base text-on-surface placeholder-on-surface-variant/30 w-full outline-none"
+                  placeholder="@neon_wanderer"
+                  type="text"
+                />
+              </div>
+              <div className="flex flex-col gap-[4px] auth-input-glow group rounded-t-md bg-white/5 border-b border-white/20 transition-all duration-300 p-[8px] px-[16px]">
+                <label className="font-hanken font-semibold text-[10px] uppercase text-on-surface-variant/70 tracking-wider">Email</label>
+                <input
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="bg-transparent border-none p-0 focus:ring-0 font-hanken text-base text-on-surface placeholder-on-surface-variant/30 w-full outline-none"
+                  placeholder="you@domain.com"
+                  type="email"
+                />
+              </div>
+              <div className="flex flex-col gap-[4px] auth-input-glow group rounded-t-md bg-white/5 border-b border-white/20 transition-all duration-300 p-[8px] px-[16px] relative">
+                <label className="font-hanken font-semibold text-[10px] uppercase text-on-surface-variant/70 tracking-wider">Password</label>
+                <div className="flex justify-between items-center w-full">
+                  <input
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    className="bg-transparent border-none p-0 focus:ring-0 font-hanken text-base text-on-surface placeholder-on-surface-variant/30 w-full outline-none"
+                    placeholder="••••••••"
+                    type={showPassword ? "text" : "password"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-on-surface-variant hover:text-primary transition-colors p-1"
+                  >
+                    <span className="material-symbols-outlined text-sm">{showPassword ? "visibility" : "visibility_off"}</span>
+                  </button>
+                </div>
+              </div>
 
-        {/* Divider */}
-        {/* <div className="flex items-center gap-3 my-8">
-          <div className="flex-1 h-px bg-gray-200"></div>
-          <span className="text-xs text-gray-400 font-semibold uppercase tracking-wide">
-            or continue with
-          </span>
-          <div className="flex-1 h-px bg-gray-200"></div>
-        </div> */}
+              {errors.fullName && <span className="text-red-400 text-xs">{errors.fullName}</span>}
+              {errors.email && <span className="text-red-400 text-xs">{errors.email}</span>}
+              {errors.password && <span className="text-red-400 text-xs">{errors.password}</span>}
 
-        {/* Google Sign In - Commented out until OAuth is implemented */}
-        {/* <button
-          onClick={handleGoogleSignIn}
-          className="w-full flex items-center justify-center gap-3 py-3 border border-gray-200 rounded-xl hover:border-pink-200 hover:bg-pink-50/50 transition-all font-bold text-gray-700 group bg-white"
-        >
-          <img src="/assets/google.svg" alt="Google" className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          <span>Google</span>
-        </button> */}
-      </motion.div>
+              <Button 
+                type="submit"
+                variant="gradient"
+                size="xl"
+                fullWidth
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Creating account..." : "First Time? Get Started"}
+              </Button>
+            </form>
+          </div>
+
+          {/* Social Auth Divider */}
+          <div className="flex items-center w-full gap-4 opacity-60">
+            <div className="h-px bg-white/20 flex-grow"></div>
+            <span className="font-hanken text-sm font-semibold text-on-surface-variant text-xs">or continue with</span>
+            <div className="h-px bg-white/20 flex-grow"></div>
+          </div>
+
+          {/* Social Buttons */}
+          <div className="flex gap-4 justify-center">
+            <button
+              type="button"
+              disabled
+              title="Coming soon"
+              aria-label="Passkey or Biometric sign in (Coming soon)"
+              className="w-12 h-12 rounded-full auth-glass-panel border border-white/10 flex items-center justify-center opacity-40 cursor-not-allowed opacity-50"
+            >
+              <span className="material-symbols-outlined text-on-surface">fingerprint</span>
+            </button>
+            <button
+              type="button"
+              disabled
+              title="Coming soon"
+              aria-label="Continue with Google (Coming soon)"
+              className="w-12 h-12 rounded-full auth-glass-panel border border-white/10 flex items-center justify-center opacity-40 cursor-not-allowed opacity-50"
+            >
+              <FcGoogle className="w-5 h-5 text-xl grayscale-[40%]" />
+            </button>
+          </div>
+        </div>
+      </main>
     </div>
   );
 };

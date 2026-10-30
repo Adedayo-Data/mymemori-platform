@@ -9,7 +9,7 @@ export interface SignupFormData {
   fullName: string;
   email: string;
   password: string;
-  confirmPassword: string;
+  confirmPassword?: string;
 }
 
 export interface SigninFormData {
@@ -22,11 +22,11 @@ export const validateSignupForm = (
 ): ValidationErrors => {
   const errors: ValidationErrors = {};
 
-  if (!formData.fullName.trim()) {
+  if (!formData.fullName || !formData.fullName.trim()) {
     errors.fullName = "Full name is required";
   }
 
-  if (!formData.email.trim()) {
+  if (!formData.email || !formData.email.trim()) {
     errors.email = "Email is required";
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
     errors.email = "Please enter a valid email address";
@@ -44,10 +44,12 @@ export const validateSignupForm = (
     errors.password = "Password must contain at least one number";
   }
 
-  if (!formData.confirmPassword) {
-    errors.confirmPassword = "Confirm password is required";
-  } else if (formData.password !== formData.confirmPassword) {
-    errors.confirmPassword = "Passwords do not match";
+  if (formData.confirmPassword !== undefined) {
+    if (!formData.confirmPassword) {
+      errors.confirmPassword = "Confirm password is required";
+    } else if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = "Passwords do not match";
+    }
   }
 
   return errors;
@@ -58,7 +60,7 @@ export const validateSigninForm = (
 ): ValidationErrors => {
   const errors: ValidationErrors = {};
 
-  if (!formData.email.trim()) {
+  if (!formData.email || !formData.email.trim()) {
     errors.email = "Email is required";
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
     errors.email = "Please enter a valid email address";
@@ -72,5 +74,5 @@ export const validateSigninForm = (
 };
 
 export const hasValidationErrors = (errors: ValidationErrors): boolean => {
-  return Object.values(errors).some((error) => error !== "");
+  return Object.values(errors).some((error) => !!error && error.trim() !== "");
 };

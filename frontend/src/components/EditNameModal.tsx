@@ -1,5 +1,4 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Edit2, X } from "lucide-react";
 import React, { useState, useEffect } from "react";
 
 interface EditNameModalProps {
@@ -11,14 +10,14 @@ interface EditNameModalProps {
   isLoading?: boolean;
 }
 
-const EditNameModal = ({
+const EditNameModal: React.FC<EditNameModalProps> = ({
   isOpen,
   onClose,
   onSave,
   initialName,
-  title = "Edit Name",
+  title = "Edit Event Title",
   isLoading = false,
-}: EditNameModalProps) => {
+}) => {
   const [name, setName] = useState(initialName);
 
   useEffect(() => {
@@ -39,85 +38,99 @@ const EditNameModal = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
-          {/* Backdrop */}
+        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4">
+          {/* Modal Overlay Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/75 backdrop-blur-xl z-[100]"
+          />
+
+          {/* Modal Container */}
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 50, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full md:w-[480px] bg-[#1a1921]/95 md:bg-white/10 backdrop-blur-2xl border-t border-white/25 md:border border-white/20 rounded-t-3xl md:rounded-3xl shadow-2xl p-6 pb-10 md:pb-6 pb-safe z-[110] relative overflow-hidden"
           >
-            {/* Modal Container */}
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative"
-            >
-              {/* Close button */}
+            {/* Subtle inner glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-[#ffb0cd]/20 blur-3xl rounded-full pointer-events-none" />
+
+            {/* Mobile Handle */}
+            <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6 md:hidden" />
+
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6 relative z-10">
+              <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+                {title}
+              </h2>
               <button
+                type="button"
                 onClick={onClose}
-                disabled={isLoading}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[#debec8] hover:bg-white/10 hover:text-[#ffb0cd] transition-colors active:scale-90 cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
+            </div>
 
-              <div className="p-6">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4 bg-purple-100 text-purple-600">
-                  <Edit2 className="w-6 h-6" />
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="relative z-10">
+              {/* Input Area */}
+              <div className="mb-6 relative group">
+                <label
+                  htmlFor="event-title"
+                  className="text-sm font-semibold text-[#debec8] block mb-2"
+                >
+                  Event Name
+                </label>
+                <div className="relative">
+                  <input
+                    id="event-title"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Enter event name"
+                    autoFocus
+                    disabled={isLoading}
+                    className="w-full bg-white/5 border-0 border-b border-white/20 rounded-t-lg px-4 py-3 text-lg font-semibold text-white focus:ring-0 focus:border-[#ffb0cd] focus:bg-white/10 transition-colors placeholder-[#debec8]/40 outline-none"
+                  />
+                  {/* Focus indicator line */}
+                  <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-[#ffb0cd] transition-all duration-300 group-focus-within:w-full" />
                 </div>
-                
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  {title}
-                </h3>
-                
-                <form onSubmit={handleSubmit} className="mt-4">
-                  <div className="mb-6">
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                      Event Name
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none transition-all"
-                      placeholder="Enter new name"
-                      autoFocus
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  <div className="flex gap-3 w-full">
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      disabled={isLoading}
-                      className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isLoading || !name.trim()}
-                      className="flex-1 py-2.5 px-4 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center"
-                    >
-                      {isLoading ? (
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        "Save Changes"
-                      )}
-                    </button>
-                  </div>
-                </form>
+                <p className="text-xs text-[#debec8]/60 mt-2">
+                  This title will be visible to all attendees.
+                </p>
               </div>
-            </motion.div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col-reverse md:flex-row justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isLoading}
+                  className="w-full md:w-auto px-6 py-3 rounded-xl bg-white/10 border border-white/20 text-sm font-semibold text-white hover:bg-white/20 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading || !name.trim()}
+                  className="w-full md:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-[#f751a1] to-[#6f00be] text-white font-semibold text-sm shadow-lg hover:opacity-95 active:scale-95 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    "Save Changes"
+                  )}
+                </button>
+              </div>
+            </form>
           </motion.div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );

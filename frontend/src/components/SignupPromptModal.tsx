@@ -1,256 +1,145 @@
+import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Lock, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface SignupPromptModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    returnTo?: string;
+  isOpen: boolean;
+  onClose: () => void;
+  returnTo?: string;
 }
 
-const SignupPromptModal = ({ isOpen, onClose, returnTo }: SignupPromptModalProps) => {
-    const navigate = useNavigate();
+const SignupPromptModal: React.FC<SignupPromptModalProps> = ({
+  isOpen,
+  onClose,
+  returnTo,
+}) => {
+  const navigate = useNavigate();
 
-    const handleSignup = () => {
-        const signupUrl = returnTo
-            ? `/auth?mode=signup&returnTo=${encodeURIComponent(returnTo)}`
-            : `/auth?mode=signup`;
-        navigate(signupUrl);
-    };
+  const handleSignup = () => {
+    const signupUrl = returnTo
+      ? `/auth?mode=signup&returnTo=${encodeURIComponent(returnTo)}`
+      : `/auth?mode=signup`;
+    navigate(signupUrl);
+  };
 
-    return (
-        <AnimatePresence>
-            {isOpen && (
-                <>
-                    {/* Backdrop */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={onClose}
-                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                    >
-                        {/* Modal Container */}
-                        <motion.div
-                            initial={{ scale: 0.8, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.8, opacity: 0, y: 20 }}
-                            transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="relative w-full max-w-md"
-                        >
-                            {/* Download Icon "Sticker" - Positioned to overlap paper edge */}
-                            <motion.div
-                                initial={{ scale: 0, rotate: -180 }}
-                                animate={{ scale: 1, rotate: 0 }}
-                                exit={{ scale: 0, rotate: 180 }}
-                                transition={{
-                                    type: "spring",
-                                    delay: 0.2,
-                                    duration: 0.6,
-                                    bounce: 0.5
-                                }}
-                                className="absolute -top-8 left-1/2 -translate-x-1/2 z-20"
-                            >
-                                {/* Floating animation for the sticker */}
-                                <motion.div
-                                    animate={{
-                                        y: [0, -10, 0],
-                                        rotate: [0, 5, -5, 0],
-                                    }}
-                                    transition={{
-                                        duration: 4,
-                                        repeat: Infinity,
-                                        ease: "easeInOut",
-                                    }}
-                                    className="relative"
-                                >
-                                    {/* Glow effect */}
-                                    <div className="absolute inset-0 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full blur-2xl opacity-60 animate-pulse" />
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-[#0a0a0f]/80 backdrop-blur-xl"
+          />
 
-                                    {/* Main icon circle */}
-                                    <div className="relative bg-gradient-to-br from-pink-500 to-purple-600 rounded-full p-5 shadow-2xl border-4 border-white">
-                                        <motion.div
-                                            animate={{
-                                                y: [0, -3, 0],
-                                            }}
-                                            transition={{
-                                                duration: 1.5,
-                                                repeat: Infinity,
-                                                ease: "easeInOut",
-                                            }}
-                                        >
-                                            <Download className="w-8 h-8 text-white" strokeWidth={2.5} />
-                                        </motion.div>
+          {/* Modal Container */}
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-[32px] p-7 sm:p-9 flex flex-col items-center text-center relative overflow-hidden z-10 bg-[#191920]/95 border border-white/15 backdrop-blur-2xl shadow-2xl"
+            style={{
+              boxShadow:
+                "0 25px 50px -12px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.08)",
+            }}
+          >
+            {/* Ambient Background Glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[#ddb7ff]/20 blur-[70px] rounded-full pointer-events-none" />
 
-                                        {/* Lock badge */}
-                                        <motion.div
-                                            initial={{ scale: 0 }}
-                                            animate={{ scale: 1 }}
-                                            transition={{ delay: 0.5, type: "spring" }}
-                                            className="absolute -bottom-1 -right-1 bg-white rounded-full p-1.5 shadow-lg"
-                                        >
-                                            <Lock className="w-4 h-4 text-pink-600" />
-                                        </motion.div>
-                                    </div>
-                                </motion.div>
-                            </motion.div>
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-[#debec8] hover:text-white flex items-center justify-center transition-colors cursor-pointer z-20"
+            >
+              <span className="material-symbols-outlined text-[20px]">close</span>
+            </button>
 
-                            {/* Paper Cutout Container */}
-                            <div
-                                className="relative bg-gradient-to-br from-white via-pink-50 to-purple-50 shadow-2xl overflow-hidden"
-                                style={{
-                                    clipPath: "polygon(5% 0%, 95% 0%, 100% 5%, 100% 80%, 95% 85%, 90% 100%, 10% 100%, 5% 95%, 0% 85%, 0% 5%)",
-                                }}
-                            >
-                                {/* Subtle paper animation */}
-                                <motion.div
-                                    animate={{
-                                        y: [0, -5, 0],
-                                    }}
-                                    transition={{
-                                        duration: 4,
-                                        repeat: Infinity,
-                                        ease: "easeInOut",
-                                    }}
-                                    className="pt-12 pb-8 px-8"
-                                >
-                                    {/* Close Button */}
-                                    <button
-                                        onClick={onClose}
-                                        className="absolute top-3 right-3 p-2 rounded-full bg-white/80 hover:bg-white shadow-md transition-all hover:scale-110 z-10"
-                                    >
-                                        <X className="w-4 h-4 text-gray-600" />
-                                    </button>
+            {/* Glowing Icon Badge */}
+            <div className="relative w-20 h-20 mb-5 flex items-center justify-center z-10">
+              <div className="absolute inset-0 rounded-full bg-[#ddb7ff]/25 blur-xl animate-pulse" />
+              <div className="relative w-full h-full rounded-full border border-[#ddb7ff]/30 flex items-center justify-center bg-white/5 backdrop-blur-sm shadow-inner">
+                <span
+                  className="material-symbols-outlined text-[40px] text-[#ddb7ff]"
+                  style={{ fontVariationSettings: "'FILL' 0" }}
+                >
+                  download
+                </span>
 
-                                    {/* Floating Sparkles */}
-                                    <motion.div
-                                        animate={{
-                                            y: [0, -15, 0],
-                                            rotate: [0, 10, 0],
-                                            opacity: [0.4, 0.8, 0.4],
-                                        }}
-                                        transition={{
-                                            duration: 3,
-                                            repeat: Infinity,
-                                            ease: "easeInOut",
-                                        }}
-                                        className="absolute top-6 left-6 text-pink-400"
-                                    >
-                                        <Sparkles className="w-5 h-5" />
-                                    </motion.div>
+                {/* Mini Lock Badge */}
+                <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#131318] border border-white/20 flex items-center justify-center shadow-md">
+                  <span
+                    className="material-symbols-outlined text-[15px] text-[#ffb0cd]"
+                    style={{ fontVariationSettings: "'FILL' 1" }}
+                  >
+                    lock
+                  </span>
+                </div>
+              </div>
+            </div>
 
-                                    <motion.div
-                                        animate={{
-                                            y: [0, -12, 0],
-                                            rotate: [0, -10, 0],
-                                            opacity: [0.3, 0.7, 0.3],
-                                        }}
-                                        transition={{
-                                            duration: 3.5,
-                                            repeat: Infinity,
-                                            ease: "easeInOut",
-                                            delay: 0.5,
-                                        }}
-                                        className="absolute top-8 right-6 text-purple-400"
-                                    >
-                                        <Sparkles className="w-4 h-4" />
-                                    </motion.div>
+            {/* Title */}
+            <h2 className="font-headline-lg-mobile text-2xl sm:text-3xl font-bold text-white mb-2 z-10 tracking-tight">
+              Save Your Memories Forever
+            </h2>
 
-                                    <motion.div
-                                        animate={{
-                                            y: [0, -10, 0],
-                                            rotate: [0, 15, 0],
-                                            opacity: [0.4, 0.6, 0.4],
-                                        }}
-                                        transition={{
-                                            duration: 4,
-                                            repeat: Infinity,
-                                            ease: "easeInOut",
-                                            delay: 1,
-                                        }}
-                                        className="absolute bottom-16 left-8 text-pink-300"
-                                    >
-                                        <Sparkles className="w-3 h-3" />
-                                    </motion.div>
+            {/* Description */}
+            <p className="font-body-md text-sm sm:text-base text-[#debec8] mb-6 z-10 leading-relaxed max-w-xs">
+              You've used all 6 free guest downloads. Sign up for free to unlock unlimited high-res downloads and keep all moments safe.
+            </p>
 
-                                    {/* Title */}
-                                    <motion.h2
-                                        initial={{ y: 20, opacity: 0 }}
-                                        animate={{ y: 0, opacity: 1 }}
-                                        transition={{ delay: 0.3 }}
-                                        className="text-2xl font-bold text-center mb-3 bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent"
-                                    >
-                                        Save Your Memories Forever
-                                    </motion.h2>
+            {/* Benefits List */}
+            <div className="w-full bg-white/[0.04] border border-white/10 rounded-2xl p-3.5 mb-6 z-10 text-left space-y-2.5">
+              <div className="flex items-center gap-2.5 text-xs sm:text-sm text-[#e4e1e9]">
+                <div className="w-5 h-5 rounded-full bg-[#ddb7ff]/15 flex items-center justify-center text-[#ddb7ff] shrink-0">
+                  <span className="material-symbols-outlined text-[14px]">check</span>
+                </div>
+                <span>Download unlimited original quality photos</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs sm:text-sm text-[#e4e1e9]">
+                <div className="w-5 h-5 rounded-full bg-[#ddb7ff]/15 flex items-center justify-center text-[#ddb7ff] shrink-0">
+                  <span className="material-symbols-outlined text-[14px]">check</span>
+                </div>
+                <span>Access your saved event albums anytime</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs sm:text-sm text-[#e4e1e9]">
+                <div className="w-5 h-5 rounded-full bg-[#ddb7ff]/15 flex items-center justify-center text-[#ddb7ff] shrink-0">
+                  <span className="material-symbols-outlined text-[14px]">check</span>
+                </div>
+                <span>Share with friends and family seamlessly</span>
+              </div>
+            </div>
 
-                                    {/* Description */}
-                                    <motion.p
-                                        initial={{ y: 20, opacity: 0 }}
-                                        animate={{ y: 0, opacity: 1 }}
-                                        transition={{ delay: 0.4 }}
-                                        className="text-gray-600 text-center mb-6 text-sm leading-relaxed"
-                                    >
-                                        Sign up to download images and keep your precious moments safe forever!
-                                    </motion.p>
+            {/* Action Buttons */}
+            <div className="w-full space-y-3 z-10">
+              <button
+                type="button"
+                onClick={handleSignup}
+                className="w-full py-3.5 rounded-full bg-gradient-to-r from-primary to-secondary text-[#40000d] font-label-md text-sm sm:text-base font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_20px_rgba(247,81,161,0.35)] flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[20px]">person_add</span>
+                <span>Sign Up for Free</span>
+              </button>
 
-                                    {/* CTA Buttons */}
-                                    <motion.div
-                                        initial={{ y: 20, opacity: 0 }}
-                                        animate={{ y: 0, opacity: 1 }}
-                                        transition={{ delay: 0.5 }}
-                                        className="space-y-3"
-                                    >
-                                        {/* Primary CTA */}
-                                        <motion.button
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                            onClick={handleSignup}
-                                            className="w-full py-3 px-6 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
-                                        >
-                                            <Sparkles className="w-4 h-4" />
-                                            <span>Sign Up Now</span>
-                                        </motion.button>
-
-                                        {/* Secondary CTA */}
-                                        <button
-                                            onClick={onClose}
-                                            className="w-full py-2 px-6 text-gray-600 hover:text-gray-800 font-medium transition-colors text-sm"
-                                        >
-                                            Maybe Later
-                                        </button>
-                                    </motion.div>
-
-                                    {/* Benefits List */}
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        transition={{ delay: 0.6 }}
-                                        className="mt-5 pt-5 border-t border-gray-200"
-                                    >
-                                        <ul className="space-y-2 text-xs text-gray-600">
-                                            <li className="flex items-center gap-2">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-600" />
-                                                <span>Download unlimited photos</span>
-                                            </li>
-                                            <li className="flex items-center gap-2">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-600" />
-                                                <span>Access your memories anytime</span>
-                                            </li>
-                                            <li className="flex items-center gap-2">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-600" />
-                                                <span>Share with friends and family</span>
-                                            </li>
-                                        </ul>
-                                    </motion.div>
-                                </motion.div>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                </>
-            )}
-        </AnimatePresence>
-    );
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full py-2 text-[#debec8]/70 hover:text-white font-label-md transition-colors text-xs sm:text-sm cursor-pointer"
+              >
+                Maybe later
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
 };
 
 export default SignupPromptModal;

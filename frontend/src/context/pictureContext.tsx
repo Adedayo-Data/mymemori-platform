@@ -10,7 +10,7 @@ import { uploadToCloudinary } from '../utils/upload';
 import { getOrCreateSession, clearSession } from '../utils/sessionUtils';
 import { handleApiError } from '../utils/errorUtils';
 
-interface UploadedPhoto {
+export interface UploadedPhoto {
   photoId: string;
   imageUrl: string;
   uploader: string;
@@ -19,6 +19,8 @@ interface UploadedPhoto {
   size: string;
   color: string;
   canDelete?: boolean;
+  reactionCount?: number;
+  isLikedByCurrentUser?: boolean;
 }
 
 interface PictureContextType {
@@ -147,7 +149,6 @@ export const PictureProvider = ({
 
       if (response.data) {
         setDefaultImages(response.data);
-        console.log("Fetched default images with like status:", response.data);
       }
       return response.data;
     } catch (error: unknown) {
@@ -177,7 +178,6 @@ export const PictureProvider = ({
 
             if (retryResponse.data) {
               setDefaultImages(retryResponse.data);
-              console.log("Retry: Fetched default images with like status:", retryResponse.data);
               return retryResponse.data;
             }
           } catch (retryError) {
@@ -206,7 +206,6 @@ export const PictureProvider = ({
   const getAllPhoto = async () => {
     try {
       const response = await apiClient.get("/api/public/my-photos");
-      console.log("Event fetch response:", response.data);
       return response.data;
     } catch (error) {
       console.error("Failed to fetch default images:", error);
@@ -216,7 +215,6 @@ export const PictureProvider = ({
   const getLikedPhotos = async () => {
     try {
       const response = await apiClient.get("/api/public/liked-photos");
-      console.log("Liked photos fetch response:", response.data);
       return response.data;
     } catch (error) {
       console.error("Failed to fetch liked photos:", error);
